@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  usedBy    String?
+  status    String   @default("active") // active, used, revoked
+
+  @@index([code])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  personalCode   String   @unique // Given after successful onboarding
+  passwordHash   String
+  firstName      String?
+  lastName       String?
+  
+  // Profile
+  profile        Profile?
+  
+  // Account Status
+  status         String   @default("active") // active, suspended, deleted
+  emailVerified  Boolean  @default(false)
+  onboardingStep String   @default("passcode") // passcode, interview, completed
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([personalCode])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Interview Answers
+  age             Int?
+  gender          String?
+  location        String?
+  bio             String?
+  interests       String[] // Array of interest tags
+  lookingFor      String? // dating, hookups, friends, networking, other
+  
+  // Media
+  avatarUrl       String?
+  photoUrls       String[] // Multiple profile photos
+  
+  // Preferences
+  isPublic        Boolean  @default(false) // Visible in member search
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OnboardingResponse {
+  id        String   @id @default(cuid())
+  userId    String
+  question  String
+  answer    String
+  order     Int      // Question number in sequence
+  createdAt DateTime @default(now())
+
+  @@unique([userId, order])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  creatorId   String
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChatRoom {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // private, group, public
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Classified {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
