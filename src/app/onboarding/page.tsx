@@ -128,6 +128,7 @@ function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const passcode = searchParams.get('passcode')
+  const prefilledDob = searchParams.get('dob')
 
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState<OnboardingFormData>(initialFormData)
@@ -190,6 +191,23 @@ function OnboardingContent() {
       isMounted = false
     }
   }, [passcode])
+
+  useEffect(() => {
+    if (!prefilledDob || !/^\d{4}-\d{2}-\d{2}$/.test(prefilledDob)) {
+      return
+    }
+
+    setFormData((previousData) => {
+      if (previousData.dateOfBirth) {
+        return previousData
+      }
+
+      return {
+        ...previousData,
+        dateOfBirth: prefilledDob,
+      }
+    })
+  }, [prefilledDob])
 
   useEffect(() => {
     const username = formData.username.trim().toLowerCase()

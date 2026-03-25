@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import LandingAccessGate from '@/app/_components/landing-access-gate'
 
 export const metadata: Metadata = {
-  title: 'Private. Passionate. Yours.',
+  title: 'Private Entry',
   description:
     'Exclusive adult social network — invite-only. RockBayBooty is a private, verified adults-only space for discreet dating, chemistry, and connection.',
   keywords: [
@@ -43,23 +43,22 @@ export default function Welcome() {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-200/80">
-                Invite-only member access
+                Lobby entrance
               </p>
               <h1 className="font-[family:var(--font-display)] text-5xl leading-[0.95] text-stone-100 sm:text-6xl">
-                Private.
+                Front door
                 <br />
-                Passionate.
-                <br />
-                Yours.
+                access only.
               </h1>
               <p className="max-w-xl text-sm leading-7 text-stone-300 sm:text-base">
-                RockBayBooty is a discreet adults-only network for meaningful chemistry.
-                Enter your invite passcode to continue onboarding.
+                Members can key in directly.
+                <br />
+                Guests can enter a code and date of birth to request buzz-in.
               </p>
               <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-stone-300/90">
                 <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5">19+ only</span>
                 <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5">Verified access</span>
-                <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5">No public profiles</span>
+                <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5">Discreet lobby</span>
               </div>
             </div>
 

@@ -1,47 +1,78 @@
 'use client'
 
-import { useEffect, useState, type FormEvent } from 'react'
+import Link from 'next/link'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { validatePasscode } from '@/lib/api'
-import { MESSAGES, PASSCODE_LENGTH, ROUTES } from '@/lib/constants'
+import { MESSAGES, MIN_AGE, PASSCODE_LENGTH, ROUTES } from '@/lib/constants'
 
 const PASSCODE_PATTERN = /^[A-Z0-9]{6,8}$/
+const KEYPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', 'DEL']
+
+function formatDateInputValue(date: Date): string {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function isAtLeastMinimumAge(dateOfBirth: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) {
+    return false
+  }
+
+  const dob = new Date(`${dateOfBirth}T00:00:00.000Z`)
+  const today = new Date()
+  let age = today.getUTCFullYear() - dob.getUTCFullYear()
+  const monthDiff = today.getUTCMonth() - dob.getUTCMonth()
+  const dayDiff = today.getUTCDate() - dob.getUTCDate()
+
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age -= 1
+  }
+
+  return Number.isFinite(age) && age >= MIN_AGE
+}
 
 export default function LandingAccessGate() {
   const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
+  const [isCodeEntryOpen, setIsCodeEntryOpen] = useState(false)
   const [passcode, setPasscode] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
 
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
+  const maxBirthDate = useMemo(() => {
+    const maxDate = new Date()
+    maxDate.setUTCFullYear(maxDate.getUTCFullYear() - MIN_AGE)
+    return formatDateInputValue(maxDate)
+  }, [])
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && status !== 'loading') {
-        setIsOpen(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isOpen, status])
-
-  const closeModal = () => {
+  const handleKeypadPress = (value: string) => {
     if (status === 'loading') {
       return
     }
 
     setError('')
-    setStatus('idle')
-    setPasscode('')
-    setIsOpen(false)
+
+    if (value === 'CLR') {
+      setPasscode('')
+      return
+    }
+
+    if (value === 'DEL') {
+      setPasscode((previousValue) => previousValue.slice(0, -1))
+      return
+    }
+
+    setPasscode((previousValue) => {
+      if (previousValue.length >= 8) {
+        return previousValue
+      }
+
+      return `${previousValue}${value}`
+    })
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -55,12 +86,22 @@ export default function LandingAccessGate() {
       return
     }
 
+    if (!isAtLeastMinimumAge(dateOfBirth)) {
+      setError(MESSAGES.INVALID_DATE_OF_BIRTH)
+      return
+    }
+
     setError('')
     setStatus('loading')
 
     try {
       await validatePasscode(normalizedPasscode)
-      router.push(`${ROUTES.ONBOARDING}?passcode=${encodeURIComponent(normalizedPasscode)}`)
+      const params = new URLSearchParams({
+        passcode: normalizedPasscode,
+        dob: dateOfBirth,
+      })
+
+      router.push(`${ROUTES.ONBOARDING}?${params.toString()}`)
     } catch (error) {
       setStatus('idle')
       setError(
@@ -72,99 +113,102 @@ export default function LandingAccessGate() {
   }
 
   return (
-    <>
-      <div className="flex flex-col items-start gap-4">
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href={ROUTES.LOGIN}
+          className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/35 px-5 py-3 text-xs font-semibold uppercase tracking-[0.28em] text-stone-100 transition hover:border-white/45 hover:bg-black/55"
+        >
+          I have a key
+        </Link>
+
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
-          className="group inline-flex items-center justify-center gap-3 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.28em] text-white shadow-[0_12px_40px_rgba(2,6,23,0.35)] transition duration-300 hover:-translate-y-0.5 hover:bg-white/16 focus:outline-none focus:ring-2 focus:ring-sky-300/70 focus:ring-offset-2 focus:ring-offset-slate-900"
+          onClick={() => {
+            setIsCodeEntryOpen((currentValue) => !currentValue)
+            setError('')
+          }}
+          className="inline-flex items-center justify-center rounded-full border border-sky-300/30 bg-sky-400/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.28em] text-sky-100 transition hover:border-sky-200/55 hover:bg-sky-300/15"
         >
-          Access
-          <span className="text-base transition-transform duration-300 group-hover:translate-x-0.5">+</span>
+          {isCodeEntryOpen ? 'Hide code panel' : 'Enter code'}
         </button>
-
       </div>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-8 backdrop-blur-md">
-          <button
-            type="button"
-            aria-label="Close passcode modal"
-            onClick={closeModal}
-            className="absolute inset-0 cursor-default"
-          />
+      {isCodeEntryOpen && (
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-white/15 bg-black/35 p-5 backdrop-blur-md sm:p-6">
+          <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Guest entry</p>
 
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="invite-gate-title"
-            className="relative z-10 w-full max-w-md overflow-hidden rounded-[2rem] border border-white/15 bg-slate-900/95 p-6 text-left shadow-[0_30px_120px_rgba(0,0,0,0.65)] sm:p-8"
-          >
-            <div className="relative flex items-start justify-between gap-6">
-              <div>
-                <h2
-                  id="invite-gate-title"
-                  className="mt-3 font-[family:var(--font-display)] text-3xl leading-none text-stone-100"
-                >
-                  Enter your passcode
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                className="rounded-full border border-white/10 px-3 py-1 text-sm text-stone-300 transition hover:border-white/20 hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="relative mt-8 space-y-4">
-              <div>
-                <label htmlFor="passcode" className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-stone-400">
-                  Passcode
-                </label>
-                <input
-                  id="passcode"
-                  name="passcode"
-                  type="text"
-                  inputMode="text"
-                  autoComplete="one-time-code"
-                  minLength={PASSCODE_LENGTH}
-                  maxLength={8}
-                  pattern="[A-Za-z0-9]{6,8}"
-                  placeholder="AB12CD"
-                  value={passcode}
-                  onChange={(event) => {
-                    setPasscode(event.target.value.toUpperCase())
-                    if (error) {
-                      setError('')
-                    }
-                  }}
-                  className="w-full rounded-2xl border border-white/20 bg-slate-950/40 px-4 py-4 text-center text-lg font-semibold tracking-[0.45em] text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-sky-300/70 focus:ring-2 focus:ring-sky-300/25"
-                />
-              </div>
-
-              {error && (
-                <p className="rounded-2xl border border-[#b03d53]/35 bg-[#4d1421]/45 px-4 py-3 text-sm text-[#ffced5]">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={status !== 'idle'}
-                className="relative inline-flex w-full items-center justify-center rounded-full border border-sky-300/20 bg-gradient-to-r from-sky-700 to-blue-800 px-5 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-stone-100 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-90"
-              >
-                {status === 'loading' && (
-                  <span className="mr-3 h-4 w-4 animate-spin rounded-full border-2 border-stone-300/25 border-t-stone-100" />
-                )}
-                {status === 'loading' ? 'Verifying access' : 'Continue'}
-              </button>
-            </form>
+          <div className="space-y-2">
+            <label htmlFor="passcode" className="block text-xs font-semibold uppercase tracking-[0.24em] text-stone-300">
+              Building code
+            </label>
+            <input
+              id="passcode"
+              name="passcode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              minLength={PASSCODE_LENGTH}
+              maxLength={8}
+              pattern="[A-Za-z0-9]{6,8}"
+              placeholder="AB12CD"
+              value={passcode}
+              onChange={(event) => {
+                const normalized = event.target.value.replace(/[^a-z0-9]/gi, '').toUpperCase()
+                setPasscode(normalized)
+                setError('')
+              }}
+              className="w-full rounded-2xl border border-white/20 bg-slate-950/50 px-4 py-3 text-center text-lg font-semibold tracking-[0.45em] text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-sky-300/70 focus:ring-2 focus:ring-sky-300/25"
+            />
           </div>
-        </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            {KEYPAD_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleKeypadPress(key)}
+                className="rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-stone-200 transition hover:border-white/30 hover:bg-black/50"
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="dateOfBirth" className="block text-xs font-semibold uppercase tracking-[0.24em] text-stone-300">
+              Birthdate
+            </label>
+            <input
+              id="dateOfBirth"
+              name="dateOfBirth"
+              type="date"
+              required
+              max={maxBirthDate}
+              value={dateOfBirth}
+              onChange={(event) => {
+                setDateOfBirth(event.target.value)
+                setError('')
+              }}
+              className="w-full rounded-2xl border border-white/20 bg-slate-950/50 px-4 py-3 text-sm text-stone-100 outline-none transition focus:border-sky-300/70 focus:ring-2 focus:ring-sky-300/25"
+            />
+          </div>
+
+          {error && (
+            <p className="rounded-2xl border border-[#b03d53]/35 bg-[#4d1421]/45 px-4 py-3 text-sm text-[#ffced5]">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={status !== 'idle'}
+            className="inline-flex w-full items-center justify-center rounded-full border border-sky-300/25 bg-gradient-to-r from-sky-700/90 to-blue-800/90 px-5 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-stone-100 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-80"
+          >
+            {status === 'loading' ? 'Calling upstairs...' : 'Request buzz-in'}
+          </button>
+        </form>
       )}
-    </>
+    </div>
   )
 }
