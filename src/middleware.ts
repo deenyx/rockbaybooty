@@ -1,52 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-// Protected routes that require authentication
-const PROTECTED_ROUTES = ['/dashboard', '/profile', '/search', '/chat', '/groups']
+import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
-export function middleware(request: NextRequest) {
+const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.ONBOARDING, ROUTES.LOGIN]
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((path) => {
+    if (path === ROUTES.HOME) {
+      return pathname === ROUTES.HOME
+    }
+
+    return pathname === path || pathname.startsWith(`${path}/`)
+  })
+}
+
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const search = request.nextUrl.search
 
-  // Check if route is protected
-  const isProtected = PROTECTED_ROUTES.some(route => 
-    pathname.startsWith(route)
-  )
-
-  if (!isProtected) {
+  if (pathname.startsWith('/api/auth/')) {
     return NextResponse.next()
   }
 
-  // Get token from cookie or header
-  const token = request.cookies.get('auth-token')?.value ||
-    request.headers.get('authorization')?.replace('Bearer ', '')
+  if (isPublicPath(pathname)) {
+    return NextResponse.next()
+  }
+
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
 
   if (!token) {
-    return NextResponse.redirect(new URL('/', request.url))
+    const loginUrl = new URL(ROUTES.LOGIN, request.url)
+    loginUrl.searchParams.set('returnTo', `${pathname}${search}`)
+    return NextResponse.redirect(loginUrl)
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '')
-    
-    // Token is valid, proceed
-    const response = NextResponse.next()
-    // Optionally, add user info to response headers or cookies
+    const jwtSecret = process.env.JWT_SECRET
+    if (!jwtSecret) {
+      const loginUrl = new URL(ROUTES.LOGIN, request.url)
+      loginUrl.searchParams.set('returnTo', `${pathname}${search}`)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    jwt.verify(token, jwtSecret)
+    return NextResponse.next()
+  } catch {
+    const loginUrl = new URL(ROUTES.LOGIN, request.url)
+    loginUrl.searchParams.set('returnTo', `${pathname}${search}`)
+    const response = NextResponse.redirect(loginUrl)
+    response.cookies.set({
+      name: AUTH_COOKIE_NAME,
+      value: '',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: new Date(0),
+    })
     return response
-  } catch (error) {
-    // Token is invalid or expired
-    return NextResponse.redirect(new URL('/', request.url))
   }
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public folder)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }

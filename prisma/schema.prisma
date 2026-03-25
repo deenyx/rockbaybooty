@@ -23,7 +23,9 @@ model InviteCode {
 
 model User {
   id             String   @id @default(cuid())
-  email          String   @unique
+  email          String?  @unique
+  username       String   @unique
+  displayName    String
   personalCode   String   @unique // Given after successful onboarding
   passwordHash   String
   firstName      String?
@@ -51,15 +53,22 @@ model Profile {
   
   // Interview Answers
   age             Int?
+  dateOfBirth     DateTime?
   gender          String?
+  genderOther     String?
+  sexualOrientation String?
+  orientationOther String?
+  city            String?
+  state           String?
+  country         String?
   location        String?
   bio             String?
-  interests       String[] // Array of interest tags
-  lookingFor      String? // dating, hookups, friends, networking, other
+  interests       String[] @default([]) // Array of interest tags
+  lookingFor      String[] @default([]) // dating, hookups, friends, networking, other
   
   // Media
   avatarUrl       String?
-  photoUrls       String[] // Multiple profile photos
+  photoUrls       String[] @default([]) // Multiple profile photos
   
   // Preferences
   isPublic        Boolean  @default(false) // Visible in member search
