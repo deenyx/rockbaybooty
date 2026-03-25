@@ -55,15 +55,6 @@ export default function RootLayout({
       <body
         className={`${sans.variable} ${display.variable} min-h-screen bg-[#060304] font-[family:var(--font-sans)] text-stone-100 antialiased`}
       >
-        <form action="/api/auth/logout" method="post" className="fixed right-4 top-4 z-40">
-          <button
-            type="submit"
-            className="rounded-full border border-white/15 bg-black/35 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-200 transition hover:border-amber-100/35 hover:text-amber-100"
-          >
-            Logout
-          </button>
-        </form>
-
         {children}
 
         <noscript>
