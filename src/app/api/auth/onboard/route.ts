@@ -274,8 +274,8 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(
       {
-        sub: user.id,
-        username: user.username,
+        userId: user.id,
+        personalCode: user.personalCode,
       },
       jwtSecret,
       { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
@@ -285,6 +285,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json(
       {
         message: MESSAGES.ACCOUNT_CREATED,
+        personalCode: user.personalCode,
         user: {
           id: user.id,
           email: user.email,

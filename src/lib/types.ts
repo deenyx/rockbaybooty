@@ -47,6 +47,15 @@ export interface InviteCode {
   usedBy?: string
 }
 
+export interface AuthTokenPayload {
+  userId: string
+  personalCode: string
+  sub?: string
+  username?: string
+  iat?: number
+  exp?: number
+}
+
 export interface OnboardingQuestion {
   id: string
   label: string
@@ -58,6 +67,7 @@ export interface OnboardingQuestion {
 
 export interface AuthResponse {
   message: string
+  personalCode: string
   user: {
     id: string
     email?: string | null
@@ -124,4 +134,32 @@ export interface UpdateMemberProfileInput {
   bio?: string
   interests?: string[]
   avatarUrl?: string
+}
+
+export interface MemberSearchFilters {
+  q?: string
+  minAge?: number
+  maxAge?: number
+  gender?: string
+  orientation?: string
+  lookingFor?: string[]
+  onlineOnly?: boolean
+  limit?: number
+}
+
+export interface MemberSearchResult {
+  id: string
+  username: string
+  displayName: string
+  age: number | null
+  location: string
+  bio: string
+  avatarUrl: string
+  interests: string[]
+  lookingFor: string[]
+  isOnline: boolean
+}
+
+export interface MemberSearchResponse {
+  members: MemberSearchResult[]
 }

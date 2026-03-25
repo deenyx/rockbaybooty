@@ -3,6 +3,8 @@
 import type {
   AuthResponse,
   LoginResponse,
+  MemberSearchFilters,
+  MemberSearchResponse,
   MemberProfileResponse,
   PasscodeValidationResponse,
   UpdateMemberProfileInput,
@@ -93,5 +95,51 @@ export async function updateMemberProfile(
   return apiCall('/api/member/profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
+  })
+}
+
+export async function searchMembers(
+  filters: MemberSearchFilters,
+  signal?: AbortSignal
+): Promise<MemberSearchResponse> {
+  const params = new URLSearchParams()
+
+  if (filters.q) {
+    params.set('q', filters.q)
+  }
+
+  if (typeof filters.minAge === 'number') {
+    params.set('minAge', String(filters.minAge))
+  }
+
+  if (typeof filters.maxAge === 'number') {
+    params.set('maxAge', String(filters.maxAge))
+  }
+
+  if (filters.gender) {
+    params.set('gender', filters.gender)
+  }
+
+  if (filters.orientation) {
+    params.set('orientation', filters.orientation)
+  }
+
+  if (filters.lookingFor && filters.lookingFor.length > 0) {
+    params.set('lookingFor', filters.lookingFor.join(','))
+  }
+
+  if (filters.onlineOnly) {
+    params.set('onlineOnly', 'true')
+  }
+
+  if (typeof filters.limit === 'number') {
+    params.set('limit', String(filters.limit))
+  }
+
+  const query = params.toString()
+
+  return apiCall(`/api/members/search${query ? `?${query}` : ''}`, {
+    method: 'GET',
+    signal,
   })
 }

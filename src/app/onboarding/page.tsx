@@ -415,7 +415,7 @@ function OnboardingContent() {
         profilePhoto: formData.profilePhoto || undefined,
       })
 
-      setGeneratedPasscode(response.user.personalCode)
+      setGeneratedPasscode(response.personalCode)
       setTimeout(() => {
         router.push('/dashboard')
       }, 6000)

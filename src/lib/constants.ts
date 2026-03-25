@@ -73,7 +73,7 @@ export const MAX_AGE = 120
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
-export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 export const ROUTES = {
   HOME: '/',

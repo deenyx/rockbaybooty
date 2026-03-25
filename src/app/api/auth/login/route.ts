@@ -6,16 +6,72 @@ import {
   AUTH_COOKIE_NAME,
   AUTH_TOKEN_MAX_AGE_SECONDS,
   MESSAGES,
+  ROUTES,
 } from '@/lib/constants'
+
+function getSafeReturnTo(returnTo: string | null): string {
+  if (!returnTo) {
+    return ROUTES.DASHBOARD
+  }
+
+  if (!returnTo.startsWith('/') || returnTo.startsWith('//')) {
+    return ROUTES.DASHBOARD
+  }
+
+  return returnTo
+}
+
+function shouldReturnJson(request: NextRequest): boolean {
+  const contentType = request.headers.get('content-type') || ''
+  return contentType.includes('application/json')
+}
+
+async function getLoginInput(request: NextRequest): Promise<{
+  personalCode: string
+  returnTo: string
+}> {
+  if (shouldReturnJson(request)) {
+    const body = await request.json()
+
+    return {
+      personalCode: body.passcode?.trim().toUpperCase() || '',
+      returnTo: getSafeReturnTo(body.returnTo || null),
+    }
+  }
+
+  const formData = await request.formData()
+
+  return {
+    personalCode: String(formData.get('passcode') || '').trim().toUpperCase(),
+    returnTo: getSafeReturnTo(String(formData.get('returnTo') || '') || null),
+  }
+}
+
+function getLoginRedirectUrl(request: NextRequest, returnTo: string, error?: string): URL {
+  const url = new URL(ROUTES.LOGIN, request.url)
+  url.searchParams.set('returnTo', returnTo)
+
+  if (error) {
+    url.searchParams.set('error', error)
+  }
+
+  return url
+}
 
 const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const personalCode = body.passcode?.trim().toUpperCase()
+    const { personalCode, returnTo } = await getLoginInput(request)
+    const expectsJson = shouldReturnJson(request)
 
     if (!personalCode) {
+      if (!expectsJson) {
+        return NextResponse.redirect(
+          getLoginRedirectUrl(request, returnTo, MESSAGES.PASSCODE_REQUIRED)
+        )
+      }
+
       return NextResponse.json(
         { error: MESSAGES.PASSCODE_REQUIRED },
         { status: 400 }
@@ -34,6 +90,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user || user.status !== 'active') {
+      if (!expectsJson) {
+        return NextResponse.redirect(
+          getLoginRedirectUrl(request, returnTo, MESSAGES.LOGIN_INVALID)
+        )
+      }
+
       return NextResponse.json(
         { error: MESSAGES.LOGIN_INVALID },
         { status: 401 }
@@ -50,25 +112,27 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(
       {
-        sub: user.id,
-        username: user.username,
+        userId: user.id,
+        personalCode: user.personalCode,
       },
       jwtSecret,
       { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
     )
 
-    const response = NextResponse.json(
-      {
-        message: MESSAGES.LOGIN_SUCCESS,
-        user: {
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          personalCode: user.personalCode,
-        },
-      },
-      { status: 200 }
-    )
+    const response = expectsJson
+      ? NextResponse.json(
+          {
+            message: MESSAGES.LOGIN_SUCCESS,
+            user: {
+              id: user.id,
+              username: user.username,
+              displayName: user.displayName,
+              personalCode: user.personalCode,
+            },
+          },
+          { status: 200 }
+        )
+      : NextResponse.redirect(new URL(returnTo || ROUTES.DASHBOARD, request.url))
 
     response.cookies.set({
       name: AUTH_COOKIE_NAME,

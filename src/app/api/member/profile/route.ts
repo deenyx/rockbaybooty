@@ -3,12 +3,9 @@ import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { AUTH_COOKIE_NAME, MESSAGES } from '@/lib/constants'
+import type { AuthTokenPayload } from '@/lib/types'
 
 const prisma = new PrismaClient()
-
-type JwtPayload = {
-  sub?: string
-}
 
 function getBearerToken(header: string | null): string | null {
   if (!header) {
@@ -42,7 +39,11 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string | nu
   }
 
   try {
-    const payload = jwt.verify(token, jwtSecret) as JwtPayload
+    const payload = jwt.verify(token, jwtSecret) as AuthTokenPayload & { sub?: string }
+    if (typeof payload.userId === 'string') {
+      return payload.userId
+    }
+
     return typeof payload.sub === 'string' ? payload.sub : null
   } catch {
     return null

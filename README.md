@@ -197,6 +197,10 @@ Creates a new user account after passcode validation.
 - Tailwind classes available in `src/app/globals.css` components layer
 - All API routes use TypeScript for type safety
 
+## Deployment
+
+Add DATABASE_URL and JWT_SECRET in Vercel Settings > Environment Variables before deploying.
+
 ## Future Considerations
 
 - **Video Infrastructure**: Integration with Twilio or Agora for video rooms
