@@ -434,9 +434,6 @@ function OnboardingContent() {
       })
 
       setGeneratedPasscode(response.personalCode)
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 6000)
     } catch (error) {
       setErrors({
         submit: error instanceof Error ? error.message : MESSAGES.ERROR_CREATING_ACCOUNT,
@@ -846,10 +843,18 @@ function OnboardingContent() {
               onClick={handleCopyPasscode}
               className="mt-5 rounded-xl border border-white/15 bg-black/35 px-5 py-3 text-sm font-semibold text-stone-100 transition hover:bg-black/50"
             >
-              {isCopying ? 'Copied' : 'Copy Passcode'}
+              {isCopying ? 'Copied ✓' : 'Copy Passcode'}
             </button>
 
-            <p className="mt-4 text-xs text-stone-400">Redirecting to dashboard in a few seconds...</p>
+            <p className="mt-4 text-xs text-stone-400">Save this code — you'll need it every time you log in.</p>
+
+            <button
+              type="button"
+              onClick={() => router.push(ROUTES.DASHBOARD)}
+              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-5 py-3 text-sm font-semibold text-amber-50 transition hover:brightness-110"
+            >
+              Enter the building →
+            </button>
           </div>
         ) : (
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
