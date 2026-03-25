@@ -162,7 +162,14 @@ function OnboardingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary">
+    <div 
+      className="min-h-screen"
+      style={{
+        backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(61, 10, 79, 0.85) 50%, rgba(26, 10, 46, 0.85) 100%), url('/onboard1.png')`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       {/* Header */}
       <div className="bg-black/20 backdrop-blur-md border-b border-white/10">
         <div className="max-w-md mx-auto px-4 py-6">

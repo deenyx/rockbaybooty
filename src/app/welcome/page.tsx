@@ -42,13 +42,6 @@ export default function Welcome() {
 
       {/* Hero content */}
       <main className="relative z-10 flex flex-col items-center gap-8 px-8 text-center">
-        {/* Tagline */}
-        <p className="max-w-2xl text-3xl text-white/60 leading-tight sm:text-4xl" style={playfulScript}>
-          Where desire meets discretion.
-          <br />
-          <span className="text-white/40 text-xl sm:text-2xl">No judgment. No limits. Just your kind of people.</span>
-        </p>
-
         {/* CTAs */}
         <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
           <button
@@ -56,7 +49,7 @@ export default function Welcome() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-10 py-4 text-2xl font-medium text-white/40 backdrop-blur-sm transition hover:bg-white/10 hover:text-white/60"
             style={playfulScript}
           >
-            Create Account
+            
           </button>
           <button
             onClick={() => setShowPasscodeModal(true)}
@@ -86,15 +79,19 @@ export default function Welcome() {
               padding: '24px',
               borderBottom: '1px solid rgba(168, 85, 247, 0.2)',
             }}>
-              <h3 className="text-3xl font-bold text-white mb-0" style={playfulScript}>Enter Passcode</h3>
+              <h3 className="text-3xl font-bold text-white mb-0" style={{
+                fontFamily: 'Copperplate, Copperplate Gothic Light, fantasy',
+                letterSpacing: '0.05em',
+                textAlign: 'center',
+                fontWeight: '700',
+              }}>The Gate</h3>
             </div>
 
             {/* Body */}
             <div className="p-8">
               <p className="text-white/80 mb-6" style={playfulScript}>
-                This is an invite-only community. Enter your passcode to begin onboarding.
+                You Need A Pin to Begin
               </p>
-
               <form onSubmit={handlePasscodeSubmit}>
                 <input
                   type="password"
@@ -110,9 +107,9 @@ export default function Welcome() {
                     type="submit"
                     style={{
                       background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.8) 0%, rgba(219, 39, 119, 0.8) 100%)',
+                      ...playfulScript,
                     }}
                     className="flex-1 px-4 py-2 rounded-lg font-medium text-white hover:shadow-lg hover:shadow-purple-500/50 transition"
-                    style={playfulScript}
                   >
                     Continue
                   </button>
