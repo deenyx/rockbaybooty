@@ -28,6 +28,7 @@ Notes:
 - `DATABASE_URL` must point at your production Postgres database.
 - `JWT_SECRET` should be a strong random secret.
 - `NEXT_PUBLIC_API_URL` is optional for this codebase because client API helpers support same-origin requests. Set it if you want an explicit canonical origin.
+- Add each variable for `Production`, `Preview`, and `Development` in Vercel so preview builds do not fail with missing env values.
 
 ## Prisma In Production
 
@@ -43,7 +44,7 @@ This repository includes:
 
 - `postinstall`: runs `prisma generate`
 - `db:deploy`: runs `prisma migrate deploy`
-- `vercel-build`: runs `prisma migrate deploy && next build`
+- `vercel-build`: runs `prisma db push --skip-generate --accept-data-loss && next build`
 
 ## Vercel Settings
 

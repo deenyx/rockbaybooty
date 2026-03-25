@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME, MAX_AGE, MESSAGES, MIN_AGE } from '@/lib/constants'
 import type { AuthTokenPayload } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
+
 const prisma = new PrismaClient()
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 60
