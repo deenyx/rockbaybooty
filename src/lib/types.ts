@@ -164,3 +164,16 @@ export interface MemberSearchResult {
 export interface MemberSearchResponse {
   members: MemberSearchResult[]
 }
+
+export interface ChatRoomTokenResponse {
+  token: string
+  wsUrl: string
+}
+
+export interface LiveChatMessage {
+  id: string
+  senderId: string
+  senderName: string
+  text: string
+  sentAt: number
+}

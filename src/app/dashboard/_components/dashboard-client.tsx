@@ -78,18 +78,21 @@ const MEMBER_HOME_ACTIONS = [
     description: 'Update your role, location, and bio so people can find your vibe faster.',
     href: ROUTES.PROFILE,
     cta: 'Go to profile',
+    eyebrow: 'Identity',
   },
   {
     title: 'Discover members',
     description: 'Browse active members and filter by the energy you are looking for tonight.',
     href: ROUTES.SEARCH,
     cta: 'Open search',
+    eyebrow: 'Discovery',
   },
   {
     title: 'Join the chat',
     description: 'Drop into conversations and start connecting with your invite-only group.',
     href: ROUTES.CHAT,
     cta: 'Open chat',
+    eyebrow: 'Conversation',
   },
 ]
 
@@ -101,6 +104,12 @@ const SECTION_ANIMATION = {
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.45, ease: 'easeOut' as const },
 }
+
+const TEASER_CARD_BACKGROUNDS = [
+  'bg-[radial-gradient(circle_at_18%_18%,rgba(217,119,6,0.3),transparent_30%),linear-gradient(180deg,rgba(45,12,22,0.85),rgba(7,6,10,0.95))]',
+  'bg-[radial-gradient(circle_at_82%_14%,rgba(244,114,182,0.28),transparent_28%),linear-gradient(180deg,rgba(28,11,26,0.85),rgba(6,6,10,0.96))]',
+  'bg-[radial-gradient(circle_at_50%_18%,rgba(96,165,250,0.24),transparent_30%),linear-gradient(180deg,rgba(29,12,23,0.85),rgba(7,6,10,0.95))]',
+]
 
 function maskPersonalCode(personalCode: string) {
   if (personalCode.length < 4) {
@@ -283,16 +292,18 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(193,46,95,0.34),_transparent_34%),radial-gradient(circle_at_85%_22%,_rgba(191,108,39,0.22),_transparent_30%),linear-gradient(155deg,#040204_12%,#11060c_46%,#2b0b17_100%)] text-stone-100">
-      <div className="pointer-events-none absolute -left-28 top-28 h-72 w-72 rounded-full bg-rose-700/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-14 h-80 w-80 rounded-full bg-amber-700/20 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,29,67,0.34),_transparent_32%),radial-gradient(circle_at_82%_20%,_rgba(184,115,34,0.16),_transparent_26%),linear-gradient(160deg,#050204_8%,#12050c_44%,#19070e_72%,#080508_100%)] text-stone-100">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:120px_120px] opacity-[0.06]" />
+      <div className="pointer-events-none absolute -left-28 top-20 h-80 w-80 rounded-full bg-rose-700/20 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-amber-700/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-14 h-96 w-96 rounded-full bg-fuchsia-900/15 blur-3xl" />
 
       <button
         type="button"
         onClick={toggleSoundboard}
         aria-label="Toggle Champagne Supernova soundboard"
         title="Champagne Supernova Soundboard"
-        className="fixed left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-full border border-rose-200/35 bg-black/55 text-rose-100 shadow-[0_0_20px_rgba(255,160,190,0.25)] transition hover:scale-105 hover:border-rose-200/60 hover:bg-black/75"
+        className="fixed left-5 top-5 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-amber-50 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition hover:scale-105 hover:border-amber-200/35 hover:bg-black/80"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
           <circle cx="12" cy="12" r="4.6" />
@@ -302,7 +313,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       </button>
 
       {isSoundboardOpen && (
-        <section className="fixed left-4 top-18 z-40 w-[min(92vw,320px)] rounded-2xl border border-rose-200/30 bg-black/80 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-md">
+        <section className="fixed left-5 top-20 z-40 w-[min(92vw,320px)] rounded-2xl border border-white/10 bg-[#12090d]/90 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-rose-100/90">Soundboard</p>
             <button
@@ -339,10 +350,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         </section>
       )}
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:px-8">
-        <aside className="hidden w-48 shrink-0 rounded-3xl border border-white/10 bg-black/30 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl md:block">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-400/60">Menu</p>
-          <h1 className="mt-2 font-[family:var(--font-display)] text-lg text-rose-100">Navigation</h1>
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <aside className="hidden w-52 shrink-0 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(17,7,12,0.88),rgba(8,5,8,0.94))] px-5 pb-5 pt-16 shadow-[0_30px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl md:block">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-amber-100/35">Members</p>
+          <h1 className="mt-3 font-[family:var(--font-display)] text-2xl text-stone-100">Private lounge</h1>
 
           <nav className="mt-4 space-y-1">
             {SIDEBAR_ITEMS.map((item) => {
@@ -352,10 +363,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded-xl px-3 py-2 text-xs transition ${
+                  className={`block rounded-xl px-3 py-2.5 text-xs transition ${
                     isActive
-                      ? 'border border-rose-200/35 bg-rose-700/20 text-rose-50'
-                      : 'border border-transparent text-stone-400 hover:border-white/15 hover:bg-white/5 hover:text-stone-200'
+                      ? 'border border-amber-200/20 bg-rose-950/60 text-stone-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                      : 'border border-transparent text-stone-400 hover:border-white/10 hover:bg-white/[0.03] hover:text-stone-200'
                   }`}
                 >
                   {item.label}
@@ -367,7 +378,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-5 w-full rounded-xl border border-rose-200/20 bg-rose-950/20 px-3 py-2 text-left text-xs font-semibold text-stone-300 transition hover:border-rose-200/40 hover:bg-rose-900/25 hover:text-stone-100"
+            className="mt-6 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-left text-xs font-semibold text-stone-300 transition hover:border-amber-200/20 hover:bg-white/[0.05] hover:text-stone-100"
           >
             Logout
           </button>
@@ -376,32 +387,43 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         <main className="flex-1 space-y-5">
           <motion.header
             {...SECTION_ANIMATION}
-            className="rounded-[2rem] border border-white/12 bg-[linear-gradient(165deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_45%,rgba(0,0,0,0.18)_100%)] p-5 shadow-[0_26px_65px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-7"
+            className="overflow-hidden rounded-[2.25rem] border border-white/8 bg-[linear-gradient(135deg,rgba(111,24,49,0.72)_0%,rgba(46,13,24,0.78)_42%,rgba(15,9,16,0.94)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.42)] sm:p-8"
           >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-rose-200/70">Welcome back</p>
-                <h2 className="mt-2 font-[family:var(--font-display)] text-3xl text-rose-50 sm:text-4xl">
+                <p className="text-[10px] uppercase tracking-[0.34em] text-amber-100/55">Welcome back</p>
+                <h2 className="mt-3 font-[family:var(--font-display)] text-4xl leading-none text-stone-50 sm:text-5xl">
                   {data.user.firstName}
                 </h2>
-                <p className="mt-3 text-sm text-stone-300/90">This is your members homepage.</p>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-stone-300/85">
+                  Your private lounge is open. Start with profile polish, then drift into discovery and chat.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-stone-200/70">
+                    Closed circle
+                  </span>
+                  <span className="rounded-full border border-amber-200/15 bg-amber-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-amber-100/70">
+                    Preview member
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
                 {data.profile.avatarUrl ? (
                   <div
-                    className="h-14 w-14 rounded-full border border-white/20 bg-cover bg-center"
+                    className="h-16 w-16 rounded-full border border-white/15 bg-cover bg-center shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
                     style={{ backgroundImage: `url(${data.profile.avatarUrl})` }}
                   />
                 ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-rose-400/20 text-sm font-semibold text-rose-100">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/[0.08] text-lg font-semibold text-stone-50 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
                     {getInitials(data.user.displayName || data.user.username)}
                   </div>
                 )}
 
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-stone-100">@{data.user.username}</p>
-                  <p className="text-xs text-rose-100/75">Private member space</p>
+                  <p className="text-lg font-semibold text-stone-50">@{data.user.username}</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-300/65">Private member space</p>
                 </div>
               </div>
             </div>
@@ -410,22 +432,30 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           <motion.section
             {...SECTION_ANIMATION}
             transition={{ ...SECTION_ANIMATION.transition, delay: 0.05 }}
-            className="rounded-[2rem] border border-white/12 bg-black/35 p-5 shadow-[0_26px_60px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-6"
+            className="rounded-[2.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(13,8,11,0.86),rgba(9,6,9,0.96))] p-6 shadow-[0_28px_70px_rgba(0,0,0,0.38)] sm:p-7"
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-rose-200/70">Members Home</p>
-            <h3 className="mt-2 font-[family:var(--font-display)] text-2xl text-rose-100">Start here</h3>
-            <p className="mt-2 text-sm text-stone-300">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-amber-100/50">Members Home</p>
+            <h3 className="mt-3 font-[family:var(--font-display)] text-4xl leading-none text-stone-50">Start here</h3>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-300/80">
               Core layout for your closed group: profile, discovery, and messaging.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {MEMBER_HOME_ACTIONS.map((item) => (
-                <article key={item.title} className="group rounded-2xl border border-white/10 bg-[linear-gradient(170deg,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.02)_100%)] p-4 transition hover:border-rose-200/30 hover:shadow-[0_16px_40px_rgba(0,0,0,0.32)]">
-                  <p className="text-sm font-semibold text-stone-100">{item.title}</p>
-                  <p className="mt-2 text-xs leading-relaxed text-stone-300">{item.description}</p>
+              {MEMBER_HOME_ACTIONS.map((item, index) => (
+                <article
+                  key={item.title}
+                  className={`group rounded-[1.75rem] border border-white/8 p-5 transition hover:-translate-y-0.5 hover:border-amber-200/15 hover:shadow-[0_18px_45px_rgba(0,0,0,0.34)] ${
+                    index === 0
+                      ? 'bg-[linear-gradient(135deg,rgba(80,20,39,0.7),rgba(29,13,22,0.95))] sm:col-span-2'
+                      : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'
+                  }`}
+                >
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-amber-100/45">{item.eyebrow}</p>
+                  <p className="mt-3 text-2xl font-semibold text-stone-50">{item.title}</p>
+                  <p className="mt-3 max-w-md text-sm leading-7 text-stone-300/80">{item.description}</p>
                   <Link
                     href={item.href}
-                    className="mt-4 inline-flex rounded-full border border-rose-200/30 bg-rose-900/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-rose-100 transition group-hover:border-rose-200/55 group-hover:bg-rose-900/35"
+                    className="mt-6 inline-flex rounded-full border border-amber-200/15 bg-black/20 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-stone-100 transition group-hover:border-amber-200/30 group-hover:bg-black/30"
                   >
                     {item.cta}
                   </Link>
@@ -437,12 +467,12 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           <motion.section
             {...SECTION_ANIMATION}
             transition={{ ...SECTION_ANIMATION.transition, delay: 0.1 }}
-            className="rounded-[2rem] border border-white/12 bg-black/35 p-5 shadow-[0_26px_60px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-6"
+            className="rounded-[2.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(12,8,11,0.86),rgba(8,5,8,0.95))] p-6 shadow-[0_28px_70px_rgba(0,0,0,0.38)] sm:p-7"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-rose-200/70">Personal Passcode</p>
-                <p className="mt-2 font-mono text-2xl tracking-[0.26em] text-rose-100 sm:text-3xl">
+                <p className="text-[10px] uppercase tracking-[0.34em] text-amber-100/50">Personal Passcode</p>
+                <p className="mt-3 font-mono text-3xl tracking-[0.28em] text-stone-50 sm:text-4xl">
                   {maskPersonalCode(data.user.personalCode)}
                 </p>
               </div>
@@ -450,40 +480,40 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <button
                 type="button"
                 onClick={handleCopyPasscode}
-                className="rounded-xl border border-rose-200/35 bg-rose-700/25 px-5 py-3 text-sm font-semibold text-rose-50 shadow-[0_8px_25px_rgba(152,36,77,0.3)] transition hover:bg-rose-700/35"
+                className="rounded-full border border-amber-200/15 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-200/25 hover:bg-white/[0.06]"
               >
                 {isCopying ? 'Copied' : 'Copy passcode'}
               </button>
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <article className="rounded-2xl border border-white/12 bg-white/5 p-4">
+              <article className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5">
                 <p className="text-xs uppercase tracking-[0.14em] text-stone-400">Age</p>
                 <p className="mt-2 text-xl font-semibold text-stone-100">
                   {typeof data.profile.age === 'number' ? data.profile.age : 'Not set'}
                 </p>
               </article>
 
-              <article className="rounded-2xl border border-white/12 bg-white/5 p-4 sm:col-span-2">
+              <article className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5 sm:col-span-2">
                 <p className="text-xs uppercase tracking-[0.14em] text-stone-400">Location</p>
                 <p className="mt-2 text-sm text-stone-100">{data.profile.location || 'Not set'}</p>
               </article>
 
-              <article className="rounded-2xl border border-white/12 bg-white/5 p-4">
+              <article className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5">
                 <p className="text-xs uppercase tracking-[0.14em] text-stone-400">Role</p>
                 <p className="mt-2 text-sm text-stone-100">{roleLabel}</p>
               </article>
 
-              <article className="rounded-2xl border border-white/12 bg-white/5 p-4 sm:col-span-2 lg:col-span-4">
+              <article className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5 sm:col-span-2 lg:col-span-4">
                 <p className="text-xs uppercase tracking-[0.14em] text-stone-400">Bio</p>
-                <p className="mt-2 text-sm text-stone-100">{data.profile.bio || 'No bio written yet.'}</p>
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-stone-200/85">{data.profile.bio || 'No bio written yet.'}</p>
               </article>
             </div>
 
             <button
               type="button"
               onClick={openModal}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-rose-200/45 bg-gradient-to-r from-[#5e1930] via-[#862042] to-[#4c1126] px-5 py-4 text-sm font-semibold uppercase tracking-[0.16em] text-rose-50 shadow-[0_12px_30px_rgba(130,28,62,0.3)] transition hover:brightness-110 sm:w-auto"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-amber-200/15 bg-[linear-gradient(90deg,rgba(100,33,53,0.95),rgba(135,42,70,0.95))] px-5 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-stone-50 shadow-[0_12px_30px_rgba(130,28,62,0.25)] transition hover:brightness-110 sm:w-auto"
             >
               Edit Profile
             </button>
@@ -492,21 +522,21 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           <motion.section
             {...SECTION_ANIMATION}
             transition={{ ...SECTION_ANIMATION.transition, delay: 0.15 }}
-            className="rounded-[2rem] border border-white/12 bg-black/35 p-5 shadow-[0_26px_60px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-6"
+            className="rounded-[2.25rem] border border-white/8 bg-[linear-gradient(180deg,rgba(12,8,11,0.86),rgba(8,5,8,0.95))] p-6 shadow-[0_28px_70px_rgba(0,0,0,0.38)] sm:p-7"
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-rose-200/70">Members Online</p>
-            <h3 className="mt-2 font-[family:var(--font-display)] text-2xl text-rose-100">Tonight's energy</h3>
-            <p className="mt-2 text-sm text-stone-300">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-amber-100/50">Members Online</p>
+            <h3 className="mt-3 font-[family:var(--font-display)] text-4xl leading-none text-stone-50">Tonight's energy</h3>
+            <p className="mt-3 text-sm leading-6 text-stone-300/80">
               Teaser list for now. Real-time online member discovery can be connected next.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {ONLINE_MEMBERS_TEASER.map((member) => (
-                <article key={member.name} className="rounded-2xl border border-white/12 bg-white/5 p-4 transition hover:border-rose-200/25 hover:bg-white/[0.075]">
-                  <div className="h-32 rounded-xl border border-dashed border-white/20 bg-[radial-gradient(circle_at_top,_rgba(201,70,124,0.2),rgba(0,0,0,0.35))]" />
+              {ONLINE_MEMBERS_TEASER.map((member, index) => (
+                <article key={member.name} className="rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-5 transition hover:-translate-y-0.5 hover:border-amber-200/15 hover:bg-white/[0.05]">
+                  <div className={`h-36 rounded-[1.4rem] border border-white/10 ${TEASER_CARD_BACKGROUNDS[index % TEASER_CARD_BACKGROUNDS.length]}`} />
                   <p className="mt-4 text-sm font-semibold text-stone-100">{member.name}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.14em] text-rose-200/75">{member.status}</p>
-                  <p className="mt-2 text-xs text-stone-300">{member.vibe}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-amber-100/55">{member.status}</p>
+                  <p className="mt-3 text-sm leading-6 text-stone-300/80">{member.vibe}</p>
                 </article>
               ))}
             </div>

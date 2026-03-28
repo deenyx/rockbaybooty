@@ -98,6 +98,7 @@ export const MESSAGES = {
   ERROR_CREATING_ACCOUNT: 'Failed to create account. Please try again.',
   ERROR_GENERAL: 'An error occurred. Please try again.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
+  ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
 }
 
 export const MIN_AGE = 19
@@ -114,6 +115,8 @@ export const MAX_MEMBER_COUNT = Number.isFinite(parsedMaxMembers) && parsedMaxMe
   : 20
 export const CLOSED_GROUP_ENABLED = process.env.CLOSED_GROUP_ENABLED !== 'false'
 export const REQUIRE_SIGNUP_INVITE = process.env.REQUIRE_SIGNUP_INVITE !== 'false'
+
+export const CHAT_ROOM_NAME = 'members-lounge'
 
 export const ROUTES = {
   HOME: '/',

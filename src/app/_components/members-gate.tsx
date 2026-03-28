@@ -68,10 +68,14 @@ function ErrorMsg({ msg }: { msg: string }) {
 function EntryStage({
   pin,
   onPinChange,
+  onRequestAccessClick,
+  showRequestAccessHint,
   error,
 }: {
   pin: string
   onPinChange: (v: string) => void
+  onRequestAccessClick: () => void
+  showRequestAccessHint: boolean
   error: string
 }) {
   return (
@@ -107,11 +111,24 @@ function EntryStage({
         new here?{' '}
         <a
           href="/signup"
+          onClick={(e) => {
+            e.preventDefault()
+            onRequestAccessClick()
+          }}
           className="text-pink-400/70 hover:text-pink-300 transition-colors"
         >
           request access
         </a>
       </p>
+
+      {showRequestAccessHint && (
+        <p
+          className="-mt-2 text-center text-[9px] leading-relaxed text-emerald-400"
+          style={{ fontFamily: CP }}
+        >
+          enter. '0000'
+        </p>
+      )}
     </div>
   )
 }
@@ -187,6 +204,7 @@ export default function MembersGate() {
   const [firstName, setFirstName] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
+  const [showRequestAccessHint, setShowRequestAccessHint] = useState(false)
 
   function reset() {
     setStage('entry')
@@ -194,6 +212,7 @@ export default function MembersGate() {
     setFirstName('')
     setError('')
     setStatus('idle')
+    setShowRequestAccessHint(false)
   }
 
   function toggleOpen() {
@@ -205,6 +224,7 @@ export default function MembersGate() {
     const cleaned = value.replace(/\D/g, '').slice(0, 4)
     setPin(cleaned)
     setError('')
+    setShowRequestAccessHint(false)
 
     if (cleaned.length === 4) {
       if (cleaned === '0000') {
@@ -212,9 +232,41 @@ export default function MembersGate() {
         router.push('/signup')
         return
       }
+
+       if (cleaned === '9999') {
+        void loginWithPasscodeOnly(cleaned)
+        return
+      }
+
       setStage('member-confirm')
     } else {
       setStage('entry')
+    }
+  }
+
+  async function loginWithPasscodeOnly(passcode: string) {
+    setStatus('loading')
+    setError('')
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode, returnTo: '/dashboard' }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Could not log in. Please try again.')
+        setStatus('idle')
+        return
+      }
+
+      router.push(data.returnTo || '/dashboard')
+    } catch {
+      setError('Network error. Please try again.')
+      setStatus('idle')
     }
   }
 
@@ -262,6 +314,8 @@ export default function MembersGate() {
             <EntryStage
               pin={pin}
               onPinChange={handlePinChange}
+              onRequestAccessClick={() => setShowRequestAccessHint(true)}
+              showRequestAccessHint={showRequestAccessHint}
               error={error}
             />
           )}

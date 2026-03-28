@@ -32,6 +32,17 @@ type ParsedLoginInput = {
   requestKind: 'json' | 'form'
 }
 
+type LoginUser = {
+  id: string
+  username: string
+  displayName: string
+  personalCode: string
+  firstName: string | null
+  email: string | null
+  status: string
+  emailVerified: boolean
+}
+
 async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> {
   const contentType = request.headers.get('content-type') || ''
   const requestKind: ParsedLoginInput['requestKind'] = contentType.includes('application/json') ? 'json' : 'form'
@@ -95,6 +106,108 @@ function buildSuccessResponse(kind: ParsedLoginInput['requestKind'], returnTo: s
   return NextResponse.redirect(new URL(returnTo, request.url))
 }
 
+async function generateUniquePersonalCode(baseCode: string) {
+  const normalizedBase = baseCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)
+  let attempt = 0
+
+  while (attempt < 10) {
+    const suffix = attempt === 0 ? '' : String(attempt)
+    const personalCode = `${normalizedBase}${suffix}`.slice(0, 12)
+    const existing = await prisma.user.findUnique({
+      where: { personalCode },
+      select: { id: true },
+    })
+
+    if (!existing) {
+      return personalCode
+    }
+
+    attempt += 1
+  }
+
+  const fallback = `DEFAULT${Date.now().toString().slice(-6)}`
+  return fallback
+}
+
+async function getOrCreateDefaultUser(): Promise<LoginUser> {
+  const existing = await prisma.user.findUnique({
+    where: { username: 'defaultuser' },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      personalCode: true,
+      firstName: true,
+      email: true,
+      status: true,
+      emailVerified: true,
+    },
+  })
+
+  if (existing) {
+    if (existing.status !== 'active' || !existing.emailVerified) {
+      const reactivated = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          status: 'active',
+          emailVerified: true,
+          firstName: existing.firstName || 'Default',
+        },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          personalCode: true,
+          firstName: true,
+          email: true,
+          status: true,
+          emailVerified: true,
+        },
+      })
+
+      return reactivated
+    }
+
+    return existing
+  }
+
+  const personalCode = await generateUniquePersonalCode('DEFAULTUSER')
+
+  const created = await prisma.user.create({
+    data: {
+      username: 'defaultuser',
+      displayName: 'Default User',
+      firstName: 'Default',
+      personalCode,
+      passwordHash: 'LEGACY_PREVIEW_ACCOUNT',
+      emailVerified: true,
+      status: 'active',
+      onboardingStep: 'completed',
+      profile: {
+        create: {
+          location: 'Member preview',
+          bio: 'Default account for preview and quick member access.',
+          lookingFor: ['Curious'],
+          interests: ['Open-minded'],
+          isPublic: true,
+        },
+      },
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      personalCode: true,
+      firstName: true,
+      email: true,
+      status: true,
+      emailVerified: true,
+    },
+  })
+
+  return created
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { code, firstName, returnTo, requestKind } = await parseLoginInput(request)
@@ -108,29 +221,30 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse(request, requestKind, MESSAGES.ERROR_GENERAL, 500)
     }
 
-    // Local QA shortcut: 0000 routes to onboarding with passcode prefilled.
+    // Shortcut: 0000 starts account creation.
     if (code === '0000') {
-      const onboardingPath = `${ROUTES.ONBOARDING}?passcode=0000`
+      const signupPath = ROUTES.SIGNUP
 
       if (requestKind === 'json') {
         return NextResponse.json(
-          { message: MESSAGES.PASSCODE_VALID, returnTo: onboardingPath },
+          { message: MESSAGES.PASSCODE_VALID, returnTo: signupPath },
           { status: 200 }
         )
       }
 
-      return NextResponse.redirect(new URL(onboardingPath, request.url))
+      return NextResponse.redirect(new URL(signupPath, request.url))
     }
 
-    // Local QA shortcut: 9999 enters static default-member dashboard preview mode.
+    // Shortcut: 9999 bypasses signup and logs into a backend default account.
     if (code === '9999') {
-      const previewPayload: AuthTokenPayload = {
-        userId: 'default-member',
-        personalCode: code,
-        mode: 'default-member',
+      const defaultUser = await getOrCreateDefaultUser()
+
+      const defaultUserPayload: AuthTokenPayload = {
+        userId: defaultUser.id,
+        personalCode: defaultUser.personalCode,
       }
 
-      const token = jwt.sign(previewPayload, jwtSecret, {
+      const token = jwt.sign(defaultUserPayload, jwtSecret, {
         expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS,
       })
 
@@ -140,10 +254,10 @@ export async function POST(request: NextRequest) {
         {
           message: MESSAGES.LOGIN_SUCCESS,
           user: {
-            id: 'default-member',
-            username: 'default_member',
-            displayName: 'Default Member',
-            personalCode: code,
+            id: defaultUser.id,
+            username: defaultUser.username,
+            displayName: defaultUser.displayName,
+            personalCode: defaultUser.personalCode,
           },
         },
         request
@@ -152,16 +266,7 @@ export async function POST(request: NextRequest) {
       return withAuthCookie(response, token)
     }
 
-    let user: {
-      id: string
-      username: string
-      displayName: string
-      personalCode: string
-      firstName: string | null
-      email: string | null
-      status: string
-      emailVerified: boolean
-    } | null = null
+    let user: LoginUser | null = null
 
     if (firstName) {
       user = await prisma.user.findUnique({

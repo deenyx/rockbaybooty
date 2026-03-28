@@ -2,6 +2,7 @@
 
 import type {
   AuthResponse,
+  ChatRoomTokenResponse,
   LoginResponse,
   MemberSearchFilters,
   MemberSearchResponse,
@@ -96,6 +97,10 @@ export async function updateMemberProfile(
     method: 'PATCH',
     body: JSON.stringify(data),
   })
+}
+
+export async function fetchChatRoomToken(): Promise<ChatRoomTokenResponse> {
+  return apiCall('/api/chat/token')
 }
 
 export async function searchMembers(

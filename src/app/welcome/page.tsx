@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import MembersGate from '@/app/_components/members-gate'
 
 export const metadata: Metadata = {
@@ -30,21 +31,40 @@ export const metadata: Metadata = {
 export default function Welcome() {
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/welcome2.jpg')",
-          backgroundPosition: 'center 22%',
-          transform: 'scale(1.04)',
-          filter: 'saturate(1.18) contrast(1.06)',
-        }}
-      />
+      <div className="absolute inset-0">
+        <Image
+          src="/welcome2.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-55"
+          style={{
+            objectPosition: 'center 22%',
+            filter: 'saturate(1.04) contrast(0.98) blur(4px)',
+          }}
+        />
+      </div>
+      <div className="absolute inset-0">
+        <Image
+          src="/welcome2.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-contain"
+          style={{
+            objectPosition: 'center center',
+            filter: 'saturate(1.08) contrast(1.02)',
+          }}
+        />
+      </div>
       <div
         className="absolute inset-0"
         style={{
           background:
             'radial-gradient(circle at 18% 16%, rgba(56, 189, 248, 0.26), transparent 42%), radial-gradient(circle at 82% 14%, rgba(244, 114, 182, 0.2), transparent 36%), linear-gradient(180deg, rgba(2, 6, 23, 0.56), rgba(2, 6, 23, 0.9))',
-          opacity: 0.1,
+          opacity: 0.14,
         }}
       />
 
