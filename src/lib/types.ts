@@ -50,6 +50,7 @@ export interface InviteCode {
 export interface AuthTokenPayload {
   userId: string
   personalCode: string
+  mode?: 'default-member'
   sub?: string
   username?: string
   iat?: number

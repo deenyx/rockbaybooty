@@ -26,24 +26,30 @@ model User {
   email          String?  @unique
   username       String   @unique
   displayName    String
-  personalCode   String   @unique // Given after successful onboarding
-  passwordHash   String
+  personalCode   String   @unique // Referral / sharing code
+  passwordHash   String?           // Optional — new users use PIN-based auth
   firstName      String?
   lastName       String?
-  
+
+  // PIN-based auth
+  loginPin                   String?   @unique  // 4-digit login PIN, assigned after email verification
+  emailVerificationToken     String?   @unique
+  emailVerificationExpiresAt DateTime?
+
   // Profile
   profile        Profile?
-  
+
   // Account Status
   status         String   @default("active") // active, suspended, deleted
   emailVerified  Boolean  @default(false)
   onboardingStep String   @default("passcode") // passcode, interview, completed
-  
+
   // Timestamps
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@index([personalCode])
+  @@index([loginPin])
 }
 
 model Profile {

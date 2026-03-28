@@ -7,10 +7,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { searchMembers } from '@/lib/api'
 import {
   GENDER_OPTIONS,
-  LOOKING_FOR_OPTIONS,
   MAX_AGE,
   MIN_AGE,
   ORIENTATION_OPTIONS,
+  ROLE_OPTIONS,
   ROUTES,
 } from '@/lib/constants'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
@@ -118,16 +118,11 @@ export default function SearchPage() {
     }
   }, [filters])
 
-  const toggleLookingForTag = (tag: string) => {
-    setFilters((current) => {
-      const tags = current.lookingFor || []
-      const exists = tags.includes(tag)
-
-      return {
-        ...current,
-        lookingFor: exists ? tags.filter((value) => value !== tag) : [...tags, tag],
-      }
-    })
+  const setRoleFilter = (role: string) => {
+    setFilters((current) => ({
+      ...current,
+      lookingFor: role ? [role] : [],
+    }))
   }
 
   const resetFilters = () => {
@@ -296,27 +291,22 @@ export default function SearchPage() {
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Looking for</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {LOOKING_FOR_OPTIONS.map((tag) => {
-                      const selected = (filters.lookingFor || []).includes(tag)
-
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => toggleLookingForTag(tag)}
-                          className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                            selected
-                              ? 'border-amber-200/60 bg-amber-300/20 text-amber-100'
-                              : 'border-white/20 bg-black/25 text-stone-300 hover:border-white/35 hover:text-white'
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  <label className="text-xs uppercase tracking-[0.16em] text-stone-300" htmlFor="role-filter">
+                    Role
+                  </label>
+                  <select
+                    id="role-filter"
+                    value={filters.lookingFor?.[0] || ''}
+                    onChange={(event) => setRoleFilter(event.target.value)}
+                    className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-amber-200/45"
+                  >
+                    <option value="">Any role</option>
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/15 bg-black/25 px-3 py-2">
@@ -392,7 +382,7 @@ export default function SearchPage() {
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {member.lookingFor.slice(0, 3).map((item) => (
+                      {member.lookingFor.slice(0, 1).map((item) => (
                         <span
                           key={`${member.id}-${item}`}
                           className="rounded-full border border-amber-100/30 bg-amber-300/15 px-2 py-1 text-[11px] text-amber-100"
@@ -434,7 +424,7 @@ export default function SearchPage() {
               {!isLoading && results.length === 0 && !loadError && (
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-8 text-center">
                   <p className="text-lg font-semibold text-stone-100">No members match these filters yet</p>
-                  <p className="mt-2 text-sm text-stone-300">Try widening age range or removing one tag.</p>
+                  <p className="mt-2 text-sm text-stone-300">Try widening the age range or clearing the role filter.</p>
                 </div>
               )}
             </section>

@@ -10,7 +10,9 @@ import DashboardClient from './_components/dashboard-client'
 
 const prisma = new PrismaClient()
 
-function getUserIdFromToken(token: string): string | null {
+const DEFAULT_MEMBER_ID = 'default-member'
+
+function getTokenPayload(token: string): AuthTokenPayload | null {
   const jwtSecret = process.env.JWT_SECRET
   if (!jwtSecret) {
     return null
@@ -18,17 +20,7 @@ function getUserIdFromToken(token: string): string | null {
 
   try {
     const payload = jwt.verify(token, jwtSecret) as AuthTokenPayload
-
-    if (typeof payload.userId === 'string' && payload.userId) {
-      return payload.userId
-    }
-
-    // Backward compatibility for existing tokens.
-    if (typeof payload.sub === 'string' && payload.sub) {
-      return payload.sub
-    }
-
-    return null
+    return payload
   } catch {
     return null
   }
@@ -58,9 +50,49 @@ export default async function DashboardPage() {
     redirect(`${ROUTES.LOGIN}?returnTo=${encodeURIComponent(ROUTES.DASHBOARD)}`)
   }
 
-  const userId = getUserIdFromToken(token)
+  const payload = getTokenPayload(token)
+  if (!payload) {
+    redirect(`${ROUTES.LOGIN}?returnTo=${encodeURIComponent(ROUTES.DASHBOARD)}`)
+  }
+
+  const userId =
+    (typeof payload.userId === 'string' && payload.userId) ||
+    (typeof payload.sub === 'string' && payload.sub) ||
+    null
+
   if (!userId) {
     redirect(`${ROUTES.LOGIN}?returnTo=${encodeURIComponent(ROUTES.DASHBOARD)}`)
+  }
+
+  if (payload.mode === 'default-member' || userId === DEFAULT_MEMBER_ID) {
+    return (
+      <DashboardClient
+        initialData={{
+          user: {
+            id: DEFAULT_MEMBER_ID,
+            username: 'default_member',
+            firstName: 'Member',
+            displayName: 'Default Member',
+            personalCode: payload.personalCode || '9999',
+          },
+          profile: {
+            age: null,
+            location: 'Preview mode',
+            bio: 'Default member position. Feed and live API pulls are disabled in this mode.',
+            lookingFor: ['Curious'],
+            interests: ['Open-minded'],
+            avatarUrl: '',
+            city: '',
+            state: '',
+            country: '',
+            gender: '',
+            genderOther: '',
+            sexualOrientation: '',
+            orientationOther: '',
+          },
+        }}
+      />
+    )
   }
 
   const user = await prisma.user.findUnique({

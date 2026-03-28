@@ -51,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
         className={`${sans.variable} ${display.variable} min-h-screen bg-[#060304] font-[family:var(--font-sans)] text-stone-100 antialiased`}
       >

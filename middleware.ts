@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
-const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.WELCOME, ROUTES.ONBOARDING, ROUTES.LOGIN]
+const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.WELCOME, ROUTES.ONBOARDING, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.PIN_REVEAL]
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => {

@@ -8,10 +8,10 @@ import { checkUsernameAvailability, onboard, validatePasscode } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   INTEREST_TAG_OPTIONS,
-  LOOKING_FOR_OPTIONS,
   MESSAGES,
   MIN_AGE,
   ORIENTATION_OPTIONS,
+  ROLE_OPTIONS,
   ROUTES,
 } from '@/lib/constants'
 
@@ -62,7 +62,7 @@ const STEPS: StepConfig[] = [
   {
     key: 'preferences',
     title: 'Preferences',
-    subtitle: 'What are you here for right now?',
+    subtitle: 'Which role fits you best right now?',
   },
   {
     key: 'desires',
@@ -315,7 +315,7 @@ function OnboardingContent() {
     }
 
     if (stepIndex === 4 && formData.lookingFor.length === 0) {
-      nextErrors.lookingFor = 'Select at least one option'
+      nextErrors.lookingFor = 'Select a role'
     }
 
     if (stepIndex === 6 && !formData.profilePhoto) {
@@ -343,12 +343,8 @@ function OnboardingContent() {
     setCustomInterestInput('')
   }
 
-  const toggleLookingFor = (option: string) => {
-    const isSelected = formData.lookingFor.includes(option)
-    const nextValues = isSelected
-      ? formData.lookingFor.filter((item) => item !== option)
-      : [...formData.lookingFor, option]
-    setFieldValue('lookingFor', nextValues)
+  const setRole = (role: string) => {
+    setFieldValue('lookingFor', role ? [role] : [])
   }
 
   const toggleInterest = (tag: string) => {
@@ -609,25 +605,21 @@ function OnboardingContent() {
     if (currentStep === 4) {
       return (
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">Choose as many as you want.</p>
-          <div className="flex flex-wrap gap-2">
-            {LOOKING_FOR_OPTIONS.map((option) => {
-              const isSelected = formData.lookingFor.includes(option)
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => toggleLookingFor(option)}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    isSelected
-                      ? 'border-[#8c1f43] bg-[#f9e6d6] text-[#6d102e]'
-                      : 'border-slate-300 bg-white text-slate-700 hover:border-[#b7793d] hover:text-[#8c1f43]'
-                  }`}
-                >
+          <p className="text-sm text-slate-600">Choose the role you want shown on your profile.</p>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700">Role</label>
+            <select
+              value={formData.lookingFor[0] ?? ''}
+              onChange={(event) => setRole(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
+            >
+              <option value="">Select your role</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
                   {option}
-                </button>
-              )
-            })}
+                </option>
+              ))}
+            </select>
           </div>
           {errors.lookingFor && <p className="text-sm text-red-500">{errors.lookingFor}</p>}
         </div>
@@ -741,8 +733,8 @@ function OnboardingContent() {
         </div>
 
         <div className="rounded-xl border border-slate-200 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Looking for</p>
-          <p className="mt-1 font-medium text-slate-900">{formData.lookingFor.join(', ')}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
+          <p className="mt-1 font-medium text-slate-900">{formData.lookingFor[0] || 'Not provided'}</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 p-3">
