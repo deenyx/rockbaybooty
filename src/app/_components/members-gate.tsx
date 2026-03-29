@@ -18,10 +18,10 @@ const submitCls =
 const backCls =
   'text-[9px] uppercase tracking-[0.22em] text-stone-600 hover:text-stone-400 transition-colors'
 
-function fieldLabel(text: string) {
+function fieldLabel(text: string, color: string = 'text-stone-600') {
   return (
     <span
-      className="block text-center text-[8px] uppercase tracking-[0.28em] text-stone-600 mb-1"
+      className={`block text-center text-[8px] uppercase tracking-[0.28em] ${color} mb-1`}
       style={{ fontFamily: CP }}
     >
       {text}
@@ -63,32 +63,36 @@ function ErrorMsg({ msg }: { msg: string }) {
   )
 }
 
+// ── Hint message (green for PIN hint) ──────────────────────────────────────────
+
+function HintMsg({ msg }: { msg: string }) {
+  return (
+    <p
+      className="text-center text-[8px] uppercase tracking-[0.24em] text-green-400"
+      style={{ fontFamily: CP }}
+    >
+      {msg}
+    </p>
+  )
+}
+
 // ── Stage: Entry — PIN input ───────────────────────────────────────────────────
 
 function EntryStage({
   pin,
   onPinChange,
-  onRequestAccessClick,
-  showRequestAccessHint,
   error,
+  wrongAttempts,
 }: {
   pin: string
   onPinChange: (v: string) => void
-  onRequestAccessClick: () => void
-  showRequestAccessHint: boolean
   error: string
+  wrongAttempts: number
 }) {
   return (
     <div className="space-y-4">
-      <p
-        className="text-center text-[9px] uppercase tracking-[0.24em] text-stone-500"
-        style={{ fontFamily: CP }}
-      >
-        enter your pin
-      </p>
-
       <div>
-        {fieldLabel('PIN')}
+        {fieldLabel('Enter Pin', 'text-yellow-400')}
         <input
           type="password"
           inputMode="numeric"
@@ -104,30 +108,8 @@ function EntryStage({
 
       {error && <ErrorMsg msg={error} />}
 
-      <p
-        className="text-center text-[9px] leading-relaxed text-stone-600"
-        style={{ fontFamily: CP }}
-      >
-        new here?{' '}
-        <a
-          href="/signup"
-          onClick={(e) => {
-            e.preventDefault()
-            onRequestAccessClick()
-          }}
-          className="text-pink-400/70 hover:text-pink-300 transition-colors"
-        >
-          request access
-        </a>
-      </p>
-
-      {showRequestAccessHint && (
-        <p
-          className="-mt-2 text-center text-[9px] leading-relaxed text-emerald-400"
-          style={{ fontFamily: CP }}
-        >
-          enter. '0000'
-        </p>
+      {wrongAttempts >= 2 && (
+        <HintMsg msg="enter 0000 to get a pin" />
       )}
     </div>
   )
@@ -204,7 +186,7 @@ export default function MembersGate() {
   const [firstName, setFirstName] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
-  const [showRequestAccessHint, setShowRequestAccessHint] = useState(false)
+  const [wrongAttempts, setWrongAttempts] = useState(0)
 
   function reset() {
     setStage('entry')
@@ -212,7 +194,7 @@ export default function MembersGate() {
     setFirstName('')
     setError('')
     setStatus('idle')
-    setShowRequestAccessHint(false)
+    setWrongAttempts(0)
   }
 
   function toggleOpen() {
@@ -224,7 +206,6 @@ export default function MembersGate() {
     const cleaned = value.replace(/\D/g, '').slice(0, 4)
     setPin(cleaned)
     setError('')
-    setShowRequestAccessHint(false)
 
     if (cleaned.length === 4) {
       if (cleaned === '0000') {
@@ -233,7 +214,7 @@ export default function MembersGate() {
         return
       }
 
-       if (cleaned === '9999') {
+      if (cleaned === '9999') {
         void loginWithPasscodeOnly(cleaned)
         return
       }
@@ -285,6 +266,7 @@ export default function MembersGate() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'PIN or name not recognised.')
+        setWrongAttempts((prev) => prev + 1)
         setStatus('idle')
         return
       }
@@ -314,9 +296,8 @@ export default function MembersGate() {
             <EntryStage
               pin={pin}
               onPinChange={handlePinChange}
-              onRequestAccessClick={() => setShowRequestAccessHint(true)}
-              showRequestAccessHint={showRequestAccessHint}
               error={error}
+              wrongAttempts={wrongAttempts}
             />
           )}
           {stage === 'member-confirm' && (
