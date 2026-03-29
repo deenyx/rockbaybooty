@@ -207,12 +207,20 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </div>
             </div>
 
-            <Link
-              href={ROUTES.CHAT}
-              className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-            >
-              Chat
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={ROUTES.MESSAGESS}
+                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
+              >
+                Messages
+              </Link>
+              <Link
+                href={ROUTES.CHAT}
+                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
+              >
+                Chat
+              </Link>
+            </div>
           </div>
         </header>
       </div>

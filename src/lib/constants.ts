@@ -131,4 +131,5 @@ export const ROUTES = {
   CHAT: '/chat',
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
+  MESSAGESS: '/messagess',
 }

@@ -18,7 +18,7 @@ import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 const NAV_ITEMS = [
   { label: 'Profile', href: ROUTES.PROFILE },
   { label: 'Search', href: ROUTES.SEARCH },
-  { label: 'Messages', href: ROUTES.CHAT },
+  { label: 'Messages', href: ROUTES.MESSAGESS },
   { label: 'Groups', href: ROUTES.GROUPS },
   { label: 'Classifieds', href: ROUTES.CLASSIFIEDS },
 ]
@@ -401,13 +401,13 @@ export default function SearchPage() {
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-3 py-2 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30"
+                      <Link
+                        href={`${ROUTES.MESSAGESS}/${member.id}`}
+                        className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-3 py-2 text-center text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30"
                         aria-label={`Message ${member.displayName}`}
                       >
                         Message
-                      </button>
+                      </Link>
 
                       <button
                         type="button"
