@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
         id: true,
         senderId: true,
         recipientId: true,
+        kind: true,
         body: true,
         readAt: true,
         createdAt: true,
@@ -118,16 +119,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const recipientId = typeof body.recipientId === 'string' ? body.recipientId.trim() : ''
     const messageBody = typeof body.body === 'string' ? body.body.trim() : ''
+    const messageKind = body.kind === 'poke' ? 'poke' : body.kind === undefined || body.kind === 'text' ? 'text' : ''
 
     if (!recipientId) {
       return NextResponse.json({ error: 'recipientId is required' }, { status: 400 })
     }
 
-    if (!messageBody) {
+    if (!messageKind) {
+      return NextResponse.json({ error: 'Invalid message kind' }, { status: 400 })
+    }
+
+    if (messageKind === 'text' && !messageBody) {
       return NextResponse.json({ error: 'Message body is required' }, { status: 400 })
     }
 
-    if (messageBody.length > 2000) {
+    if (messageKind === 'text' && messageBody.length > 2000) {
       return NextResponse.json({ error: 'Message must be 2000 characters or fewer' }, { status: 400 })
     }
 
@@ -148,12 +154,14 @@ export async function POST(request: NextRequest) {
       data: {
         senderId: currentUserId,
         recipientId,
-        body: messageBody,
+        kind: messageKind,
+        body: messageKind === 'poke' ? '' : messageBody,
       },
       select: {
         id: true,
         senderId: true,
         recipientId: true,
+        kind: true,
         body: true,
         readAt: true,
         createdAt: true,

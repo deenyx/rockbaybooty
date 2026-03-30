@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
-import { searchMembers } from '@/lib/api'
+import { searchMembers, sendPoke } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   MAX_AGE,
@@ -57,6 +57,8 @@ export default function SearchPage() {
   const [results, setResults] = useState<MemberSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [activePokeId, setActivePokeId] = useState<string | null>(null)
+  const [pokeFeedback, setPokeFeedback] = useState<Record<string, string>>({})
 
   const activeFilterCount = useMemo(() => {
     let count = 0
@@ -87,6 +89,22 @@ export default function SearchPage() {
 
     return count
   }, [filters])
+
+  async function handlePoke(memberId: string) {
+    try {
+      setActivePokeId(memberId)
+      setPokeFeedback((current) => ({ ...current, [memberId]: '' }))
+      await sendPoke(memberId)
+      setPokeFeedback((current) => ({ ...current, [memberId]: 'Poke sent.' }))
+    } catch (error) {
+      setPokeFeedback((current) => ({
+        ...current,
+        [memberId]: error instanceof Error ? error.message : 'Failed to send poke.',
+      }))
+    } finally {
+      setActivePokeId(null)
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -411,12 +429,18 @@ export default function SearchPage() {
 
                       <button
                         type="button"
-                        className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/40 hover:text-white"
-                        aria-label={`Add ${member.displayName} as friend`}
+                        onClick={() => handlePoke(member.id)}
+                        disabled={activePokeId === member.id}
+                        className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label={`Poke ${member.displayName}`}
                       >
-                        Add Friend
+                        {activePokeId === member.id ? 'Poking...' : 'Poke'}
                       </button>
                     </div>
+
+                    {pokeFeedback[member.id] && (
+                      <p className="mt-2 text-xs text-stone-300">{pokeFeedback[member.id]}</p>
+                    )}
                   </article>
                 ))}
               </div>

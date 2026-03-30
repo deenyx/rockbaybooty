@@ -171,3 +171,12 @@ export async function sendMessage(
     body: JSON.stringify({ recipientId, body }),
   })
 }
+
+export async function sendPoke(
+  recipientId: string
+): Promise<SendMessageResponse> {
+  return apiCall('/api/messages', {
+    method: 'POST',
+    body: JSON.stringify({ recipientId, kind: 'poke' }),
+  })
+}

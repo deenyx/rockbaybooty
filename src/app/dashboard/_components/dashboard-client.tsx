@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { fetchConversations } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
+import type { Conversation } from '@/lib/types'
 
 type DashboardViewData = {
   user: {
@@ -34,6 +36,7 @@ type DashboardClientProps = {
   initialData: DashboardViewData
 }
 
+const DEFAULT_MEMBER_ID = 'default-member'
 const SUPERNOVA_URL = 'https://www.youtube.com/watch?v=tI-5uv4wryI'
 const SUPERNOVA_EMBED_URL = 'https://www.youtube-nocookie.com/embed/tI-5uv4wryI?autoplay=1&rel=0'
 
@@ -111,9 +114,166 @@ function MoonWidget({ city }: { city: string }) {
   )
 }
 
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part.trim()[0])
+    .filter(Boolean)
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+function formatRelativeTime(isoString: string) {
+  const diff = Date.now() - new Date(isoString).getTime()
+  const minutes = Math.floor(diff / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(isoString).toLocaleDateString()
+}
+
+function buildNextSteps(data: DashboardViewData) {
+  const steps: string[] = []
+
+  if (!data.profile.bio.trim()) {
+    steps.push('Write a short bio so people know your vibe before they message you.')
+  }
+
+  if (!data.profile.avatarUrl.trim()) {
+    steps.push('Add a profile photo to stand out in search and direct messages.')
+  }
+
+  if (!data.profile.location.trim()) {
+    steps.push('Set your city or region so nearby members can find you faster.')
+  }
+
+  if (data.profile.interests.length < 3) {
+    steps.push('Add a few more interests to improve search matches and profile depth.')
+  }
+
+  if (data.profile.lookingFor.length === 0) {
+    steps.push('Pick what you are looking for so the app can frame better introductions.')
+  }
+
+  return steps.slice(0, 3)
+}
+
+function getGreetingForTime(date = new Date()) {
+  const hour = date.getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function getHeaderName(user: DashboardViewData['user']) {
+  const candidates = [user.firstName, user.displayName, user.username]
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  const preferredName = candidates.find(
+    (value) => {
+      const normalized = value.toLowerCase()
+      return normalized !== 'default' && normalized !== 'default-member' && !normalized.startsWith('default')
+    }
+  )
+
+  return preferredName ?? 'default user'
+}
+
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const [isSoundboardOpen, setIsSoundboardOpen] = useState(false)
   const [playerInstanceKey, setPlayerInstanceKey] = useState(0)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [isConversationsLoading, setIsConversationsLoading] = useState(
+    initialData.user.id !== DEFAULT_MEMBER_ID
+  )
+  const [conversationsError, setConversationsError] = useState('')
+  const [lastConversationSync, setLastConversationSync] = useState<Date | null>(null)
+
+  const completionChecks = useMemo(
+    () => [
+      Boolean(initialData.profile.bio.trim()),
+      Boolean(initialData.profile.avatarUrl.trim()),
+      Boolean(initialData.profile.location.trim()),
+      initialData.profile.interests.length >= 3,
+      initialData.profile.lookingFor.length > 0,
+    ],
+    [initialData]
+  )
+
+  const profileCompletion = Math.round(
+    (completionChecks.filter(Boolean).length / completionChecks.length) * 100
+  )
+
+  const nextSteps = useMemo(() => buildNextSteps(initialData), [initialData])
+  const headerGreeting = useMemo(() => getGreetingForTime(), [])
+  const headerName = useMemo(() => getHeaderName(initialData.user), [initialData.user])
+
+  const loadConversations = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const isSilent = options?.silent ?? false
+
+      if (initialData.user.id === DEFAULT_MEMBER_ID) {
+        setIsConversationsLoading(false)
+        return
+      }
+
+      try {
+        if (!isSilent) {
+          setIsConversationsLoading(true)
+        }
+        setConversationsError('')
+        const data = await fetchConversations()
+        setConversations(data.conversations.slice(0, 4))
+        setLastConversationSync(new Date())
+      } catch (error) {
+        setConversationsError(
+          error instanceof Error ? error.message : 'Unable to load recent conversations.'
+        )
+      } finally {
+        if (!isSilent) {
+          setIsConversationsLoading(false)
+        }
+      }
+    },
+    [initialData.user.id]
+  )
+
+  useEffect(() => {
+    if (initialData.user.id === DEFAULT_MEMBER_ID) {
+      setIsConversationsLoading(false)
+      return
+    }
+
+    void loadConversations()
+
+    const intervalId = window.setInterval(() => {
+      void loadConversations({ silent: true })
+    }, 20_000)
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void loadConversations({ silent: true })
+      }
+    }
+
+    const handleWindowFocus = () => {
+      void loadConversations({ silent: true })
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleWindowFocus)
+
+    return () => {
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleWindowFocus)
+    }
+  }, [initialData.user.id, loadConversations])
 
   const toggleSoundboard = () => {
     setIsSoundboardOpen((previous) => {
@@ -202,27 +362,133 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <circle cx="17.7" cy="7.7" r="1.25" />
                 </svg>
               </span>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.24em] text-stone-300/70">Member Headbar</p>
-              </div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-300/70">
+                {headerGreeting} {headerName}
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
               <Link
-                href={ROUTES.MESSAGESS}
-                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-              >
-                Messages
-              </Link>
-              <Link
                 href={ROUTES.CHAT}
                 className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
               >
-                Chat
+                live chat
               </Link>
             </div>
           </div>
         </header>
+
+        <main className="mx-auto flex min-h-screen w-full max-w-7xl items-start px-4 pb-16 pt-28 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-2xl space-y-6">
+            <section className="rounded-[1.8rem] border border-white/10 bg-black/30 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6">
+                <p className="text-[11px] uppercase tracking-[0.22em] text-amber-100/70">Recent Conversations</p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <h2 className="text-2xl font-semibold text-stone-100">Inbox preview</h2>
+                  <Link
+                    href={ROUTES.MESSAGESS}
+                    className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-100/85 transition hover:text-amber-50"
+                  >
+                    View all
+                  </Link>
+                </div>
+
+                {initialData.user.id !== DEFAULT_MEMBER_ID && (
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-stone-500">
+                    Auto-refresh every 20s
+                    {lastConversationSync ? ` • Synced ${formatRelativeTime(lastConversationSync.toISOString())}` : ''}
+                  </p>
+                )}
+
+                {initialData.user.id === DEFAULT_MEMBER_ID && (
+                  <p className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-stone-300">
+                    Preview mode does not load live inbox data. Sign in with a real member account to see conversations here.
+                  </p>
+                )}
+
+                {initialData.user.id !== DEFAULT_MEMBER_ID && isConversationsLoading && (
+                  <div className="mt-5 flex justify-center py-8">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
+                  </div>
+                )}
+
+                {initialData.user.id !== DEFAULT_MEMBER_ID && !isConversationsLoading && conversationsError && (
+                  <p className="mt-5 rounded-2xl border border-rose-400/35 bg-rose-500/20 p-4 text-sm text-rose-100">
+                    {conversationsError}
+                  </p>
+                )}
+
+                {initialData.user.id !== DEFAULT_MEMBER_ID && !isConversationsLoading && !conversationsError && conversations.length === 0 && (
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <p className="text-sm font-medium text-stone-100">No messages yet</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-400">Browse members and start the first conversation from search.</p>
+                  </div>
+                )}
+
+                {conversations.length > 0 && (
+                  <ul className="mt-5 space-y-3">
+                    {conversations.map((conversation) => (
+                      <li key={conversation.partnerId}>
+                        <Link
+                          href={`${ROUTES.MESSAGESS}/${conversation.partnerId}`}
+                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-amber-200/35 hover:bg-white/[0.06]"
+                        >
+                          {conversation.partnerAvatarUrl ? (
+                            <div
+                              className="h-11 w-11 flex-none rounded-2xl border border-white/15 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${conversation.partnerAvatarUrl})` }}
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl border border-white/15 bg-amber-500/15 text-sm font-semibold text-amber-100">
+                              {getInitials(conversation.partnerDisplayName || conversation.partnerUsername)}
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="truncate text-sm font-semibold text-stone-100">
+                                {conversation.partnerDisplayName}
+                              </p>
+                              <p className="shrink-0 text-[11px] text-stone-500">
+                                {formatRelativeTime(conversation.lastMessage.createdAt)}
+                              </p>
+                            </div>
+                            <p className="mt-1 truncate text-sm text-stone-400">
+                              {conversation.lastMessage.body}
+                            </p>
+                          </div>
+
+                          {conversation.unreadCount > 0 && (
+                            <span className="flex h-5 min-w-[1.25rem] flex-none items-center justify-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-black">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </section>
+
+            <section className="rounded-[1.8rem] border border-white/10 bg-black/30 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-amber-100/70">Next Steps</p>
+              <h2 className="mt-2 text-2xl font-semibold text-stone-100">Tighten the profile</h2>
+
+              {nextSteps.length > 0 ? (
+                <ul className="mt-5 space-y-3">
+                  {nextSteps.map((step) => (
+                    <li key={step} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-stone-300">
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100/90">
+                  Your profile is in strong shape. Use search or the live room to turn that into actual conversations.
+                </p>
+              )}
+            </section>
+          </div>
+        </main>
       </div>
 
       {/* Moon phase widget — location from member profile */}

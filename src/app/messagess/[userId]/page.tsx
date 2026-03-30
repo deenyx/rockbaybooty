@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-import { fetchConversationMessages, sendMessage } from '@/lib/api'
+import { fetchConversationMessages, sendMessage, sendPoke } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
 import type { ConversationMessagesResponse, DirectMessage } from '@/lib/types'
 
@@ -41,6 +41,14 @@ function formatDate(isoString: string) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatMessageBody(message: DirectMessage, isMine: boolean) {
+  if (message.kind === 'poke') {
+    return isMine ? 'You sent a poke' : 'Sent you a poke'
+  }
+
+  return message.body
+}
+
 export default function ConversationPage() {
   const params = useParams()
   const partnerId = typeof params.userId === 'string' ? params.userId : ''
@@ -52,6 +60,7 @@ export default function ConversationPage() {
   const [loadError, setLoadError] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isPoking, setIsPoking] = useState(false)
   const [sendError, setSendError] = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -106,6 +115,24 @@ export default function ConversationPage() {
       )
     } finally {
       setIsSending(false)
+    }
+  }
+
+  async function handlePoke() {
+    if (!partnerId || isPoking) return
+
+    setSendError('')
+    setIsPoking(true)
+
+    try {
+      const result = await sendPoke(partnerId)
+      setMessages((prev) => [...prev, result.message])
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : 'Failed to send poke.'
+      )
+    } finally {
+      setIsPoking(false)
     }
   }
 
@@ -188,6 +215,14 @@ export default function ConversationPage() {
                   <p className="font-semibold text-white">{partner.displayName}</p>
                   <p className="text-xs text-stone-400">@{partner.username}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={handlePoke}
+                  disabled={isPoking}
+                  className="ml-auto rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-200 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isPoking ? 'Poking...' : 'Poke'}
+                </button>
               </>
             ) : (
               <div className="h-5 w-32 animate-pulse rounded bg-white/10" />
@@ -232,12 +267,14 @@ export default function ConversationPage() {
                       >
                         <div
                           className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                            isMine
-                              ? 'rounded-br-sm bg-amber-400/25 text-amber-50'
-                              : 'rounded-bl-sm bg-white/10 text-stone-100'
+                            msg.kind === 'poke'
+                              ? 'border border-amber-200/20 bg-amber-300/10 text-amber-100'
+                              : isMine
+                                ? 'rounded-br-sm bg-amber-400/25 text-amber-50'
+                                : 'rounded-bl-sm bg-white/10 text-stone-100'
                           }`}
                         >
-                          <p>{msg.body}</p>
+                          <p>{formatMessageBody(msg, isMine)}</p>
                           <p className={`mt-1 text-[10px] ${isMine ? 'text-amber-100/50' : 'text-stone-400'}`}>
                             {formatTime(msg.createdAt)}
                           </p>
@@ -282,6 +319,14 @@ export default function ConversationPage() {
                   </svg>
                 )}
                 <span className="sr-only">Send</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePoke}
+                disabled={isPoking}
+                className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPoking ? 'Poking...' : 'Poke'}
               </button>
             </div>
           </div>

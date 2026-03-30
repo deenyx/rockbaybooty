@@ -178,10 +178,13 @@ export interface LiveChatMessage {
   sentAt: number
 }
 
+export type MessageKind = 'text' | 'poke'
+
 export interface DirectMessage {
   id: string
   senderId: string
   recipientId: string
+  kind: MessageKind
   body: string
   readAt: string | null
   createdAt: string

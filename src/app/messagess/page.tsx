@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 
 import { fetchConversations } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
-import type { Conversation } from '@/lib/types'
+import type { Conversation, DirectMessage } from '@/lib/types'
 
 const NAV_ITEMS = [
   { label: 'Profile', href: ROUTES.PROFILE },
@@ -36,6 +36,10 @@ function formatRelativeTime(isoString: string) {
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d ago`
   return new Date(isoString).toLocaleDateString()
+}
+
+function formatConversationPreview(message: DirectMessage) {
+  return message.kind === 'poke' ? 'Sent a poke' : message.body
 }
 
 export default function MessagesPage() {
@@ -163,7 +167,7 @@ export default function MessagesPage() {
                         </p>
                       </div>
                       <p className="mt-0.5 truncate text-sm text-stone-300">
-                        {conv.lastMessage.body}
+                        {formatConversationPreview(conv.lastMessage)}
                       </p>
                     </div>
 

@@ -129,7 +129,8 @@ model Message {
   id          String    @id @default(cuid())
   senderId    String
   recipientId String
-  body        String
+  kind        String    @default("text")
+  body        String    @default("")
   readAt      DateTime?
   createdAt   DateTime  @default(now())
 
