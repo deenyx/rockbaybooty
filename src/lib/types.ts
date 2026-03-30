@@ -177,3 +177,39 @@ export interface LiveChatMessage {
   text: string
   sentAt: number
 }
+
+export interface DirectMessage {
+  id: string
+  senderId: string
+  recipientId: string
+  body: string
+  readAt: string | null
+  createdAt: string
+}
+
+export interface Conversation {
+  partnerId: string
+  partnerUsername: string
+  partnerDisplayName: string
+  partnerAvatarUrl: string | null
+  lastMessage: DirectMessage
+  unreadCount: number
+}
+
+export interface SendMessageResponse {
+  message: DirectMessage
+}
+
+export interface ConversationMessagesResponse {
+  messages: DirectMessage[]
+  partner: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }
+}
+
+export interface ConversationsResponse {
+  conversations: Conversation[]
+}

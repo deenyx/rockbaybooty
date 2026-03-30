@@ -3,11 +3,14 @@
 import type {
   AuthResponse,
   ChatRoomTokenResponse,
+  ConversationMessagesResponse,
+  ConversationsResponse,
   LoginResponse,
   MemberSearchFilters,
   MemberSearchResponse,
   MemberProfileResponse,
   PasscodeValidationResponse,
+  SendMessageResponse,
   UpdateMemberProfileInput,
   UserIdAvailabilityResponse,
 } from '@/lib/types'
@@ -146,5 +149,25 @@ export async function searchMembers(
   return apiCall(`/api/members/search${query ? `?${query}` : ''}`, {
     method: 'GET',
     signal,
+  })
+}
+
+export async function fetchConversations(): Promise<ConversationsResponse> {
+  return apiCall('/api/messages/conversations')
+}
+
+export async function fetchConversationMessages(
+  userId: string
+): Promise<ConversationMessagesResponse> {
+  return apiCall(`/api/messages?with=${encodeURIComponent(userId)}`)
+}
+
+export async function sendMessage(
+  recipientId: string,
+  body: string
+): Promise<SendMessageResponse> {
+  return apiCall('/api/messages', {
+    method: 'POST',
+    body: JSON.stringify({ recipientId, body }),
   })
 }
