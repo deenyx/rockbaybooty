@@ -98,6 +98,8 @@ export async function GET(request: NextRequest) {
     const orientation = searchParams.get('orientation')?.trim() || ''
     const lookingFor = parseList(searchParams.get('lookingFor'))
     const onlineOnly = parseBoolean(searchParams.get('onlineOnly'))
+    const hasPhoto = parseBoolean(searchParams.get('hasPhoto'))
+    const lastActive = searchParams.get('lastActive') as 'today' | 'week' | 'any' | null
     const parsedMinAge = parseNumber(searchParams.get('minAge'))
     const parsedMaxAge = parseNumber(searchParams.get('maxAge'))
     const parsedLimit = parseNumber(searchParams.get('limit'))
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
         gte: ageFloor,
         lte: ageCeiling,
       },
+      ...(hasPhoto ? { avatarUrl: { not: null } } : {}),
       ...(gender
         ? {
             gender: {
@@ -141,6 +144,13 @@ export async function GET(request: NextRequest) {
 
     const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60 * 1000)
 
+    const lastActiveCutoff =
+      lastActive === 'today'
+        ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+        : lastActive === 'week'
+          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          : null
+
     const where: Prisma.UserWhereInput = {
       id: {
         not: currentUserId,
@@ -152,7 +162,13 @@ export async function GET(request: NextRequest) {
               gte: onlineCutoff,
             },
           }
-        : {}),
+        : lastActiveCutoff
+          ? {
+              updatedAt: {
+                gte: lastActiveCutoff,
+              },
+            }
+          : {}),
       profile: {
         is: profileFilters,
       },

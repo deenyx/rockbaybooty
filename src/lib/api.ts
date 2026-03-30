@@ -140,6 +140,14 @@ export async function searchMembers(
     params.set('onlineOnly', 'true')
   }
 
+  if (filters.hasPhoto) {
+    params.set('hasPhoto', 'true')
+  }
+
+  if (filters.lastActive && filters.lastActive !== 'any') {
+    params.set('lastActive', filters.lastActive)
+  }
+
   if (typeof filters.limit === 'number') {
     params.set('limit', String(filters.limit))
   }

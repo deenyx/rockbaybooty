@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { searchMembers, sendPoke } from '@/lib/api'
 import {
   GENDER_OPTIONS,
+  LOOKING_FOR_OPTIONS,
   MAX_AGE,
   MIN_AGE,
   ORIENTATION_OPTIONS,
@@ -31,6 +32,8 @@ const INITIAL_FILTERS: MemberSearchFilters = {
   orientation: '',
   lookingFor: [],
   onlineOnly: false,
+  hasPhoto: false,
+  lastActive: 'any',
   limit: 24,
 }
 
@@ -87,6 +90,14 @@ export default function SearchPage() {
       count += 1
     }
 
+    if (filters.hasPhoto) {
+      count += 1
+    }
+
+    if (filters.lastActive && filters.lastActive !== 'any') {
+      count += 1
+    }
+
     return count
   }, [filters])
 
@@ -136,11 +147,26 @@ export default function SearchPage() {
     }
   }, [filters])
 
+  const toggleSeeking = (value: string) => {
+    setFilters((current) => {
+      const existing = current.lookingFor || []
+      return {
+        ...current,
+        lookingFor: existing.includes(value)
+          ? existing.filter((v) => v !== value)
+          : [...existing, value],
+      }
+    })
+  }
+
   const setRoleFilter = (role: string) => {
-    setFilters((current) => ({
-      ...current,
-      lookingFor: role ? [role] : [],
-    }))
+    setFilters((current) => {
+      const withoutRole = (current.lookingFor || []).filter((v) => !ROLE_OPTIONS.includes(v))
+      return {
+        ...current,
+        lookingFor: role ? [...withoutRole, role] : withoutRole,
+      }
+    })
   }
 
   const resetFilters = () => {
@@ -314,7 +340,7 @@ export default function SearchPage() {
                   </label>
                   <select
                     id="role-filter"
-                    value={filters.lookingFor?.[0] || ''}
+                    value={(filters.lookingFor || []).find((v) => ROLE_OPTIONS.includes(v)) || ''}
                     onChange={(event) => setRoleFilter(event.target.value)}
                     className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-amber-200/45"
                   >
@@ -326,6 +352,61 @@ export default function SearchPage() {
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Seeking</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {LOOKING_FOR_OPTIONS.map((option) => {
+                      const active = (filters.lookingFor || []).includes(option)
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleSeeking(option)}
+                          className={`rounded-full px-3 py-1 text-[11px] transition ${
+                            active
+                              ? 'border border-amber-200/60 bg-amber-300/25 text-amber-100'
+                              : 'border border-white/15 bg-black/20 text-stone-300 hover:border-white/30 hover:text-stone-100'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs uppercase tracking-[0.16em] text-stone-300" htmlFor="last-active-filter">
+                    Last active
+                  </label>
+                  <select
+                    id="last-active-filter"
+                    value={filters.lastActive || 'any'}
+                    onChange={(event) => {
+                      const value = event.target.value as 'today' | 'week' | 'any'
+                      setFilters((current) => ({ ...current, lastActive: value }))
+                    }}
+                    className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-amber-200/45"
+                  >
+                    <option value="any">Any time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This week</option>
+                  </select>
+                </div>
+
+                <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/15 bg-black/25 px-3 py-2">
+                  <span className="text-sm text-stone-200">Has photo</span>
+                  <input
+                    type="checkbox"
+                    checked={filters.hasPhoto || false}
+                    onChange={(event) => {
+                      const checked = event.target.checked
+                      setFilters((current) => ({ ...current, hasPhoto: checked }))
+                    }}
+                    className="h-4 w-4 rounded border-white/30 bg-transparent text-amber-200"
+                  />
+                </label>
 
                 <label className="flex cursor-pointer items-center justify-between rounded-xl border border-white/15 bg-black/25 px-3 py-2">
                   <span className="text-sm text-stone-200">Online only</span>

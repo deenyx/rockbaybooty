@@ -145,6 +145,8 @@ export interface MemberSearchFilters {
   orientation?: string
   lookingFor?: string[]
   onlineOnly?: boolean
+  hasPhoto?: boolean
+  lastActive?: 'today' | 'week' | 'any'
   limit?: number
 }
 
