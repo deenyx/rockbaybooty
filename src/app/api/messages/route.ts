@@ -103,8 +103,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Messages fetch error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -181,7 +179,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Message send error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

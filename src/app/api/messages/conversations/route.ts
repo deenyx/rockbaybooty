@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME, MESSAGES } from '@/lib/constants'
 import type { AuthTokenPayload } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
+
 const prisma = new PrismaClient()
 
 function getBearerToken(header: string | null): string | null {
@@ -136,7 +138,5 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Conversations fetch error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

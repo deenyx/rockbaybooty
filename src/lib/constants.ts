@@ -117,6 +117,7 @@ export const CLOSED_GROUP_ENABLED = process.env.CLOSED_GROUP_ENABLED !== 'false'
 export const REQUIRE_SIGNUP_INVITE = process.env.REQUIRE_SIGNUP_INVITE !== 'false'
 
 export const CHAT_ROOM_NAME = 'members-lounge'
+export const MESSAGING_POLL_INTERVAL_MS = 2500
 
 export const ROUTES = {
   HOME: '/',

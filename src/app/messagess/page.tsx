@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { fetchConversations } from '@/lib/api'
-import { ROUTES } from '@/lib/constants'
+import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { Conversation, DirectMessage } from '@/lib/types'
 
 const NAV_ITEMS = [
@@ -50,26 +50,71 @@ export default function MessagesPage() {
 
   useEffect(() => {
     let cancelled = false
+    let abortController: AbortController | null = null
+    let isLoading_ = false
+    let lastFocusTime = 0
 
-    async function load() {
+    async function load(options?: { silent?: boolean }) {
+      const silent = options?.silent === true
+
+      // Guard: prevent overlapping requests
+      if (isLoading_) return
+
       try {
-        setIsLoading(true)
+        isLoading_ = true
+        if (!silent) setIsLoading(true)
         setLoadError('')
-        const data = await fetchConversations()
+
+        // Cancel previous request
+        if (abortController) abortController.abort()
+        abortController = new AbortController()
+
+        const data = await fetchConversations(abortController.signal)
         if (!cancelled) setConversations(data.conversations)
       } catch (error) {
+        // Ignore abort errors silently
+        if (error instanceof Error && error.name === 'AbortError') {
+          return
+        }
+
         if (!cancelled) {
           setLoadError(
             error instanceof Error ? error.message : 'Unable to load messages.'
           )
         }
       } finally {
-        if (!cancelled) setIsLoading(false)
+        isLoading_ = false
+        if (!cancelled && !silent) setIsLoading(false)
       }
     }
 
-    load()
-    return () => { cancelled = true }
+    const refreshIfVisible = () => {
+      if (document.visibilityState !== 'visible') return
+
+      // Debounce focus events: skip if last focus was within 500ms
+      const now = Date.now()
+      if (now - lastFocusTime < 500) return
+
+      lastFocusTime = now
+      void load({ silent: true })
+    }
+
+    void load()
+
+    const intervalId = window.setInterval(() => {
+      refreshIfVisible()
+    }, MESSAGING_POLL_INTERVAL_MS)
+
+    window.addEventListener('focus', refreshIfVisible)
+    document.addEventListener('visibilitychange', refreshIfVisible)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshIfVisible)
+      document.removeEventListener('visibilitychange', refreshIfVisible)
+      if (abortController) abortController.abort()
+    }
   }, [])
 
   return (

@@ -160,14 +160,19 @@ export async function searchMembers(
   })
 }
 
-export async function fetchConversations(): Promise<ConversationsResponse> {
-  return apiCall('/api/messages/conversations')
+export async function fetchConversations(signal?: AbortSignal): Promise<ConversationsResponse> {
+  return apiCall('/api/messages/conversations', {
+    signal,
+  })
 }
 
 export async function fetchConversationMessages(
-  userId: string
+  userId: string,
+  signal?: AbortSignal
 ): Promise<ConversationMessagesResponse> {
-  return apiCall(`/api/messages?with=${encodeURIComponent(userId)}`)
+  return apiCall(`/api/messages?with=${encodeURIComponent(userId)}`, {
+    signal,
+  })
 }
 
 export async function sendMessage(
