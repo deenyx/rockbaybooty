@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { fetchConversations } from '@/lib/api'
@@ -184,7 +185,13 @@ function getHeaderName(user: DashboardViewData['user']) {
   return preferredName ?? 'default user'
 }
 
+function maskPersonalCode(code: string): string {
+  if (code.length <= 4) return code
+  return '•'.repeat(code.length - 4) + code.slice(-4)
+}
+
 export default function DashboardClient({ initialData }: DashboardClientProps) {
+  const router = useRouter()
   const [isSoundboardOpen, setIsSoundboardOpen] = useState(false)
   const [playerInstanceKey, setPlayerInstanceKey] = useState(0)
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -193,6 +200,20 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   )
   const [conversationsError, setConversationsError] = useState('')
   const [lastConversationSync, setLastConversationSync] = useState<Date | null>(null)
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'GET' })
+    } catch {
+      // best-effort
+    }
+    router.push(ROUTES.WELCOME)
+  }, [router])
+
+  const maskedCode = useMemo(
+    () => maskPersonalCode(initialData.user.personalCode),
+    [initialData.user.personalCode]
+  )
 
   const completionChecks = useMemo(
     () => [
@@ -367,25 +388,44 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-                <Link
-                  href={ROUTES.SEARCH}
-                  className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-                >
-                  search
-                </Link>
-                <Link
-                  href={ROUTES.MESSAGESS}
-                  className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-                >
-                  messages
-                </Link>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span
+                className="hidden items-center rounded-full border border-amber-200/15 bg-amber-300/[0.06] px-3 py-1.5 font-mono text-[10px] tracking-widest text-amber-100/60 sm:inline-flex"
+                title="Your masked passcode"
+              >
+                {maskedCode}
+              </span>
+              <Link
+                href={ROUTES.SEARCH}
+                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
+              >
+                search
+              </Link>
+              <Link
+                href={ROUTES.MESSAGESS}
+                className="hidden items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100 sm:inline-flex"
+              >
+                messages
+              </Link>
               <Link
                 href={ROUTES.CHAT}
-                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
+                className="hidden items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100 sm:inline-flex"
               >
                 live chat
               </Link>
+              <Link
+                href={ROUTES.PROFILE}
+                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
+              >
+                profile
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center rounded-full border border-rose-400/20 bg-rose-500/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-rose-300/70 transition hover:border-rose-400/40 hover:bg-rose-500/15 hover:text-rose-200"
+              >
+                logout
+              </button>
             </div>
           </div>
         </header>

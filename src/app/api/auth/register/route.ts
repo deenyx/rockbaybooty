@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 import crypto from 'crypto'
 import {
   MIN_AGE,
@@ -7,8 +7,6 @@ import {
   NEW_MEMBER_PIN,
 } from '@/lib/constants'
 import { sendVerificationEmail } from '@/lib/email'
-
-const prisma = new PrismaClient()
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

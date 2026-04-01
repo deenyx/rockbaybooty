@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import {
   AUTH_COOKIE_NAME,
@@ -22,8 +22,6 @@ function getSafeReturnTo(returnTo: string | null): string {
 
   return returnTo
 }
-
-const prisma = new PrismaClient()
 
 type ParsedLoginInput = {
   code: string
@@ -269,7 +267,7 @@ export async function POST(request: NextRequest) {
     let user: LoginUser | null = null
 
     if (firstName) {
-      user = await prisma.user.findFirst({
+      const pinUser = await prisma.user.findFirst({
         where: {
           loginPin: code,
           firstName: {
@@ -289,12 +287,38 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      if (!user || user.status !== 'active') {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-      }
+      if (pinUser && pinUser.status === 'active') {
+        // Legacy PIN path — require email verification
+        if (!pinUser.emailVerified) {
+          return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
+        }
+        user = pinUser
+      } else {
+        // Fallback: match personalCode + first/display name (all onboarded users)
+        const codeUser = await prisma.user.findUnique({
+          where: { personalCode: code.toUpperCase() },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            personalCode: true,
+            firstName: true,
+            email: true,
+            status: true,
+            emailVerified: true,
+          },
+        })
 
-      if (!user.emailVerified) {
-        return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
+        const nameMatches =
+          codeUser &&
+          (codeUser.firstName?.toLowerCase() === firstName.toLowerCase() ||
+            codeUser.displayName?.toLowerCase() === firstName.toLowerCase())
+
+        if (!codeUser || codeUser.status !== 'active' || !nameMatches) {
+          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+        }
+
+        user = codeUser
       }
     } else {
       user = await prisma.user.findUnique({

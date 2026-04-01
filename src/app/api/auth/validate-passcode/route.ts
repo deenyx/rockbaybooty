@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import { MESSAGES } from '@/lib/constants'
-
-const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +36,5 @@ export async function POST(request: NextRequest) {
       { error: MESSAGES.ERROR_GENERAL },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

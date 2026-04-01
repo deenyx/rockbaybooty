@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { MESSAGES } from '@/lib/constants'
-
-const prisma = new PrismaClient()
 
 interface PinRevealPayload {
   userId: string

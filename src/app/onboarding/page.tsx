@@ -136,6 +136,7 @@ function OnboardingContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   const [generatedPasscode, setGeneratedPasscode] = useState('')
+  const [redirectCountdown, setRedirectCountdown] = useState(0)
   const [customInterestInput, setCustomInterestInput] = useState('')
   const [usernameState, setUsernameState] = useState<
     'idle' | 'checking' | 'available' | 'taken' | 'invalid'
@@ -145,6 +146,22 @@ function OnboardingContent() {
 
   const currentStepConfig = STEPS[currentStep]
   const progress = ((currentStep + 1) / STEPS.length) * 100
+
+  useEffect(() => {
+    if (!generatedPasscode) return
+    setRedirectCountdown(8)
+    const interval = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          router.push(ROUTES.DASHBOARD)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [generatedPasscode, router])
 
   const canGoBack = currentStep > 0 && !isLoading && !generatedPasscode
   const nextButtonLabel = currentStep === STEPS.length - 1 ? 'Create My Profile' : 'Continue'
@@ -845,7 +862,9 @@ function OnboardingContent() {
               onClick={() => router.push(ROUTES.DASHBOARD)}
               className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-5 py-3 text-sm font-semibold text-amber-50 transition hover:brightness-110"
             >
-              Enter the building →
+              {redirectCountdown > 0
+                ? `Enter the building (${redirectCountdown})`
+                : 'Enter the building →'}
             </button>
           </div>
         ) : (

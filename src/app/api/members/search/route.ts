@@ -1,13 +1,13 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import { AUTH_COOKIE_NAME, MAX_AGE, MESSAGES, MIN_AGE } from '@/lib/constants'
 import type { AuthTokenPayload } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-const prisma = new PrismaClient()
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 60
 const ONLINE_WINDOW_MINUTES = 15
@@ -281,7 +281,5 @@ export async function GET(request: NextRequest) {
       { error: MESSAGES.ERROR_GENERAL },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

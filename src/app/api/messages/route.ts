@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import { AUTH_COOKIE_NAME, MESSAGES } from '@/lib/constants'
 import type { AuthTokenPayload } from '@/lib/types'
-
-const prisma = new PrismaClient()
 
 function getBearerToken(header: string | null): string | null {
   if (!header) return null
