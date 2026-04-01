@@ -70,6 +70,17 @@ export const INTEREST_TAG_OPTIONS = [
   'Aftercare-focused',
 ]
 
+export const SEARCH_LOCATION_OPTIONS = [
+  'Harbor District',
+  'Old Town',
+  'Riverfront',
+  'Midtown',
+  'North End',
+  'South Docks',
+  'West Quarter',
+  'East Heights',
+]
+
 export const MESSAGES = {
   PASSCODE_REQUIRED: 'Passcode is required',
   PASSCODE_INVALID: 'Invalid or expired passcode',
@@ -102,6 +113,18 @@ export const MESSAGES = {
   ERROR_GENERAL: 'An error occurred. Please try again.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
+  FRIEND_REQUEST_SENT: 'Friend request sent',
+  FRIEND_REQUEST_ALREADY_SENT: 'Friend request already sent',
+  FRIEND_REQUEST_ALREADY_FRIENDS: 'You are already friends',
+  FRIEND_REQUEST_RECEIVED_PENDING: 'This member already sent you a request',
+  FRIEND_REQUEST_INVALID_TARGET: 'Member not found',
+  FRIEND_REQUEST_SELF: 'You cannot add yourself',
+  FRIEND_REQUEST_NOT_FOUND: 'Friend request not found',
+  FRIEND_REQUEST_NO_PERMISSION: 'You cannot update this friend request',
+  FRIEND_REQUEST_NOT_PENDING: 'This friend request is no longer pending',
+  FRIEND_REQUEST_ACCEPTED: 'Friend request accepted',
+  FRIEND_REQUEST_DECLINED: 'Friend request declined',
+  FRIEND_REQUEST_CANCELLED: 'Friend request cancelled',
 }
 
 export const MIN_AGE = 19

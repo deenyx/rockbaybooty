@@ -139,6 +139,7 @@ export interface UpdateMemberProfileInput {
 
 export interface MemberSearchFilters {
   q?: string
+  location?: string
   minAge?: number
   maxAge?: number
   gender?: string
@@ -161,10 +162,43 @@ export interface MemberSearchResult {
   interests: string[]
   lookingFor: string[]
   isOnline: boolean
+  friendshipStatus: FriendshipStatus
 }
 
 export interface MemberSearchResponse {
   members: MemberSearchResult[]
+}
+
+export type FriendshipStatus = 'none' | 'outgoing_pending' | 'incoming_pending' | 'friends'
+
+export type FriendshipDecisionAction = 'accept' | 'decline' | 'cancel'
+
+export interface PendingFriendRequest {
+  id: string
+  createdAt: string
+  status: 'pending'
+  direction: 'incoming' | 'outgoing'
+  member: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }
+}
+
+export interface FriendRequestResponse {
+  friendship: {
+    id: string
+    requesterId: string
+    recipientId: string
+    status: 'pending' | 'accepted' | 'declined'
+    createdAt: string
+  }
+}
+
+export interface FriendRequestsResponse {
+  incoming: PendingFriendRequest[]
+  outgoing: PendingFriendRequest[]
 }
 
 export interface ChatRoomTokenResponse {

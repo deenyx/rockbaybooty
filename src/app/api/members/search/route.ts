@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
 import { AUTH_COOKIE_NAME, MAX_AGE, MESSAGES, MIN_AGE } from '@/lib/constants'
-import type { AuthTokenPayload } from '@/lib/types'
+import type { AuthTokenPayload, FriendshipStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const q = searchParams.get('q')?.trim() || ''
+    const location = searchParams.get('location')?.trim() || ''
     const gender = searchParams.get('gender')?.trim() || ''
     const orientation = searchParams.get('orientation')?.trim() || ''
     const lookingFor = parseList(searchParams.get('lookingFor'))
@@ -138,6 +139,36 @@ export async function GET(request: NextRequest) {
             lookingFor: {
               hasSome: lookingFor,
             },
+          }
+        : {}),
+      ...(location
+        ? {
+            OR: [
+              {
+                location: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                city: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                state: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                country: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+            ],
           }
         : {}),
     }
@@ -253,6 +284,57 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const relationshipRecords = await prisma.friendship.findMany({
+      where: {
+        OR: [
+          {
+            requesterId: currentUserId,
+            recipientId: {
+              in: users.map((user) => user.id),
+            },
+          },
+          {
+            recipientId: currentUserId,
+            requesterId: {
+              in: users.map((user) => user.id),
+            },
+          },
+        ],
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      select: {
+        requesterId: true,
+        recipientId: true,
+        status: true,
+      },
+    })
+
+    const relationshipByUser = new Map<string, FriendshipStatus>()
+
+    for (const relationship of relationshipRecords) {
+      const partnerId = relationship.requesterId === currentUserId
+        ? relationship.recipientId
+        : relationship.requesterId
+
+      if (relationshipByUser.get(partnerId) === 'friends') {
+        continue
+      }
+
+      if (relationship.status === 'accepted') {
+        relationshipByUser.set(partnerId, 'friends')
+        continue
+      }
+
+      if (relationship.status === 'pending') {
+        relationshipByUser.set(
+          partnerId,
+          relationship.requesterId === currentUserId ? 'outgoing_pending' : 'incoming_pending'
+        )
+      }
+    }
+
     const members = users.map((user) => {
       const profile = user.profile
       const fallbackLocation = [profile?.city, profile?.state, profile?.country]
@@ -270,6 +352,7 @@ export async function GET(request: NextRequest) {
         interests: profile?.interests || [],
         lookingFor: profile?.lookingFor || [],
         isOnline: user.updatedAt >= onlineCutoff,
+        friendshipStatus: relationshipByUser.get(user.id) || 'none',
       }
     })
 

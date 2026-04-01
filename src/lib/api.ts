@@ -5,6 +5,9 @@ import type {
   ChatRoomTokenResponse,
   ConversationMessagesResponse,
   ConversationsResponse,
+  FriendRequestsResponse,
+  FriendRequestResponse,
+  FriendshipDecisionAction,
   LoginResponse,
   MemberSearchFilters,
   MemberSearchResponse,
@@ -116,6 +119,10 @@ export async function searchMembers(
     params.set('q', filters.q)
   }
 
+  if (filters.location) {
+    params.set('location', filters.location)
+  }
+
   if (typeof filters.minAge === 'number') {
     params.set('minAge', String(filters.minAge))
   }
@@ -191,5 +198,29 @@ export async function sendPoke(
   return apiCall('/api/messages', {
     method: 'POST',
     body: JSON.stringify({ recipientId, kind: 'poke' }),
+  })
+}
+
+export async function sendFriendRequest(recipientId: string): Promise<FriendRequestResponse> {
+  return apiCall('/api/friends/request', {
+    method: 'POST',
+    body: JSON.stringify({ recipientId }),
+  })
+}
+
+export async function fetchFriendRequests(signal?: AbortSignal): Promise<FriendRequestsResponse> {
+  return apiCall('/api/friends/requests', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function decideFriendRequest(
+  friendshipId: string,
+  action: FriendshipDecisionAction
+): Promise<FriendRequestResponse> {
+  return apiCall('/api/friends/requests', {
+    method: 'PATCH',
+    body: JSON.stringify({ friendshipId, action }),
   })
 }

@@ -1,12 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 
-import { fetchConversations } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
-import type { Conversation } from '@/lib/types'
 
 type DashboardViewData = {
   user: {
@@ -37,137 +35,91 @@ type DashboardClientProps = {
   initialData: DashboardViewData
 }
 
-const DEFAULT_MEMBER_ID = 'default-member'
-const SUPERNOVA_URL = 'https://www.youtube.com/watch?v=tI-5uv4wryI'
-const SUPERNOVA_EMBED_URL = 'https://www.youtube-nocookie.com/embed/tI-5uv4wryI?autoplay=1&rel=0'
+type NearbyMember = {
+  id: string
+  name: string
+  age: number
+  location: string
+  bio: string
+}
 
-// ─── Moon phase astronomy ─────────────────────────────────────────────────
+type MoonData = {
+  phase: number
+  illumination: number
+  phaseName: string
+}
+
 const SYNODIC_MONTH = 29.530588853
 
-type MoonData = { phase: number; illumination: number; phaseName: string }
+const NAV_ITEMS = [
+  { label: 'Dashboard', href: ROUTES.DASHBOARD },
+  { label: 'Search Members', href: ROUTES.SEARCH },
+  { label: 'Messages', href: ROUTES.MESSAGESS },
+  { label: 'Groups', href: ROUTES.GROUPS },
+  { label: 'Profile', href: ROUTES.PROFILE },
+]
 
-function computeMoonPhase(date: Date): MoonData {
-  const anchor = new Date('2000-01-06T18:14:00Z')
-  const elapsed = (date.getTime() - anchor.getTime()) / 86_400_000
-  const phase = ((elapsed % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH
-  const illumination = (1 - Math.cos((phase / SYNODIC_MONTH) * 2 * Math.PI)) / 2
-  let phaseName: string
-  if (phase < 1.0)        phaseName = 'New Moon'
-  else if (phase < 7.38)  phaseName = 'Waxing Crescent'
-  else if (phase < 8.38)  phaseName = 'First Quarter'
-  else if (phase < 14.77) phaseName = 'Waxing Gibbous'
-  else if (phase < 15.77) phaseName = 'Full Moon'
-  else if (phase < 22.14) phaseName = 'Waning Gibbous'
-  else if (phase < 23.14) phaseName = 'Last Quarter'
-  else                    phaseName = 'Waning Crescent'
-  return { phase, illumination, phaseName }
-}
-
-// Each path: outer limb (full semicircle) + terminator ellipse arc back
-function buildMoonPath(phase: number, r = 44): string | null {
-  if (phase < 1.0 || phase > 28.53) return null
-  const theta = (phase / SYNODIC_MONTH) * 2 * Math.PI
-  const k = Math.cos(theta)
-  const tx = Math.abs(r * k)
-  const isWaxing = phase <= 14.765
-  const top    = `50 ${50 - r}`
-  const bottom = `50 ${50 + r}`
-  if (isWaxing) {
-    const sweep = k >= 0 ? 0 : 1
-    return `M ${top} A ${r} ${r} 0 1 1 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
-  }
-  const sweep = k >= 0 ? 1 : 0
-  return `M ${top} A ${r} ${r} 0 1 0 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
-}
-
-function MoonWidget({ city }: { city: string }) {
-  const [moon, setMoon] = useState<MoonData | null>(null)
-  useEffect(() => { setMoon(computeMoonPhase(new Date())) }, [])
-  if (!moon) return null
-  const moonPath = buildMoonPath(moon.phase)
-  const illumPct = Math.round(moon.illumination * 100)
-  const locationLabel = city.trim() || 'tonight'
-  const isNearFull = moon.illumination > 0.85
-  return (
-    <div className="fixed bottom-8 right-6 z-20 flex w-32 flex-col items-center gap-3 rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(12,8,16,0.82),rgba(7,5,10,0.92))] p-4 shadow-[0_20px_55px_rgba(0,0,0,0.5)] backdrop-blur-md sm:right-8">
-      <svg
-        viewBox="0 0 100 100"
-        className="h-[4.5rem] w-[4.5rem]"
-        aria-label={`${moon.phaseName}, ${illumPct}% illuminated`}
-        role="img"
-      >
-        <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.14)" strokeWidth="0.7" />
-        {isNearFull && (
-          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(230,218,190,0.22)" strokeWidth="5" />
-        )}
-        {moonPath ? (
-          <path d={moonPath} fill="rgba(232,222,196,0.92)" />
-        ) : (
-          <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.05)" />
-        )}
-      </svg>
-      <div className="w-full text-center">
-        <p className="text-[9px] uppercase tracking-[0.22em] leading-tight text-stone-300/65">{moon.phaseName}</p>
-        <p className="mt-1 text-[11px] font-medium tabular-nums text-stone-200/80">{illumPct}%</p>
-        <p className="mt-1.5 truncate text-[8px] uppercase tracking-[0.14em] text-stone-400/50">{locationLabel}</p>
-      </div>
-    </div>
-  )
-}
+const STATIC_NEARBY_MEMBERS: NearbyMember[] = [
+  {
+    id: 'near-1',
+    name: 'Raven Luxe',
+    age: 29,
+    location: 'Downtown',
+    bio: 'Night owl, after-hours cocktails, and electric chemistry with confident company.',
+  },
+  {
+    id: 'near-2',
+    name: 'Milo Voss',
+    age: 34,
+    location: 'West End',
+    bio: 'Designer by day, vinyl collector by night. Big on banter and playful tension.',
+  },
+  {
+    id: 'near-3',
+    name: 'Sienna Vale',
+    age: 27,
+    location: 'Harbor District',
+    bio: 'Soft-spoken, direct, and curious. Looking for chemistry that feels effortless.',
+  },
+  {
+    id: 'near-4',
+    name: 'Jax Noir',
+    age: 31,
+    location: 'Old Town',
+    bio: 'Gym mornings, rooftop evenings, and unapologetic confidence with good communication.',
+  },
+  {
+    id: 'near-5',
+    name: 'Ari Sol',
+    age: 26,
+    location: 'Riverfront',
+    bio: 'Creative soul, travel obsessed, and always down for a late-night deep conversation.',
+  },
+  {
+    id: 'near-6',
+    name: 'Cleo Hart',
+    age: 33,
+    location: 'Midtown',
+    bio: 'Discreet, open-minded, and into quality connection over endless small talk.',
+  },
+]
 
 function getInitials(name: string) {
   return name
     .split(' ')
-    .map((part) => part.trim()[0])
+    .map((part) => part.trim().slice(0, 1))
     .filter(Boolean)
     .join('')
     .slice(0, 2)
     .toUpperCase()
 }
 
-function formatRelativeTime(isoString: string) {
-  const diff = Date.now() - new Date(isoString).getTime()
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-  return new Date(isoString).toLocaleDateString()
-}
-
-function buildNextSteps(data: DashboardViewData) {
-  const steps: string[] = []
-
-  if (!data.profile.bio.trim()) {
-    steps.push('Write a short bio so people know your vibe before they message you.')
+function maskPersonalCode(code: string) {
+  if (code.length <= 4) {
+    return code
   }
 
-  if (!data.profile.avatarUrl.trim()) {
-    steps.push('Add a profile photo to stand out in search and direct messages.')
-  }
-
-  if (!data.profile.location.trim()) {
-    steps.push('Set your city or region so nearby members can find you faster.')
-  }
-
-  if (data.profile.interests.length < 3) {
-    steps.push('Add a few more interests to improve search matches and profile depth.')
-  }
-
-  if (data.profile.lookingFor.length === 0) {
-    steps.push('Pick what you are looking for so the app can frame better introductions.')
-  }
-
-  return steps.slice(0, 3)
-}
-
-function getGreetingForTime(date = new Date()) {
-  const hour = date.getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+  return '•'.repeat(code.length - 4) + code.slice(-4)
 }
 
 function getHeaderName(user: DashboardViewData['user']) {
@@ -175,375 +127,451 @@ function getHeaderName(user: DashboardViewData['user']) {
     .map((value) => value.trim())
     .filter(Boolean)
 
-  const preferredName = candidates.find(
-    (value) => {
-      const normalized = value.toLowerCase()
-      return normalized !== 'default' && normalized !== 'default-member' && !normalized.startsWith('default')
-    }
-  )
-
-  return preferredName ?? 'default user'
+  return candidates[0] || 'Member'
 }
 
-function maskPersonalCode(code: string): string {
-  if (code.length <= 4) return code
-  return '•'.repeat(code.length - 4) + code.slice(-4)
+function computeMoonPhase(date: Date): MoonData {
+  const anchor = new Date('2000-01-06T18:14:00Z')
+  const elapsed = (date.getTime() - anchor.getTime()) / 86_400_000
+  const phase = ((elapsed % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH
+  const illumination = (1 - Math.cos((phase / SYNODIC_MONTH) * 2 * Math.PI)) / 2
+
+  let phaseName = 'Waning Crescent'
+  if (phase < 1.0) phaseName = 'New Moon'
+  else if (phase < 7.38) phaseName = 'Waxing Crescent'
+  else if (phase < 8.38) phaseName = 'First Quarter'
+  else if (phase < 14.77) phaseName = 'Waxing Gibbous'
+  else if (phase < 15.77) phaseName = 'Full Moon'
+  else if (phase < 22.14) phaseName = 'Waning Gibbous'
+  else if (phase < 23.14) phaseName = 'Last Quarter'
+
+  return { phase, illumination, phaseName }
+}
+
+function buildMoonPath(phase: number, r = 44): string | null {
+  if (phase < 1.0 || phase > 28.53) {
+    return null
+  }
+
+  const theta = (phase / SYNODIC_MONTH) * 2 * Math.PI
+  const k = Math.cos(theta)
+  const tx = Math.abs(r * k)
+  const isWaxing = phase <= 14.765
+  const top = `50 ${50 - r}`
+  const bottom = `50 ${50 + r}`
+
+  if (isWaxing) {
+    const sweep = k >= 0 ? 0 : 1
+    return `M ${top} A ${r} ${r} 0 1 1 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
+  }
+
+  const sweep = k >= 0 ? 1 : 0
+  return `M ${top} A ${r} ${r} 0 1 0 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
+}
+
+function MoonWidget({ city }: { city: string }) {
+  const [moon, setMoon] = useState<MoonData | null>(null)
+
+  useEffect(() => {
+    setMoon(computeMoonPhase(new Date()))
+  }, [])
+
+  if (!moon) {
+    return null
+  }
+
+  const moonPath = buildMoonPath(moon.phase)
+  const illuminationPercent = Math.round(moon.illumination * 100)
+  const isNearFullMoon = moon.illumination > 0.85
+
+  return (
+    <div className="fixed bottom-6 right-4 z-20 flex w-32 flex-col items-center gap-3 rounded-2xl border border-[#d5b06a]/20 bg-[linear-gradient(160deg,rgba(16,7,11,0.84),rgba(8,3,6,0.92))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md sm:right-6">
+      <svg
+        viewBox="0 0 100 100"
+        className="h-[4.5rem] w-[4.5rem]"
+        aria-label={`${moon.phaseName}, ${illuminationPercent}% illuminated`}
+        role="img"
+      >
+        <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.03)" stroke="rgba(213,176,106,0.24)" strokeWidth="0.8" />
+        {isNearFullMoon && (
+          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(213,176,106,0.22)" strokeWidth="5" />
+        )}
+        {moonPath ? <path d={moonPath} fill="rgba(238,223,188,0.92)" /> : <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.04)" />}
+      </svg>
+      <div className="w-full text-center">
+        <p className="text-[9px] uppercase tracking-[0.22em] text-stone-300/70">{moon.phaseName}</p>
+        <p className="mt-1 text-[11px] font-medium tabular-nums text-stone-100/85">{illuminationPercent}%</p>
+        <p className="mt-1 truncate text-[8px] uppercase tracking-[0.15em] text-stone-400/55">{city.trim() || 'Tonight'}</p>
+      </div>
+    </div>
+  )
+}
+
+function NavIcon({ label }: { label: string }) {
+  if (label === 'Dashboard') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <path d="M3 13.5 12 4l9 9.5" />
+        <path d="M5.5 11.5V20h13V11.5" />
+      </svg>
+    )
+  }
+
+  if (label === 'Search Members') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="m16 16 4.5 4.5" />
+      </svg>
+    )
+  }
+
+  if (label === 'Messages') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2.5" />
+        <path d="m4.5 7 7.5 6 7.5-6" />
+      </svg>
+    )
+  }
+
+  if (label === 'Groups') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="8" cy="10" r="3" />
+        <circle cx="16.5" cy="9" r="2.5" />
+        <path d="M3.5 19c.8-2.6 2.8-4 5.8-4s5 1.4 5.7 4" />
+        <path d="M13.5 18.8c.6-1.8 1.9-2.9 3.9-2.9 1.4 0 2.6.6 3.2 1.7" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.2" />
+      <path d="M5 19c1.2-3 3.5-4.5 7-4.5S17.8 16 19 19" />
+    </svg>
+  )
+}
+
+function Sidebar({
+  currentPath,
+  fullName,
+  initials,
+  onLogout,
+  isMobile,
+  onNavigate,
+}: {
+  currentPath: string
+  fullName: string
+  initials: string
+  onLogout: () => void
+  isMobile: boolean
+  onNavigate?: () => void
+}) {
+  return (
+    <aside className="flex h-full flex-col border-r border-white/10 bg-[linear-gradient(180deg,#0a0508_0%,#060304_100%)] px-4 py-5">
+      <div className="px-2">
+        <p className="font-[var(--font-display)] text-3xl leading-none text-[#f2dfbe]">fuxem</p>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-stone-400">Private member lounge</p>
+      </div>
+
+      <nav className="mt-7 space-y-1.5">
+        {NAV_ITEMS.map((item) => {
+          const active = currentPath === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active
+                ? 'border border-[#d5b06a]/35 bg-[#3b121f]/60 text-[#f6e4be] shadow-[0_8px_20px_rgba(0,0,0,0.25)]'
+                : 'border border-transparent text-stone-300 hover:border-white/10 hover:bg-white/[0.03] hover:text-stone-100'
+                }`}
+            >
+              <span className="opacity-90">
+                <NavIcon label={item.label} />
+              </span>
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d5b06a]/30 bg-[#3b121f]/50 text-sm font-semibold text-[#f6e4be]">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-stone-100">{fullName}</p>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-stone-400">Member</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-rose-200 transition hover:border-rose-300/40 hover:bg-rose-500/20"
+        >
+          Logout
+        </button>
+
+        {isMobile && (
+          <p className="mt-2 text-center text-[10px] uppercase tracking-[0.14em] text-stone-500">Swipe your world</p>
+        )}
+      </div>
+    </aside>
+  )
 }
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const router = useRouter()
-  const [isSoundboardOpen, setIsSoundboardOpen] = useState(false)
-  const [playerInstanceKey, setPlayerInstanceKey] = useState(0)
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [isConversationsLoading, setIsConversationsLoading] = useState(
-    initialData.user.id !== DEFAULT_MEMBER_ID
-  )
-  const [conversationsError, setConversationsError] = useState('')
-  const [lastConversationSync, setLastConversationSync] = useState<Date | null>(null)
+  const pathname = usePathname()
 
-  const handleLogout = useCallback(async () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [isRevealed, setIsRevealed] = useState(false)
+
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(() => {
+      setIsRevealed(true)
+    })
+
+    return () => window.cancelAnimationFrame(raf)
+  }, [])
+
+  const headerName = useMemo(() => getHeaderName(initialData.user), [initialData.user])
+  const fullName = useMemo(() => initialData.user.displayName || initialData.user.firstName || initialData.user.username, [initialData.user])
+  const initials = useMemo(() => getInitials(fullName || 'Member'), [fullName])
+  const maskedPasscode = useMemo(() => maskPersonalCode(initialData.user.personalCode), [initialData.user.personalCode])
+  const location = useMemo(
+    () => initialData.profile.location || [initialData.profile.city, initialData.profile.state, initialData.profile.country].filter(Boolean).join(', '),
+    [initialData.profile]
+  )
+
+  const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'GET' })
     } catch {
-      // best-effort
+      // best-effort logout request
     }
+
     router.push(ROUTES.WELCOME)
-  }, [router])
+  }
 
-  const maskedCode = useMemo(
-    () => maskPersonalCode(initialData.user.personalCode),
-    [initialData.user.personalCode]
-  )
-
-  const completionChecks = useMemo(
-    () => [
-      Boolean(initialData.profile.bio.trim()),
-      Boolean(initialData.profile.avatarUrl.trim()),
-      Boolean(initialData.profile.location.trim()),
-      initialData.profile.interests.length >= 3,
-      initialData.profile.lookingFor.length > 0,
-    ],
-    [initialData]
-  )
-
-  const profileCompletion = Math.round(
-    (completionChecks.filter(Boolean).length / completionChecks.length) * 100
-  )
-
-  const nextSteps = useMemo(() => buildNextSteps(initialData), [initialData])
-  const headerGreeting = useMemo(() => getGreetingForTime(), [])
-  const headerName = useMemo(() => getHeaderName(initialData.user), [initialData.user])
-
-  const loadConversations = useCallback(
-    async (options?: { silent?: boolean }) => {
-      const isSilent = options?.silent ?? false
-
-      if (initialData.user.id === DEFAULT_MEMBER_ID) {
-        setIsConversationsLoading(false)
-        return
-      }
-
-      try {
-        if (!isSilent) {
-          setIsConversationsLoading(true)
-        }
-        setConversationsError('')
-        const data = await fetchConversations()
-        setConversations(data.conversations.slice(0, 4))
-        setLastConversationSync(new Date())
-      } catch (error) {
-        setConversationsError(
-          error instanceof Error ? error.message : 'Unable to load recent conversations.'
-        )
-      } finally {
-        if (!isSilent) {
-          setIsConversationsLoading(false)
-        }
-      }
-    },
-    [initialData.user.id]
-  )
-
-  useEffect(() => {
-    if (initialData.user.id === DEFAULT_MEMBER_ID) {
-      setIsConversationsLoading(false)
-      return
+  const copyPasscode = async () => {
+    try {
+      await navigator.clipboard.writeText(initialData.user.personalCode)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
     }
-
-    void loadConversations()
-
-    const intervalId = window.setInterval(() => {
-      void loadConversations({ silent: true })
-    }, 20_000)
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        void loadConversations({ silent: true })
-      }
-    }
-
-    const handleWindowFocus = () => {
-      void loadConversations({ silent: true })
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleWindowFocus)
-
-    return () => {
-      window.clearInterval(intervalId)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleWindowFocus)
-    }
-  }, [initialData.user.id, loadConversations])
-
-  const toggleSoundboard = () => {
-    setIsSoundboardOpen((previous) => {
-      const next = !previous
-      if (next) {
-        // Force a fresh iframe mount so the track starts on open.
-        setPlayerInstanceKey((value) => value + 1)
-      }
-      return next
-    })
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#060304] text-stone-100">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-70"
-        style={{ backgroundImage: "url('/3.jpg')" }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(154,29,67,0.22),_transparent_38%),radial-gradient(circle_at_82%_20%,_rgba(184,115,34,0.1),_transparent_34%),linear-gradient(160deg,rgba(5,2,4,0.36)_8%,rgba(18,5,12,0.38)_44%,rgba(25,7,14,0.42)_72%,rgba(8,5,8,0.48)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:120px_120px] opacity-[0.06]" />
-      <div className="pointer-events-none absolute -left-28 top-20 h-80 w-80 rounded-full bg-rose-700/20 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-0 h-[28rem] w-[28rem] rounded-full bg-amber-700/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-14 h-96 w-96 rounded-full bg-fuchsia-900/15 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-[#050203] text-stone-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_8%,rgba(127,18,41,0.24),transparent_40%),radial-gradient(circle_at_88%_12%,rgba(180,127,42,0.17),transparent_34%),linear-gradient(165deg,#050203_4%,#11050a_44%,#18070e_72%,#060304_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:120px_120px] opacity-[0.07]" />
 
-      <button
-        type="button"
-        onClick={toggleSoundboard}
-        aria-label="Toggle Champagne Supernova soundboard"
-        title="Champagne Supernova Soundboard"
-        className="fixed left-5 top-20 z-40 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-amber-50 shadow-[0_12px_28px_rgba(0,0,0,0.35)] transition hover:scale-105 hover:border-amber-200/35 hover:bg-black/80"
-      >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.6" />
-          <ellipse cx="12" cy="12" rx="9" ry="3.2" transform="rotate(-20 12 12)" />
-          <path d="M16.5 8.2a1.2 1.2 0 1 0 0.01 0" />
-        </svg>
-      </button>
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#090406]/85 backdrop-blur-md lg:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div>
+            <p className="font-[var(--font-display)] text-2xl text-[#f2dfbe]">fuxem</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400">Dashboard</p>
+          </div>
 
-      {isSoundboardOpen && (
-        <section className="fixed left-5 top-36 z-40 w-[min(92vw,320px)] rounded-2xl border border-white/10 bg-[#12090d]/90 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-md">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-rose-100/90">Soundboard</p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#d5b06a]/30 bg-[#3b121f]/50 text-xs font-semibold text-[#f6e4be]">
+              {initials}
+            </div>
             <button
               type="button"
-              onClick={() => setIsSoundboardOpen(false)}
-              className="rounded-md border border-white/20 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-stone-300 transition hover:text-white"
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03]"
+              aria-label="Open menu"
             >
-              Close
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
             </button>
           </div>
+        </div>
+      </header>
 
-          <p className="mt-1 text-xs text-stone-300">Oasis - Champagne Supernova</p>
-
-          <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-black/50">
-            <iframe
-              key={playerInstanceKey}
-              src={SUPERNOVA_EMBED_URL}
-              title="Oasis - Champagne Supernova"
-              className="h-44 w-full"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close menu overlay"
+          />
+          <div className="absolute inset-y-0 left-0 w-[84%] max-w-xs">
+            <Sidebar
+              currentPath={pathname}
+              fullName={fullName}
+              initials={initials}
+              onLogout={handleLogout}
+              isMobile
+              onNavigate={() => setIsMobileMenuOpen(false)}
             />
           </div>
-
-          <a
-            href={SUPERNOVA_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex text-[10px] uppercase tracking-[0.14em] text-rose-200/85 transition hover:text-rose-100"
-          >
-            Open on YouTube
-          </a>
-        </section>
+        </div>
       )}
 
-      <div className="relative z-10">
-        <header className="fixed left-1/2 top-4 z-30 w-[calc(100%-2rem)] max-w-7xl -translate-x-1/2 rounded-2xl border border-white/12 bg-[linear-gradient(140deg,rgba(20,10,16,0.84),rgba(9,7,10,0.9))] px-4 py-3 shadow-[0_22px_50px_rgba(0,0,0,0.35)] backdrop-blur-md sm:w-[calc(100%-3rem)] sm:px-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2.5 text-stone-100">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-200/20 bg-amber-300/10 text-amber-100/90">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-                  <path d="M12 5.2a5.8 5.8 0 1 0 0 11.6 5.8 5.8 0 0 0 0-11.6Z" />
-                  <path d="M3.2 13.4c.5 1.5 4 2.5 8.5 2.5 5 0 9-1.3 9-3s-4-3-9-3c-3.6 0-6.6.7-8 1.9a1.1 1.1 0 0 0-.5 1.6Z" opacity="0.72" />
-                  <circle cx="17.7" cy="7.7" r="1.25" />
-                </svg>
-              </span>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-300/70">
-                {headerGreeting} {headerName}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span
-                className="hidden items-center rounded-full border border-amber-200/15 bg-amber-300/[0.06] px-3 py-1.5 font-mono text-[10px] tracking-widest text-amber-100/60 sm:inline-flex"
-                title="Your masked passcode"
-              >
-                {maskedCode}
-              </span>
-              <Link
-                href={ROUTES.SEARCH}
-                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-              >
-                search
-              </Link>
-              <Link
-                href={ROUTES.MESSAGESS}
-                className="hidden items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100 sm:inline-flex"
-              >
-                messages
-              </Link>
-              <Link
-                href={ROUTES.CHAT}
-                className="hidden items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100 sm:inline-flex"
-              >
-                live chat
-              </Link>
-              <Link
-                href={ROUTES.PROFILE}
-                className="inline-flex items-center rounded-full border border-white/15 bg-white/[0.02] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-200/70 transition hover:border-amber-200/25 hover:bg-amber-200/10 hover:text-amber-100"
-              >
-                profile
-              </Link>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex items-center rounded-full border border-rose-400/20 bg-rose-500/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-rose-300/70 transition hover:border-rose-400/40 hover:bg-rose-500/15 hover:text-rose-200"
-              >
-                logout
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="mx-auto flex min-h-screen w-full max-w-7xl items-start px-4 pb-16 pt-28 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-2xl space-y-6">
-            <section className="rounded-[1.8rem] border border-white/10 bg-black/30 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6">
-                <p className="text-[11px] uppercase tracking-[0.22em] text-amber-100/70">Recent Conversations</p>
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <h2 className="text-2xl font-semibold text-stone-100">Inbox preview</h2>
-                  <Link
-                    href={ROUTES.MESSAGESS}
-                    className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-100/85 transition hover:text-amber-50"
-                  >
-                    View all
-                  </Link>
-                </div>
-
-                {initialData.user.id !== DEFAULT_MEMBER_ID && (
-                  <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-stone-500">
-                    Auto-refresh every 20s
-                    {lastConversationSync ? ` • Synced ${formatRelativeTime(lastConversationSync.toISOString())}` : ''}
-                  </p>
-                )}
-
-                {initialData.user.id === DEFAULT_MEMBER_ID && (
-                  <p className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-stone-300">
-                    Preview mode does not load live inbox data. Sign in with a real member account to see conversations here.
-                  </p>
-                )}
-
-                {initialData.user.id !== DEFAULT_MEMBER_ID && isConversationsLoading && (
-                  <div className="mt-5 flex justify-center py-8">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
-                  </div>
-                )}
-
-                {initialData.user.id !== DEFAULT_MEMBER_ID && !isConversationsLoading && conversationsError && (
-                  <p className="mt-5 rounded-2xl border border-rose-400/35 bg-rose-500/20 p-4 text-sm text-rose-100">
-                    {conversationsError}
-                  </p>
-                )}
-
-                {initialData.user.id !== DEFAULT_MEMBER_ID && !isConversationsLoading && !conversationsError && conversations.length === 0 && (
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-sm font-medium text-stone-100">No messages yet</p>
-                    <p className="mt-2 text-sm leading-6 text-stone-400">Browse members and start the first conversation from search.</p>
-                  </div>
-                )}
-
-                {conversations.length > 0 && (
-                  <ul className="mt-5 space-y-3">
-                    {conversations.map((conversation) => (
-                      <li key={conversation.partnerId}>
-                        <Link
-                          href={`${ROUTES.MESSAGESS}/${conversation.partnerId}`}
-                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-amber-200/35 hover:bg-white/[0.06]"
-                        >
-                          {conversation.partnerAvatarUrl ? (
-                            <div
-                              className="h-11 w-11 flex-none rounded-2xl border border-white/15 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${conversation.partnerAvatarUrl})` }}
-                            />
-                          ) : (
-                            <div className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl border border-white/15 bg-amber-500/15 text-sm font-semibold text-amber-100">
-                              {getInitials(conversation.partnerDisplayName || conversation.partnerUsername)}
-                            </div>
-                          )}
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="truncate text-sm font-semibold text-stone-100">
-                                {conversation.partnerDisplayName}
-                              </p>
-                              <p className="shrink-0 text-[11px] text-stone-500">
-                                {formatRelativeTime(conversation.lastMessage.createdAt)}
-                              </p>
-                            </div>
-                            <p className="mt-1 truncate text-sm text-stone-400">
-                              {conversation.lastMessage.body}
-                            </p>
-                          </div>
-
-                          {conversation.unreadCount > 0 && (
-                            <span className="flex h-5 min-w-[1.25rem] flex-none items-center justify-center rounded-full bg-amber-400 px-1.5 text-[11px] font-bold text-black">
-                              {conversation.unreadCount}
-                            </span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-            </section>
-
-            <section className="rounded-[1.8rem] border border-white/10 bg-black/30 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-amber-100/70">Next Steps</p>
-              <h2 className="mt-2 text-2xl font-semibold text-stone-100">Tighten the profile</h2>
-
-              {nextSteps.length > 0 ? (
-                <ul className="mt-5 space-y-3">
-                  {nextSteps.map((step) => (
-                    <li key={step} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-stone-300">
-                      {step}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100/90">
-                  Your profile is in strong shape. Use search or the live room to turn that into actual conversations.
-                </p>
-              )}
-            </section>
-          </div>
-        </main>
+      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64">
+        <Sidebar
+          currentPath={pathname}
+          fullName={fullName}
+          initials={initials}
+          onLogout={handleLogout}
+          isMobile={false}
+        />
       </div>
 
-      {/* Moon phase widget — location from member profile */}
+      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:pl-72 lg:pr-8 lg:pt-8">
+        <section className={`rounded-3xl border border-[#d5b06a]/18 bg-[linear-gradient(145deg,rgba(18,7,12,0.84),rgba(10,4,7,0.9))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.42)] transition-all duration-700 ease-out sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-xl font-semibold text-[#f6e4be]">
+              {initialData.profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={initialData.profile.avatarUrl} alt={`${headerName} avatar`} className="h-full w-full object-cover" />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">Welcome back</p>
+              <h1 className="mt-1 text-3xl font-semibold text-stone-50">{headerName}</h1>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {initialData.profile.age ? (
+                  <span className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1 text-xs text-stone-200">
+                    {initialData.profile.age} years old
+                  </span>
+                ) : null}
+                {location ? (
+                  <span className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1 text-xs text-stone-200">
+                    {location}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {initialData.profile.gender ? (
+                  <span className="rounded-full border border-[#d5b06a]/28 bg-[#d5b06a]/10 px-2.5 py-1 text-[11px] text-[#f4dfb3]">
+                    {initialData.profile.gender}
+                  </span>
+                ) : null}
+                {initialData.profile.sexualOrientation ? (
+                  <span className="rounded-full border border-[#d5b06a]/28 bg-[#d5b06a]/10 px-2.5 py-1 text-[11px] text-[#f4dfb3]">
+                    {initialData.profile.sexualOrientation}
+                  </span>
+                ) : null}
+              </div>
+
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-stone-300">
+                {initialData.profile.bio.trim() || 'Tell members a little about your energy, style, and what kind of connection you enjoy.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/12 bg-black/20 p-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Personal passcode</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="rounded-lg border border-[#d5b06a]/30 bg-[#3b121f]/40 px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-[#f4dfb3]">
+                  {maskedPasscode}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyPasscode}
+                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-[#d5b06a]/35 hover:text-[#f4dfb3]"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/12 bg-black/20 p-3">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Looking for</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {initialData.profile.lookingFor.length > 0 ? (
+                  initialData.profile.lookingFor.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-1 text-[11px] text-rose-100"
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-stone-400">Add your intentions in Profile to improve matches.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/25 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.35)] transition-all delay-100 duration-700 ease-out sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#d5b06a]/80">Members Near You</p>
+              <h2 className="mt-1 text-2xl font-semibold text-stone-100">Fresh faces in your orbit</h2>
+            </div>
+            <Link
+              href={ROUTES.SEARCH}
+              className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-stone-200 transition hover:border-[#d5b06a]/35 hover:text-[#f4dfb3]"
+            >
+              Browse all
+            </Link>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {STATIC_NEARBY_MEMBERS.map((member, index) => (
+              <article
+                key={member.id}
+                style={{ transitionDelay: `${120 + index * 65}ms` }}
+                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(17,8,12,0.7),rgba(8,4,6,0.82))] p-4 transition-all duration-700 ease-out hover:-translate-y-0.5 hover:border-[#d5b06a]/35 hover:shadow-[0_18px_32px_rgba(0,0,0,0.32)] ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-sm font-semibold text-[#f4dfb3]">
+                    {getInitials(member.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-stone-100">{member.name}</p>
+                    <p className="text-xs text-stone-400">
+                      {member.age} • {member.location}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-300">{member.bio}</p>
+
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href={ROUTES.SEARCH}
+                    className="inline-flex flex-1 items-center justify-center rounded-lg border border-white/20 bg-white/[0.02] px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-stone-200 transition hover:border-white/35 hover:bg-white/[0.05] hover:text-stone-100"
+                  >
+                    View Profile
+                  </Link>
+                  <Link
+                    href={ROUTES.MESSAGESS}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#d5b06a]/40 bg-[linear-gradient(145deg,rgba(181,128,44,0.35),rgba(123,28,55,0.5))] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fae8c2] shadow-[0_10px_20px_rgba(0,0,0,0.25)] transition hover:border-[#e2c37f]/55 hover:brightness-110"
+                  >
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#f7dfa9]" aria-hidden="true" />
+                    Message
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+
       <MoonWidget city={initialData.profile.city} />
     </div>
   )
