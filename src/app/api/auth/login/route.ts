@@ -289,8 +289,12 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      if (!user || user.status !== 'active' || !user.emailVerified) {
+      if (!user || user.status !== 'active') {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+      }
+
+      if (!user.emailVerified) {
+        return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
       }
     } else {
       user = await prisma.user.findUnique({

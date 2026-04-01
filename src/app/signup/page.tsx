@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 
-import { MIN_AGE } from '@/lib/constants'
+import { MIN_AGE, NEW_MEMBER_PIN } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent'>('idle')
+  const [assignedPin, setAssignedPin] = useState('')
 
   function calculateAgeFromDob(dobValue: string) {
     const dob = new Date(`${dobValue}T00:00:00.000Z`)
@@ -64,6 +65,7 @@ export default function SignupPage() {
         setStatus('idle')
         return
       }
+      setAssignedPin(data.pin || NEW_MEMBER_PIN)
       setStatus('sent')
     } catch {
       setError('Network error. Please try again.')
@@ -97,19 +99,22 @@ export default function SignupPage() {
                 className="text-[9px] uppercase tracking-[0.28em] text-stone-500"
                 style={{ fontFamily: CP }}
               >
-                check your email
+                your pin is ready
+              </p>
+              <p className="text-4xl tracking-[0.6em] text-pink-300 font-mono">
+                {assignedPin || NEW_MEMBER_PIN}
               </p>
               <p className="text-sm leading-relaxed text-stone-400" style={{ fontFamily: CP }}>
                 We sent a verification link to{' '}
                 <span className="text-pink-300">{email.trim().toLowerCase()}</span>.
                 <br />
-                Click it to receive your private login PIN.
+                Verify that email to activate this PIN.
               </p>
               <p
                 className="text-[9px] leading-relaxed text-stone-600"
                 style={{ fontFamily: CP }}
               >
-                The link expires in 24 hours.
+                Come back, enter {assignedPin || NEW_MEMBER_PIN}, then enter your name.
               </p>
             </div>
           ) : (

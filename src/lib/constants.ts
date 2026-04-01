@@ -80,10 +80,12 @@ export const MESSAGES = {
   GROUP_CLOSED: 'Registrations are currently closed',
   GROUP_FULL: 'Member limit reached. Registrations are temporarily paused.',
   LOGIN_INVALID: 'Invalid passcode',
+  EMAIL_VERIFICATION_REQUIRED: 'Verify your email before using this PIN.',
   AUTH_REQUIRED: 'Authentication required',
   LOGIN_SUCCESS: 'Logged in successfully',
   LOGOUT_SUCCESS: 'Logged out successfully',
   EMAIL_EXISTS: 'An account with this email already exists',
+  NAME_EXISTS: 'That name is already in use',
   EMAIL_SENT: 'Check your email to continue',
   INVALID_TOKEN: 'This link is invalid or has already been used',
   TOKEN_EXPIRED: 'This link has expired. Please sign up again.',
@@ -104,6 +106,7 @@ export const MESSAGES = {
 
 export const MIN_AGE = 19
 export const MAX_AGE = 120
+export const NEW_MEMBER_PIN = '5555'
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8

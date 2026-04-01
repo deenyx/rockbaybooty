@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import {
   MIN_AGE,
   MESSAGES,
+  NEW_MEMBER_PIN,
 } from '@/lib/constants'
 import { sendVerificationEmail } from '@/lib/email'
 
@@ -69,81 +70,76 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: MESSAGES.INVALID_DATE_OF_BIRTH }, { status: 400 })
     }
 
+    const existingName = await prisma.user.findFirst({
+      where: {
+        firstName: {
+          equals: name,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    })
+
+    if (existingName) {
+      return NextResponse.json({ error: MESSAGES.NAME_EXISTS }, { status: 409 })
+    }
+
+    const existingEmail = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    })
+
+    if (existingEmail) {
+      return NextResponse.json({ error: MESSAGES.EMAIL_EXISTS }, { status: 409 })
+    }
+
     const age = calculateAge(dateOfBirth)
 
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, emailVerified: true },
+    // Generate a unique username
+    const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'member'
+    let username = base + Math.floor(1000 + Math.random() * 9000)
+    let taken = await prisma.user.findUnique({ where: { username } })
+    let attempts = 0
+    while (taken && attempts < 20) {
+      username = base + Math.floor(1000 + Math.random() * 9000)
+      taken = await prisma.user.findUnique({ where: { username } })
+      attempts++
+    }
+
+    const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
+
+    await prisma.user.create({
+      data: {
+        email,
+        firstName: name,
+        displayName: name,
+        username,
+        personalCode,
+        loginPin: NEW_MEMBER_PIN,
+        emailVerificationToken: token,
+        emailVerificationExpiresAt: expiresAt,
+        onboardingStep: 'passcode',
+        profile: {
+          create: {
+            age,
+            dateOfBirth,
+          },
+        },
+      },
     })
-
-    if (existingUser?.emailVerified) {
-      // Don't reveal whether the account exists — just say "check your email"
-      return NextResponse.json({ message: MESSAGES.EMAIL_SENT }, { status: 200 })
-    }
-
-    if (existingUser) {
-      // Re-send verification to existing unverified account
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          firstName: name,
-          displayName: name,
-          emailVerificationToken: token,
-          emailVerificationExpiresAt: expiresAt,
-          profile: {
-            upsert: {
-              create: {
-                age,
-                dateOfBirth,
-              },
-              update: {
-                age,
-                dateOfBirth,
-              },
-            },
-          },
-        },
-      })
-    } else {
-      // Generate a unique username
-      const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'member'
-      let username = base + Math.floor(1000 + Math.random() * 9000)
-      let taken = await prisma.user.findUnique({ where: { username } })
-      let attempts = 0
-      while (taken && attempts < 20) {
-        username = base + Math.floor(1000 + Math.random() * 9000)
-        taken = await prisma.user.findUnique({ where: { username } })
-        attempts++
-      }
-
-      const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
-
-      await prisma.user.create({
-        data: {
-          email,
-          firstName: name,
-          displayName: name,
-          username,
-          personalCode,
-          emailVerificationToken: token,
-          emailVerificationExpiresAt: expiresAt,
-          onboardingStep: 'passcode',
-          profile: {
-            create: {
-              age,
-              dateOfBirth,
-            },
-          },
-        },
-      })
-    }
 
     await sendVerificationEmail(email, name, token)
 
-    return NextResponse.json({ message: MESSAGES.EMAIL_SENT }, { status: 200 })
+    return NextResponse.json(
+      {
+        message: 'Verify your email to activate your PIN.',
+        pin: NEW_MEMBER_PIN,
+      },
+      { status: 200 }
+    )
   } catch (error) {
     console.error('[register]', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })

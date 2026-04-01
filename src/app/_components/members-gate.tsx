@@ -3,7 +3,15 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { NEW_MEMBER_PIN } from '@/lib/constants'
+
 type Stage = 'entry' | 'member-confirm'
+
+type MembersGateProps = {
+  initialError?: string
+  returnTo?: string
+  verified?: boolean
+}
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -83,11 +91,13 @@ function EntryStage({
   onPinChange,
   error,
   wrongAttempts,
+  verified,
 }: {
   pin: string
   onPinChange: (v: string) => void
   error: string
   wrongAttempts: number
+  verified: boolean
 }) {
   return (
     <div className="space-y-4">
@@ -108,8 +118,12 @@ function EntryStage({
 
       {error && <ErrorMsg msg={error} />}
 
+      {verified && !error && (
+        <HintMsg msg={`email verified. enter ${NEW_MEMBER_PIN}, then your name`} />
+      )}
+
       {wrongAttempts >= 2 && (
-        <HintMsg msg="enter 0000 to get a pin" />
+        <HintMsg msg="enter 0000 to sign up" />
       )}
     </div>
   )
@@ -178,13 +192,13 @@ function MemberConfirmStage({
 
 // ── Root component ─────────────────────────────────────────────────────────────
 
-export default function MembersGate() {
+export default function MembersGate({ initialError = '', returnTo = '/dashboard', verified = false }: MembersGateProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [stage, setStage] = useState<Stage>('entry')
   const [pin, setPin] = useState('')
   const [firstName, setFirstName] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(initialError)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
   const [wrongAttempts, setWrongAttempts] = useState(0)
 
@@ -233,7 +247,7 @@ export default function MembersGate() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode, returnTo: '/dashboard' }),
+        body: JSON.stringify({ passcode, returnTo }),
       })
 
       const data = await res.json()
@@ -261,7 +275,7 @@ export default function MembersGate() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin, name }),
+        body: JSON.stringify({ pin, name, returnTo }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -298,6 +312,7 @@ export default function MembersGate() {
               onPinChange={handlePinChange}
               error={error}
               wrongAttempts={wrongAttempts}
+              verified={verified}
             />
           )}
           {stage === 'member-confirm' && (

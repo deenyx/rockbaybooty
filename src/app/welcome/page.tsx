@@ -2,6 +2,14 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import MembersGate from '@/app/_components/members-gate'
 
+type WelcomePageProps = {
+  searchParams?: {
+    error?: string
+    returnTo?: string
+    verified?: string
+  }
+}
+
 export const metadata: Metadata = {
   title: 'Private Entry',
   description:
@@ -28,7 +36,14 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Welcome() {
+export default function Welcome({ searchParams }: WelcomePageProps) {
+  const safeReturnTo =
+    searchParams?.returnTo &&
+    searchParams.returnTo.startsWith('/') &&
+    !searchParams.returnTo.startsWith('//')
+      ? searchParams.returnTo
+      : '/dashboard'
+
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
       <div className="absolute inset-0">
@@ -66,10 +81,14 @@ export default function Welcome() {
           className="text-xs tracking-[0.15em] text-yellow-400 select-none -mt-6"
           style={{ fontFamily: 'var(--font-copperplate)' }}
         >
-          access code required
+          enter your pin, then your name
         </p>
 
-        <MembersGate />
+        <MembersGate
+          initialError={searchParams?.error || ''}
+          returnTo={safeReturnTo}
+          verified={searchParams?.verified === '1'}
+        />
       </div>
 
     </div>
