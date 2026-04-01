@@ -94,7 +94,7 @@ export const MESSAGES = {
   FIELD_REQUIRED: 'This field is required',
   INVALID_EMAIL: 'Please enter a valid email',
   INVALID_AGE: 'You must be over 18 years old',
-  INVALID_DATE_OF_BIRTH: 'You must be at least 19 years old',
+  INVALID_DATE_OF_BIRTH: 'You must be over 18 years old',
   INVALID_USER_ID: 'User ID must be 3-20 characters and use only letters, numbers, or underscores',
   ERROR_CREATING_ACCOUNT: 'Failed to create account. Please try again.',
   ERROR_GENERAL: 'An error occurred. Please try again.',

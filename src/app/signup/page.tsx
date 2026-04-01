@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from 'react'
 
+import { MIN_AGE } from '@/lib/constants'
+
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
 const inputCls =
@@ -13,18 +15,39 @@ const submitCls =
 export default function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [age, setAge] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent'>('idle')
+
+  function calculateAgeFromDob(dobValue: string) {
+    const dob = new Date(`${dobValue}T00:00:00.000Z`)
+    const now = new Date()
+
+    let age = now.getFullYear() - dob.getUTCFullYear()
+    const monthDifference = now.getMonth() - dob.getUTCMonth()
+    const dayDifference = now.getDate() - dob.getUTCDate()
+
+    if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
+      age -= 1
+    }
+
+    return age
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const submittedName = name.trim()
     const mail = email.trim().toLowerCase()
-    const ageValue = Number.parseInt(age, 10)
 
-    if (!submittedName || !mail || !age) { setError('All fields are required.'); return }
-    if (!Number.isFinite(ageValue) || ageValue < 19) { setError('You must be over 18 years old.'); return }
+    if (!submittedName || !mail || !dateOfBirth) {
+      setError('All fields are required.')
+      return
+    }
+
+    if (calculateAgeFromDob(dateOfBirth) < MIN_AGE) {
+      setError('You must be over 18 years old.')
+      return
+    }
 
     setStatus('loading')
     setError('')
@@ -33,7 +56,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: submittedName, email: mail, age: ageValue }),
+        body: JSON.stringify({ name: submittedName, email: mail, dateOfBirth }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -117,23 +140,25 @@ export default function SignupPage() {
                 <label
                   className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
                   style={{ fontFamily: CP }}
-                  htmlFor="age"
+                  htmlFor="dateOfBirth"
                 >
-                  Age
+                  Date of Birth
                 </label>
                 <input
-                  id="age"
-                  type="number"
-                  inputMode="numeric"
+                  id="dateOfBirth"
+                  type="date"
                   required
-                  min={19}
-                  max={120}
-                  value={age}
-                  onChange={(e) => { setAge(e.target.value.replace(/\D/g, '')); setError('') }}
-                  placeholder="must be over 18"
+                  value={dateOfBirth}
+                  onChange={(e) => {
+                    setDateOfBirth(e.target.value)
+                    setError('')
+                  }}
                   className={inputCls}
                   style={{ fontFamily: CP }}
                 />
+                <p className="mt-1 text-[10px] text-stone-500" style={{ fontFamily: CP }}>
+                  Must be over 18.
+                </p>
               </div>
 
               <div>
