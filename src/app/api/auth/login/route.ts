@@ -51,7 +51,7 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     const body = await request.json()
     return {
       code: (body.passcode || body.pin || '').trim(),
-      firstName: (body.firstName || '').trim().toLowerCase(),
+      firstName: (body.name || body.firstName || '').trim().toLowerCase(),
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -60,7 +60,7 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
   const formData = await request.formData()
   return {
     code: String(formData.get('passcode') || '').trim(),
-    firstName: String(formData.get('firstName') || '').trim().toLowerCase(),
+    firstName: String(formData.get('name') || formData.get('firstName') || '').trim().toLowerCase(),
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.DASHBOARD)),
     requestKind,
   }
@@ -269,8 +269,14 @@ export async function POST(request: NextRequest) {
     let user: LoginUser | null = null
 
     if (firstName) {
-      user = await prisma.user.findUnique({
-        where: { loginPin: code },
+      user = await prisma.user.findFirst({
+        where: {
+          loginPin: code,
+          firstName: {
+            equals: firstName,
+            mode: 'insensitive',
+          },
+        },
         select: {
           id: true,
           username: true,
@@ -284,10 +290,6 @@ export async function POST(request: NextRequest) {
       })
 
       if (!user || user.status !== 'active' || !user.emailVerified) {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-      }
-
-      if ((user.firstName?.trim().toLowerCase() ?? '') !== firstName) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
       }
     } else {

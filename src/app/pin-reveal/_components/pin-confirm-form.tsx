@@ -33,7 +33,7 @@ export default function PinConfirmForm({
       const res = await fetch('/api/auth/confirm-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin.trim(), firstName: firstName.trim() }),
+        body: JSON.stringify({ pin: pin.trim(), name: firstName.trim() }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -76,7 +76,7 @@ export default function PinConfirmForm({
           style={{ fontFamily: CP }}
           htmlFor="confirmFirstName"
         >
-          First name
+          Name
         </label>
         <input
           id="confirmFirstName"

@@ -11,18 +11,21 @@ const submitCls =
   'w-full rounded-full border border-pink-300/20 bg-gradient-to-r from-pink-600/90 to-rose-700/90 py-3 text-sm tracking-wide text-stone-100 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-wait'
 
 export default function SignupPage() {
-  const [firstName, setFirstName] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
+  const [age, setAge] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent'>('idle')
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const name = firstName.trim()
+    const submittedName = name.trim()
     const mail = email.trim().toLowerCase()
-    const code = inviteCode.trim().toUpperCase()
-    if (!name || !mail || !code) { setError('All fields are required.'); return }
+    const ageValue = Number.parseInt(age, 10)
+
+    if (!submittedName || !mail || !age) { setError('All fields are required.'); return }
+    if (!Number.isFinite(ageValue) || ageValue < 19) { setError('You must be over 18 years old.'); return }
+
     setStatus('loading')
     setError('')
 
@@ -30,7 +33,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName: name, email: mail, inviteCode: code }),
+        body: JSON.stringify({ name: submittedName, email: mail, age: ageValue }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -92,19 +95,19 @@ export default function SignupPage() {
                 <label
                   className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
                   style={{ fontFamily: CP }}
-                  htmlFor="firstName"
+                  htmlFor="name"
                 >
-                  First name
+                  Name
                 </label>
                 <input
-                  id="firstName"
+                  id="name"
                   type="text"
                   required
-                  autoComplete="given-name"
+                  autoComplete="name"
                   autoFocus
-                  value={firstName}
-                  onChange={(e) => { setFirstName(e.target.value); setError('') }}
-                  placeholder="your first name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setError('') }}
+                  placeholder="your name"
                   className={inputCls}
                   style={{ fontFamily: CP }}
                 />
@@ -114,17 +117,20 @@ export default function SignupPage() {
                 <label
                   className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
                   style={{ fontFamily: CP }}
-                  htmlFor="inviteCode"
+                  htmlFor="age"
                 >
-                  Access code
+                  Age
                 </label>
                 <input
-                  id="inviteCode"
-                  type="text"
+                  id="age"
+                  type="number"
+                  inputMode="numeric"
                   required
-                  value={inviteCode}
-                  onChange={(e) => { setInviteCode(e.target.value.toUpperCase()); setError('') }}
-                  placeholder="enter your invite code"
+                  min={19}
+                  max={120}
+                  value={age}
+                  onChange={(e) => { setAge(e.target.value.replace(/\D/g, '')); setError('') }}
+                  placeholder="must be over 18"
                   className={inputCls}
                   style={{ fontFamily: CP }}
                 />

@@ -98,7 +98,7 @@ export default async function PinRevealPage() {
             className="text-[9px] leading-relaxed text-stone-500 pt-2"
             style={{ fontFamily: CP }}
           >
-            to log in: enter your pin + first name.<br />
+            to log in: enter your pin + name.<br />
             you will not see this again.
           </p>
         </div>

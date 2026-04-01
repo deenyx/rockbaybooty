@@ -142,15 +142,15 @@ function MemberConfirmStage({
       </p>
 
       <div>
-        {fieldLabel('First name')}
+        {fieldLabel('Name')}
         <input
           type="text"
           required
-          autoComplete="given-name"
+          autoComplete="name"
           autoFocus
           value={firstName}
           onChange={(e) => onFirstNameChange(e.target.value)}
-          placeholder="your first name"
+          placeholder="what name?"
           className={inputCls}
           style={{ fontFamily: CP }}
         />
@@ -210,7 +210,7 @@ export default function MembersGate() {
     if (cleaned.length === 4) {
       if (cleaned === '0000') {
         // Reserved: send to signup flow
-        router.push('/signup')
+        globalThis.location.assign('/signup')
         return
       }
 
@@ -261,7 +261,7 @@ export default function MembersGate() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin, firstName: name }),
+        body: JSON.stringify({ pin, name }),
       })
       const data = await res.json()
       if (!res.ok) {

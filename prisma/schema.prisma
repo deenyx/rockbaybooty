@@ -32,7 +32,7 @@ model User {
   lastName       String?
 
   // PIN-based auth
-  loginPin                   String?   @unique  // 4-digit login PIN, assigned after email verification
+  loginPin                   String?            // 4-digit login PIN, matched with name at login
   emailVerificationToken     String?   @unique
   emailVerificationExpiresAt DateTime?
 
