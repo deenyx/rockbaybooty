@@ -52,11 +52,11 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
           alt=""
           fill
           priority
+          quality={95}
           sizes="100vw"
           className="object-cover"
           style={{
-            objectPosition: 'center 18%',
-            filter: 'saturate(1.08) contrast(1.02)',
+            objectPosition: 'center 16%',
           }}
         />
       </div>
@@ -64,8 +64,8 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at 18% 16%, rgba(56, 189, 248, 0.26), transparent 42%), radial-gradient(circle at 82% 14%, rgba(244, 114, 182, 0.2), transparent 36%), linear-gradient(180deg, rgba(2, 6, 23, 0.56), rgba(2, 6, 23, 0.9))',
-          opacity: 0.08,
+            'linear-gradient(180deg, rgba(2, 6, 23, 0.16), rgba(2, 6, 23, 0.34)), linear-gradient(120deg, rgba(8, 47, 73, 0.16), rgba(17, 24, 39, 0.08) 42%, rgba(67, 20, 7, 0.14))',
+          opacity: 1,
         }}
       />
 

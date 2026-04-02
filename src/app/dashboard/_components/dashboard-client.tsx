@@ -43,17 +43,10 @@ type NearbyMember = {
   bio: string
 }
 
-type MoonData = {
-  phase: number
-  illumination: number
-  phaseName: string
-}
-
-const SYNODIC_MONTH = 29.530588853
-
 const NAV_ITEMS = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
   { label: 'Search Members', href: ROUTES.SEARCH },
+  { label: 'Videos', href: ROUTES.VIDEOS },
   { label: 'Messages', href: ROUTES.MESSAGESS },
   { label: 'Groups', href: ROUTES.GROUPS },
   { label: 'Profile', href: ROUTES.PROFILE },
@@ -130,82 +123,6 @@ function getHeaderName(user: DashboardViewData['user']) {
   return candidates[0] || 'Member'
 }
 
-function computeMoonPhase(date: Date): MoonData {
-  const anchor = new Date('2000-01-06T18:14:00Z')
-  const elapsed = (date.getTime() - anchor.getTime()) / 86_400_000
-  const phase = ((elapsed % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH
-  const illumination = (1 - Math.cos((phase / SYNODIC_MONTH) * 2 * Math.PI)) / 2
-
-  let phaseName = 'Waning Crescent'
-  if (phase < 1.0) phaseName = 'New Moon'
-  else if (phase < 7.38) phaseName = 'Waxing Crescent'
-  else if (phase < 8.38) phaseName = 'First Quarter'
-  else if (phase < 14.77) phaseName = 'Waxing Gibbous'
-  else if (phase < 15.77) phaseName = 'Full Moon'
-  else if (phase < 22.14) phaseName = 'Waning Gibbous'
-  else if (phase < 23.14) phaseName = 'Last Quarter'
-
-  return { phase, illumination, phaseName }
-}
-
-function buildMoonPath(phase: number, r = 44): string | null {
-  if (phase < 1.0 || phase > 28.53) {
-    return null
-  }
-
-  const theta = (phase / SYNODIC_MONTH) * 2 * Math.PI
-  const k = Math.cos(theta)
-  const tx = Math.abs(r * k)
-  const isWaxing = phase <= 14.765
-  const top = `50 ${50 - r}`
-  const bottom = `50 ${50 + r}`
-
-  if (isWaxing) {
-    const sweep = k >= 0 ? 0 : 1
-    return `M ${top} A ${r} ${r} 0 1 1 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
-  }
-
-  const sweep = k >= 0 ? 1 : 0
-  return `M ${top} A ${r} ${r} 0 1 0 ${bottom} A ${tx.toFixed(2)} ${r} 0 0 ${sweep} ${top} Z`
-}
-
-function MoonWidget({ city }: { city: string }) {
-  const [moon, setMoon] = useState<MoonData | null>(null)
-
-  useEffect(() => {
-    setMoon(computeMoonPhase(new Date()))
-  }, [])
-
-  if (!moon) {
-    return null
-  }
-
-  const moonPath = buildMoonPath(moon.phase)
-  const illuminationPercent = Math.round(moon.illumination * 100)
-  const isNearFullMoon = moon.illumination > 0.85
-
-  return (
-    <div className="fixed bottom-6 right-4 z-20 flex w-32 flex-col items-center gap-3 rounded-2xl border border-[#d5b06a]/20 bg-[linear-gradient(160deg,rgba(16,7,11,0.84),rgba(8,3,6,0.92))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-md sm:right-6">
-      <svg
-        viewBox="0 0 100 100"
-        className="h-[4.5rem] w-[4.5rem]"
-        aria-label={`${moon.phaseName}, ${illuminationPercent}% illuminated`}
-        role="img"
-      >
-        <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.03)" stroke="rgba(213,176,106,0.24)" strokeWidth="0.8" />
-        {isNearFullMoon && (
-          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(213,176,106,0.22)" strokeWidth="5" />
-        )}
-        {moonPath ? <path d={moonPath} fill="rgba(238,223,188,0.92)" /> : <circle cx="50" cy="50" r="44" fill="rgba(255,255,255,0.04)" />}
-      </svg>
-      <div className="w-full text-center">
-        <p className="text-[9px] uppercase tracking-[0.22em] text-stone-300/70">{moon.phaseName}</p>
-        <p className="mt-1 text-[11px] font-medium tabular-nums text-stone-100/85">{illuminationPercent}%</p>
-        <p className="mt-1 truncate text-[8px] uppercase tracking-[0.15em] text-stone-400/55">{city.trim() || 'Tonight'}</p>
-      </div>
-    </div>
-  )
-}
 
 function NavIcon({ label }: { label: string }) {
   if (label === 'Dashboard') {
@@ -231,6 +148,16 @@ function NavIcon({ label }: { label: string }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2.5" />
         <path d="m4.5 7 7.5 6 7.5-6" />
+      </svg>
+    )
+  }
+
+  if (label === 'Videos') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <rect x="3" y="6" width="13" height="12" rx="2" />
+        <path d="m10 10 4 2-4 2z" />
+        <path d="m16 10 5-3v10l-5-3" />
       </svg>
     )
   }
@@ -334,6 +261,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const [isRevealed, setIsRevealed] = useState(false)
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIsRevealed(true)
+      return
+    }
+
     const raf = window.requestAnimationFrame(() => {
       setIsRevealed(true)
     })
@@ -371,9 +303,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050203] text-stone-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_8%,rgba(127,18,41,0.24),transparent_40%),radial-gradient(circle_at_88%_12%,rgba(180,127,42,0.17),transparent_34%),linear-gradient(165deg,#050203_4%,#11050a_44%,#18070e_72%,#060304_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:120px_120px] opacity-[0.07]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#050304] text-stone-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_2%,rgba(175,62,80,0.18),transparent_48%),radial-gradient(circle_at_82%_9%,rgba(185,143,73,0.12),transparent_40%),linear-gradient(168deg,#070405_2%,#12080c_44%,#080405_100%)]" />
 
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#090406]/85 backdrop-blur-md lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
@@ -432,7 +363,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       </div>
 
       <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:pl-72 lg:pr-8 lg:pt-8">
-        <section className={`rounded-3xl border border-[#d5b06a]/18 bg-[linear-gradient(145deg,rgba(18,7,12,0.84),rgba(10,4,7,0.9))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.42)] transition-all duration-700 ease-out sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+        <section className={`rounded-3xl border border-[#d5b06a]/18 bg-[linear-gradient(145deg,rgba(17,8,12,0.78),rgba(10,5,7,0.84))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.38)] transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-xl font-semibold text-[#f6e4be]">
               {initialData.profile.avatarUrl ? (
@@ -476,6 +407,21 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="mt-4 max-w-3xl text-sm leading-6 text-stone-300">
                 {initialData.profile.bio.trim() || 'Tell members a little about your energy, style, and what kind of connection you enjoy.'}
               </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link
+                  href={ROUTES.SEARCH}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d5b06a]/45 bg-[linear-gradient(145deg,rgba(181,128,44,0.32),rgba(123,28,55,0.45))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#fae8c2] transition hover:border-[#e2c37f]/60 hover:brightness-110"
+                >
+                  Search Members
+                </Link>
+                <Link
+                  href={ROUTES.MESSAGESS}
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/[0.03] px-4 py-2 text-xs uppercase tracking-[0.15em] text-stone-200 transition hover:border-white/35 hover:bg-white/[0.06]"
+                >
+                  Open Inbox
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -516,7 +462,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         </section>
 
-        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/25 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.35)] transition-all delay-100 duration-700 ease-out sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
+        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/18 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.32)] transition-all delay-100 duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.2em] text-[#d5b06a]/80">Members Near You</p>
@@ -524,7 +470,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             </div>
             <Link
               href={ROUTES.SEARCH}
-              className="rounded-full border border-white/15 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-stone-200 transition hover:border-[#d5b06a]/35 hover:text-[#f4dfb3]"
+              className="rounded-full border border-[#d5b06a]/35 bg-[#d5b06a]/12 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#f4dfb3] transition hover:border-[#e2c37f]/55 hover:bg-[#d5b06a]/18"
             >
               Browse all
             </Link>
@@ -535,7 +481,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <article
                 key={member.id}
                 style={{ transitionDelay: `${120 + index * 65}ms` }}
-                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(17,8,12,0.7),rgba(8,4,6,0.82))] p-4 transition-all duration-700 ease-out hover:-translate-y-0.5 hover:border-[#d5b06a]/35 hover:shadow-[0_18px_32px_rgba(0,0,0,0.32)] ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(17,8,12,0.7),rgba(8,4,6,0.82))] p-4 transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 hover:-translate-y-0.5 hover:border-[#d5b06a]/35 hover:shadow-[0_18px_32px_rgba(0,0,0,0.32)] motion-reduce:hover:translate-y-0 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-sm font-semibold text-[#f4dfb3]">
@@ -571,8 +517,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         </section>
       </main>
-
-      <MoonWidget city={initialData.profile.city} />
     </div>
   )
 }
