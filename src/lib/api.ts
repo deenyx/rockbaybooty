@@ -195,9 +195,16 @@ export async function sendMessage(
 export async function sendPoke(
   recipientId: string
 ): Promise<SendMessageResponse> {
+  return sendGesture(recipientId, 'poke')
+}
+
+export async function sendGesture(
+  recipientId: string,
+  kind: 'poke' | 'wink' | 'wave'
+): Promise<SendMessageResponse> {
   return apiCall('/api/messages', {
     method: 'POST',
-    body: JSON.stringify({ recipientId, kind: 'poke' }),
+    body: JSON.stringify({ recipientId, kind }),
   })
 }
 

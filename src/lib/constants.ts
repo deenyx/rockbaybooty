@@ -160,4 +160,6 @@ export const ROUTES = {
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
   MESSAGESS: '/messagess',
+  VIDEOS: '/videos',
+  MY_VIDEOS: '/videos/my',
 }
