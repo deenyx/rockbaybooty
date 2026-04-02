@@ -39,7 +39,10 @@ function formatRelativeTime(isoString: string) {
 }
 
 function formatConversationPreview(message: DirectMessage) {
-  return message.kind === 'poke' ? 'Sent a poke' : message.body
+  if (message.kind === 'poke') return 'Sent a poke'
+  if (message.kind === 'wink') return 'Sent a wink'
+  if (message.kind === 'wave') return 'Sent a wave'
+  return message.body
 }
 
 export default function MessagesPage() {
@@ -49,6 +52,7 @@ export default function MessagesPage() {
   const [outgoingRequests, setOutgoingRequests] = useState<PendingFriendRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [showPreviews, setShowPreviews] = useState(true)
   const [activeDecisionId, setActiveDecisionId] = useState<string | null>(null)
   const [decisionFeedback, setDecisionFeedback] = useState('')
 
@@ -150,12 +154,18 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,180,120,0.24),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(255,125,95,0.2),_transparent_42%),linear-gradient(160deg,#12080b_8%,#220d13_48%,#3f141f_100%)] text-stone-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-[#090b10] text-stone-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
+        style={{ backgroundImage: "url('/welcome2.jpg')" }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl md:block">
-          <p className="text-xs uppercase tracking-[0.22em] text-amber-100/70">Member Area</p>
-          <h1 className="mt-3 font-[family:var(--font-display)] text-3xl text-amber-100">Messages</h1>
+        <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-[#0d1117]/78 p-5 backdrop-blur-md md:block">
+          <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Member Area</p>
+          <h1 className="mt-3 font-[family:var(--font-display)] text-3xl text-stone-100">Messages</h1>
 
           <nav className="mt-8 space-y-2">
             {NAV_ITEMS.map((item) => {
@@ -164,9 +174,10 @@ export default function MessagesPage() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  title={`Open ${item.label}`}
                   className={`block rounded-xl px-4 py-3 text-sm transition ${
                     active
-                      ? 'bg-amber-200/20 text-amber-100'
+                      ? 'border border-white/20 bg-white/[0.08] text-stone-100'
                       : 'text-stone-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -179,11 +190,23 @@ export default function MessagesPage() {
 
         {/* Main */}
         <main className="flex-1 space-y-5">
-          <header className="rounded-3xl border border-white/10 bg-black/30 p-4 backdrop-blur-xl sm:p-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-amber-100/70">Private</p>
-            <h2 className="mt-2 font-[family:var(--font-display)] text-3xl text-amber-100">
-              Your Conversations
-            </h2>
+          <header className="rounded-3xl border border-white/10 bg-black/20 p-4 backdrop-blur-lg sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Private</p>
+                <h2 className="mt-2 font-[family:var(--font-display)] text-3xl text-stone-100">
+                  Your Conversations
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowPreviews((current) => !current)}
+                className="rounded-xl border border-white/20 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-stone-200 transition hover:border-amber-100/35 hover:text-amber-100"
+              >
+                {showPreviews ? 'Hide previews' : 'Show previews'}
+              </button>
+            </div>
           </header>
 
           {loadError && (
@@ -193,7 +216,7 @@ export default function MessagesPage() {
           )}
 
           {!isLoading && !loadError && (incomingRequests.length > 0 || outgoingRequests.length > 0) && (
-            <section className="rounded-3xl border border-white/10 bg-black/30 p-4 backdrop-blur-xl sm:p-5">
+            <section className="rounded-3xl border border-white/10 bg-black/20 p-4 backdrop-blur-lg sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-amber-100/70">Friends</p>
@@ -259,6 +282,7 @@ export default function MessagesPage() {
                           </button>
                           <Link
                             href={`${ROUTES.MESSAGESS}/${request.member.id}`}
+                            title={`Preview thread with ${request.member.displayName}`}
                             className="rounded-xl border border-white/20 bg-black/20 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/35 hover:text-white"
                           >
                             Message
@@ -346,7 +370,8 @@ export default function MessagesPage() {
                 <li key={conv.partnerId}>
                   <Link
                     href={`${ROUTES.MESSAGESS}/${conv.partnerId}`}
-                    className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-xl transition hover:border-amber-100/30 hover:bg-black/40"
+                    title={`Preview conversation with ${conv.partnerDisplayName}`}
+                    className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-3 backdrop-blur-lg transition hover:border-amber-100/30 hover:bg-black/30"
                   >
                     {/* Avatar */}
                     {conv.partnerAvatarUrl ? (
@@ -370,9 +395,11 @@ export default function MessagesPage() {
                           {formatRelativeTime(conv.lastMessage.createdAt)}
                         </p>
                       </div>
-                      <p className="mt-0.5 truncate text-sm text-stone-300">
-                        {formatConversationPreview(conv.lastMessage)}
-                      </p>
+                      {showPreviews && (
+                        <p className="mt-0.5 truncate text-sm text-stone-300">
+                          {formatConversationPreview(conv.lastMessage)}
+                        </p>
+                      )}
                     </div>
 
                     {/* Unread badge */}

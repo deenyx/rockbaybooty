@@ -125,16 +125,22 @@ export const MESSAGES = {
   FRIEND_REQUEST_ACCEPTED: 'Friend request accepted',
   FRIEND_REQUEST_DECLINED: 'Friend request declined',
   FRIEND_REQUEST_CANCELLED: 'Friend request cancelled',
+  VIDEO_NOT_FOUND: 'Video not found',
+  VIDEO_FORBIDDEN: 'You cannot modify this video',
+  VIDEO_PREMIUM_REQUIRED: 'Only Premium members can make videos public',
 }
 
 export const MIN_AGE = 19
 export const MAX_AGE = 120
 export const NEW_MEMBER_PIN = '5555'
+export const QUICK_JOIN_PIN = '0000'
+export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
 
 const parsedMaxMembers = Number.parseInt(process.env.MAX_MEMBER_COUNT || '20', 10)
 export const MAX_MEMBER_COUNT = Number.isFinite(parsedMaxMembers) && parsedMaxMembers > 0
@@ -160,4 +166,6 @@ export const ROUTES = {
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
   MESSAGESS: '/messagess',
+  VIDEOS: '/videos',
+  MY_VIDEOS: '/videos/my',
 }

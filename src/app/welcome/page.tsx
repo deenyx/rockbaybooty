@@ -48,7 +48,7 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
     <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
       <div className="absolute inset-0">
         <Image
-          src="/welcome2.jpg"
+          src="/welcome1.jpg"
           alt=""
           fill
           priority

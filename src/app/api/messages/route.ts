@@ -115,7 +115,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const recipientId = typeof body.recipientId === 'string' ? body.recipientId.trim() : ''
     const messageBody = typeof body.body === 'string' ? body.body.trim() : ''
-    const messageKind = body.kind === 'poke' ? 'poke' : body.kind === undefined || body.kind === 'text' ? 'text' : ''
+    const messageKind =
+      body.kind === 'poke' || body.kind === 'wink' || body.kind === 'wave'
+        ? body.kind
+        : body.kind === undefined || body.kind === 'text'
+          ? 'text'
+          : ''
 
     if (!recipientId) {
       return NextResponse.json({ error: 'recipientId is required' }, { status: 400 })
@@ -151,7 +156,7 @@ export async function POST(request: NextRequest) {
         senderId: currentUserId,
         recipientId,
         kind: messageKind,
-        body: messageKind === 'poke' ? '' : messageBody,
+        body: messageKind === 'text' ? messageBody : '',
       },
       select: {
         id: true,

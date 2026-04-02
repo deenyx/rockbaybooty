@@ -3,6 +3,7 @@
 import type {
   AuthResponse,
   ChatRoomTokenResponse,
+  CreateVideoInput,
   ConversationMessagesResponse,
   ConversationsResponse,
   FriendRequestsResponse,
@@ -14,6 +15,10 @@ import type {
   MemberProfileResponse,
   PasscodeValidationResponse,
   SendMessageResponse,
+  UpdateVideoInput,
+  VideoListResponse,
+  VideoResponse,
+  VideoViewResponse,
   UpdateMemberProfileInput,
   UserIdAvailabilityResponse,
 } from '@/lib/types'
@@ -195,9 +200,16 @@ export async function sendMessage(
 export async function sendPoke(
   recipientId: string
 ): Promise<SendMessageResponse> {
+  return sendGesture(recipientId, 'poke')
+}
+
+export async function sendGesture(
+  recipientId: string,
+  kind: 'poke' | 'wink' | 'wave'
+): Promise<SendMessageResponse> {
   return apiCall('/api/messages', {
     method: 'POST',
-    body: JSON.stringify({ recipientId, kind: 'poke' }),
+    body: JSON.stringify({ recipientId, kind }),
   })
 }
 
@@ -222,5 +234,45 @@ export async function decideFriendRequest(
   return apiCall('/api/friends/requests', {
     method: 'PATCH',
     body: JSON.stringify({ friendshipId, action }),
+  })
+}
+
+export async function fetchPublicVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function fetchMyVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos?mine=true', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function createVideo(data: CreateVideoInput): Promise<VideoResponse> {
+  return apiCall('/api/videos', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateVideo(videoId: string, data: UpdateVideoInput): Promise<VideoResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteVideo(videoId: string): Promise<{ success: boolean }> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function incrementVideoViews(videoId: string): Promise<VideoViewResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}/view`, {
+    method: 'POST',
   })
 }

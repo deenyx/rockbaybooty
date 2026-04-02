@@ -48,6 +48,7 @@ model User {
 
   // Account Status
   status         String   @default("active") // active, suspended, deleted
+  isPremium      Boolean  @default(false)
   emailVerified  Boolean  @default(false)
   onboardingStep String   @default("passcode") // passcode, interview, completed
 

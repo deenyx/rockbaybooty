@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -720,11 +721,15 @@ function OnboardingContent() {
           </div>
 
           {formData.profilePhoto && (
-            <img
-              src={formData.profilePhoto}
-              alt="Profile preview"
-              className="h-52 w-full rounded-2xl object-cover shadow"
-            />
+            <div className="relative h-52 w-full overflow-hidden rounded-2xl shadow">
+              <Image
+                src={formData.profilePhoto}
+                alt="Profile preview"
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            </div>
           )}
           {errors.profilePhoto && <p className="text-sm text-red-500">{errors.profilePhoto}</p>}
         </div>
@@ -841,7 +846,7 @@ function OnboardingContent() {
           <div className="rounded-2xl border border-amber-100/20 bg-[#130c0e]/92 p-8 text-center shadow-2xl">
             <p className="text-xs uppercase tracking-[0.2em] text-amber-200/80">Profile Created</p>
             <h2 className="mt-2 text-2xl font-bold text-stone-100">Your Personal Passcode</h2>
-            <p className="mt-2 text-sm text-stone-300/80">Save this - it's your login key forever.</p>
+            <p className="mt-2 text-sm text-stone-300/80">Save this - it&apos;s your login key forever.</p>
 
             <div className="mt-6 rounded-2xl border border-dashed border-amber-200/35 bg-amber-100/10 p-5">
               <p className="text-4xl font-black tracking-[0.15em] text-amber-100">{generatedPasscode}</p>
@@ -855,7 +860,7 @@ function OnboardingContent() {
               {isCopying ? 'Copied ✓' : 'Copy Passcode'}
             </button>
 
-            <p className="mt-4 text-xs text-stone-400">Save this code — you'll need it every time you log in.</p>
+            <p className="mt-4 text-xs text-stone-400">Save this code — you&apos;ll need it every time you log in.</p>
 
             <button
               type="button"

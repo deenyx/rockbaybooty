@@ -1,10 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
 import PinConfirmForm from './_components/pin-confirm-form'
-
-const prisma = new PrismaClient()
+import prisma from '@/lib/prisma'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 

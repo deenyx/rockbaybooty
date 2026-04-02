@@ -201,6 +201,54 @@ export interface FriendRequestsResponse {
   outgoing: PendingFriendRequest[]
 }
 
+export interface VideoFeedItem {
+  id: string
+  userId: string
+  title: string
+  description: string | null
+  videoUrl: string
+  thumbnailUrl: string | null
+  isPublic: boolean
+  views: number
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }
+}
+
+export interface VideoListResponse {
+  videos: VideoFeedItem[]
+  isPremium?: boolean
+}
+
+export interface VideoResponse {
+  video: VideoFeedItem
+}
+
+export interface VideoViewResponse {
+  views: number
+}
+
+export interface CreateVideoInput {
+  title: string
+  description?: string
+  videoUrl: string
+  thumbnailUrl?: string
+  isPublic?: boolean
+}
+
+export interface UpdateVideoInput {
+  title?: string
+  description?: string
+  videoUrl?: string
+  thumbnailUrl?: string
+  isPublic?: boolean
+}
+
 export interface ChatRoomTokenResponse {
   token: string
   wsUrl: string
@@ -214,7 +262,7 @@ export interface LiveChatMessage {
   sentAt: number
 }
 
-export type MessageKind = 'text' | 'poke'
+export type MessageKind = 'text' | 'poke' | 'wink' | 'wave'
 
 export interface DirectMessage {
   id: string
