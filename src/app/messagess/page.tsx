@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { fetchConversations } from '@/lib/api'
+import { decideFriendRequest, fetchConversations, fetchFriendRequests } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
-import type { Conversation, DirectMessage } from '@/lib/types'
+import type { Conversation, DirectMessage, PendingFriendRequest } from '@/lib/types'
 
 const NAV_ITEMS = [
   { label: 'Profile', href: ROUTES.PROFILE },
@@ -45,8 +45,12 @@ function formatConversationPreview(message: DirectMessage) {
 export default function MessagesPage() {
   const pathname = usePathname()
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [incomingRequests, setIncomingRequests] = useState<PendingFriendRequest[]>([])
+  const [outgoingRequests, setOutgoingRequests] = useState<PendingFriendRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [activeDecisionId, setActiveDecisionId] = useState<string | null>(null)
+  const [decisionFeedback, setDecisionFeedback] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -69,8 +73,16 @@ export default function MessagesPage() {
         if (abortController) abortController.abort()
         abortController = new AbortController()
 
-        const data = await fetchConversations(abortController.signal)
-        if (!cancelled) setConversations(data.conversations)
+        const [conversationData, friendRequestData] = await Promise.all([
+          fetchConversations(abortController.signal),
+          fetchFriendRequests(abortController.signal),
+        ])
+
+        if (!cancelled) {
+          setConversations(conversationData.conversations)
+          setIncomingRequests(friendRequestData.incoming)
+          setOutgoingRequests(friendRequestData.outgoing)
+        }
       } catch (error) {
         // Ignore abort errors silently
         if (error instanceof Error && error.name === 'AbortError') {
@@ -117,6 +129,26 @@ export default function MessagesPage() {
     }
   }, [])
 
+  async function handleFriendDecision(friendshipId: string, action: 'accept' | 'decline' | 'cancel') {
+    try {
+      setActiveDecisionId(friendshipId)
+      setDecisionFeedback('')
+      await decideFriendRequest(friendshipId, action)
+
+      if (action === 'cancel') {
+        setOutgoingRequests((current) => current.filter((request) => request.id !== friendshipId))
+        setDecisionFeedback('Friend request cancelled.')
+      } else {
+        setIncomingRequests((current) => current.filter((request) => request.id !== friendshipId))
+        setDecisionFeedback(action === 'accept' ? 'Friend request accepted.' : 'Friend request declined.')
+      }
+    } catch (error) {
+      setDecisionFeedback(error instanceof Error ? error.message : 'Unable to update friend request.')
+    } finally {
+      setActiveDecisionId(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,180,120,0.24),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(255,125,95,0.2),_transparent_42%),linear-gradient(160deg,#12080b_8%,#220d13_48%,#3f141f_100%)] text-stone-100">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -158,6 +190,133 @@ export default function MessagesPage() {
             <p className="rounded-xl border border-rose-400/35 bg-rose-500/20 p-4 text-sm text-rose-100">
               {loadError}
             </p>
+          )}
+
+          {!isLoading && !loadError && (incomingRequests.length > 0 || outgoingRequests.length > 0) && (
+            <section className="rounded-3xl border border-white/10 bg-black/30 p-4 backdrop-blur-xl sm:p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-amber-100/70">Friends</p>
+                  <h3 className="mt-2 font-[family:var(--font-display)] text-2xl text-amber-100">
+                    Pending requests
+                  </h3>
+                </div>
+                <p className="text-xs uppercase tracking-[0.14em] text-stone-400">
+                  {incomingRequests.length} incoming • {outgoingRequests.length} sent
+                </p>
+              </div>
+
+              {decisionFeedback && (
+                <p className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-stone-200">
+                  {decisionFeedback}
+                </p>
+              )}
+
+              {incomingRequests.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">Incoming</p>
+                  <ul className="mt-3 space-y-3">
+                    {incomingRequests.map((request) => (
+                      <li
+                        key={request.id}
+                        className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center"
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          {request.member.avatarUrl ? (
+                            <div
+                              className="h-11 w-11 shrink-0 rounded-2xl border border-white/20 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${request.member.avatarUrl})` }}
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-amber-500/20 text-sm font-semibold text-amber-100">
+                              {getInitials(request.member.displayName || request.member.username)}
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-white">{request.member.displayName}</p>
+                            <p className="text-sm text-stone-300">@{request.member.username}</p>
+                            <p className="text-xs text-stone-400">Requested {formatRelativeTime(request.createdAt)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleFriendDecision(request.id, 'decline')}
+                            disabled={activeDecisionId === request.id}
+                            className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleFriendDecision(request.id, 'accept')}
+                            disabled={activeDecisionId === request.id}
+                            className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-3 py-2 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {activeDecisionId === request.id ? 'Saving...' : 'Accept'}
+                          </button>
+                          <Link
+                            href={`${ROUTES.MESSAGESS}/${request.member.id}`}
+                            className="rounded-xl border border-white/20 bg-black/20 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/35 hover:text-white"
+                          >
+                            Message
+                          </Link>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {outgoingRequests.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">Awaiting response</p>
+                  <ul className="mt-3 space-y-3">
+                    {outgoingRequests.map((request) => (
+                      <li
+                        key={request.id}
+                        className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center"
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          {request.member.avatarUrl ? (
+                            <div
+                              className="h-11 w-11 shrink-0 rounded-2xl border border-white/20 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${request.member.avatarUrl})` }}
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-amber-500/20 text-sm font-semibold text-amber-100">
+                              {getInitials(request.member.displayName || request.member.username)}
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-white">{request.member.displayName}</p>
+                            <p className="text-sm text-stone-300">@{request.member.username}</p>
+                            <p className="text-xs text-stone-400">Requested {formatRelativeTime(request.createdAt)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full border border-amber-200/30 bg-amber-300/15 px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-amber-100">
+                            Pending
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleFriendDecision(request.id, 'cancel')}
+                            disabled={activeDecisionId === request.id}
+                            className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/35 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {activeDecisionId === request.id ? 'Cancelling...' : 'Cancel'}
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
           )}
 
           {isLoading && (

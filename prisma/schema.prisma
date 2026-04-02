@@ -42,6 +42,8 @@ model User {
   // Messages
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
+  outgoingFriendships Friendship[] @relation("OutgoingFriendships")
+  incomingFriendships Friendship[] @relation("IncomingFriendships")
 
   // Account Status
   status         String   @default("active") // active, suspended, deleted
@@ -54,6 +56,22 @@ model User {
 
   @@index([personalCode])
   @@index([loginPin])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      String   @default("pending") // pending, accepted, declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("OutgoingFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient User @relation("IncomingFriendships", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, recipientId])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
 }
 
 model Profile {

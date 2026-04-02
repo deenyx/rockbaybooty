@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
-import { searchMembers, sendPoke } from '@/lib/api'
+import { searchMembers, sendFriendRequest } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   LOOKING_FOR_OPTIONS,
@@ -13,6 +13,7 @@ import {
   ORIENTATION_OPTIONS,
   ROLE_OPTIONS,
   ROUTES,
+  SEARCH_LOCATION_OPTIONS,
 } from '@/lib/constants'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 
 const INITIAL_FILTERS: MemberSearchFilters = {
   q: '',
+  location: '',
   minAge: MIN_AGE,
   maxAge: MAX_AGE,
   gender: '',
@@ -60,13 +62,17 @@ export default function SearchPage() {
   const [results, setResults] = useState<MemberSearchResult[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
-  const [activePokeId, setActivePokeId] = useState<string | null>(null)
-  const [pokeFeedback, setPokeFeedback] = useState<Record<string, string>>({})
+  const [activeFriendId, setActiveFriendId] = useState<string | null>(null)
+  const [friendFeedback, setFriendFeedback] = useState<Record<string, string>>({})
 
   const activeFilterCount = useMemo(() => {
     let count = 0
 
     if (filters.q?.trim()) {
+      count += 1
+    }
+
+    if (filters.location) {
       count += 1
     }
 
@@ -101,19 +107,31 @@ export default function SearchPage() {
     return count
   }, [filters])
 
-  async function handlePoke(memberId: string) {
+  async function handleAddFriend(memberId: string) {
     try {
-      setActivePokeId(memberId)
-      setPokeFeedback((current) => ({ ...current, [memberId]: '' }))
-      await sendPoke(memberId)
-      setPokeFeedback((current) => ({ ...current, [memberId]: 'Poke sent.' }))
+      setActiveFriendId(memberId)
+      setFriendFeedback((current) => ({ ...current, [memberId]: '' }))
+      await sendFriendRequest(memberId)
+
+      setResults((current) =>
+        current.map((member) =>
+          member.id === memberId
+            ? {
+                ...member,
+                friendshipStatus: 'outgoing_pending',
+              }
+            : member
+        )
+      )
+
+      setFriendFeedback((current) => ({ ...current, [memberId]: 'Friend request sent.' }))
     } catch (error) {
-      setPokeFeedback((current) => ({
+      setFriendFeedback((current) => ({
         ...current,
-        [memberId]: error instanceof Error ? error.message : 'Failed to send poke.',
+        [memberId]: error instanceof Error ? error.message : 'Failed to send friend request.',
       }))
     } finally {
-      setActivePokeId(null)
+      setActiveFriendId(null)
     }
   }
 
@@ -229,7 +247,7 @@ export default function SearchPage() {
 
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-3 sm:p-4">
               <label htmlFor="search-query" className="text-xs uppercase tracking-[0.16em] text-amber-100/75">
-                Search name, location, interests
+                Search by name or username
               </label>
               <input
                 id="search-query"
@@ -238,7 +256,7 @@ export default function SearchPage() {
                   const value = event.target.value
                   setFilters((current) => ({ ...current, q: value }))
                 }}
-                placeholder="Try: alex, victoria, roleplay"
+                placeholder="Try: alex, @ravenluxe"
                 className="mt-2 w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
               />
             </div>
@@ -252,6 +270,28 @@ export default function SearchPage() {
               </div>
 
               <div className="mt-5 space-y-5">
+                <div>
+                  <label className="text-xs uppercase tracking-[0.16em] text-stone-300" htmlFor="location-filter">
+                    Location
+                  </label>
+                  <select
+                    id="location-filter"
+                    value={filters.location || ''}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setFilters((current) => ({ ...current, location: value }))
+                    }}
+                    className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-amber-200/45"
+                  >
+                    <option value="">Any location</option>
+                    {SEARCH_LOCATION_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Age range</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
@@ -426,7 +466,12 @@ export default function SearchPage() {
             <section>
               <div className="mb-3 flex items-center justify-between px-1">
                 <p className="text-sm text-stone-200">{results.length} members shown</p>
-                {isLoading && <p className="text-xs uppercase tracking-[0.15em] text-amber-100/75">Refreshing...</p>}
+                {isLoading && (
+                  <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-amber-100/75">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-300/35 border-t-amber-100" />
+                    Refreshing...
+                  </div>
+                )}
               </div>
 
               {loadError && (
@@ -510,17 +555,30 @@ export default function SearchPage() {
 
                       <button
                         type="button"
-                        onClick={() => handlePoke(member.id)}
-                        disabled={activePokeId === member.id}
+                        onClick={() => handleAddFriend(member.id)}
+                        disabled={
+                          activeFriendId === member.id ||
+                          member.friendshipStatus === 'friends' ||
+                          member.friendshipStatus === 'outgoing_pending' ||
+                          member.friendshipStatus === 'incoming_pending'
+                        }
                         className="rounded-xl border border-white/25 bg-black/30 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label={`Poke ${member.displayName}`}
+                        aria-label={`Add ${member.displayName} as a friend`}
                       >
-                        {activePokeId === member.id ? 'Poking...' : 'Poke'}
+                        {activeFriendId === member.id
+                          ? 'Sending...'
+                          : member.friendshipStatus === 'friends'
+                            ? 'Friends'
+                            : member.friendshipStatus === 'outgoing_pending'
+                              ? 'Pending'
+                              : member.friendshipStatus === 'incoming_pending'
+                                ? 'Respond in Inbox'
+                                : 'Add Friend'}
                       </button>
                     </div>
 
-                    {pokeFeedback[member.id] && (
-                      <p className="mt-2 text-xs text-stone-300">{pokeFeedback[member.id]}</p>
+                    {friendFeedback[member.id] && (
+                      <p className="mt-2 text-xs text-stone-300">{friendFeedback[member.id]}</p>
                     )}
                   </article>
                 ))}
