@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { ROUTES } from '@/lib/constants'
 
@@ -35,66 +35,14 @@ type DashboardClientProps = {
   initialData: DashboardViewData
 }
 
-type NearbyMember = {
-  id: string
-  name: string
-  age: number
-  location: string
-  bio: string
-}
-
 const NAV_ITEMS = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
-  { label: 'Search Members', href: ROUTES.SEARCH },
+  { label: 'Search', href: ROUTES.SEARCH },
   { label: 'Videos', href: ROUTES.VIDEOS },
   { label: 'Messages', href: ROUTES.MESSAGESS },
+  { label: 'Live Chat', href: ROUTES.CHAT },
   { label: 'Groups', href: ROUTES.GROUPS },
   { label: 'Profile', href: ROUTES.PROFILE },
-]
-
-const STATIC_NEARBY_MEMBERS: NearbyMember[] = [
-  {
-    id: 'near-1',
-    name: 'Raven Luxe',
-    age: 29,
-    location: 'Downtown',
-    bio: 'Night owl, after-hours cocktails, and electric chemistry with confident company.',
-  },
-  {
-    id: 'near-2',
-    name: 'Milo Voss',
-    age: 34,
-    location: 'West End',
-    bio: 'Designer by day, vinyl collector by night. Big on banter and playful tension.',
-  },
-  {
-    id: 'near-3',
-    name: 'Sienna Vale',
-    age: 27,
-    location: 'Harbor District',
-    bio: 'Soft-spoken, direct, and curious. Looking for chemistry that feels effortless.',
-  },
-  {
-    id: 'near-4',
-    name: 'Jax Noir',
-    age: 31,
-    location: 'Old Town',
-    bio: 'Gym mornings, rooftop evenings, and unapologetic confidence with good communication.',
-  },
-  {
-    id: 'near-5',
-    name: 'Ari Sol',
-    age: 26,
-    location: 'Riverfront',
-    bio: 'Creative soul, travel obsessed, and always down for a late-night deep conversation.',
-  },
-  {
-    id: 'near-6',
-    name: 'Cleo Hart',
-    age: 33,
-    location: 'Midtown',
-    bio: 'Discreet, open-minded, and into quality connection over endless small talk.',
-  },
 ]
 
 function getInitials(name: string) {
@@ -123,7 +71,6 @@ function getHeaderName(user: DashboardViewData['user']) {
   return candidates[0] || 'Member'
 }
 
-
 function NavIcon({ label }: { label: string }) {
   if (label === 'Dashboard') {
     return (
@@ -134,7 +81,7 @@ function NavIcon({ label }: { label: string }) {
     )
   }
 
-  if (label === 'Search Members') {
+  if (label === 'Search') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <circle cx="11" cy="11" r="6.5" />
@@ -148,6 +95,16 @@ function NavIcon({ label }: { label: string }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2.5" />
         <path d="m4.5 7 7.5 6 7.5-6" />
+      </svg>
+    )
+  }
+
+  if (label === 'Live Chat') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <path d="M7.5 8.5a4.5 4.5 0 1 1 9 0v2.1a4.5 4.5 0 0 1-9 0z" />
+        <path d="M12 16.8v2.7" />
+        <path d="M9.5 19.5h5" />
       </svg>
     )
   }
@@ -197,10 +154,20 @@ function Sidebar({
   onNavigate?: () => void
 }) {
   return (
-    <aside className="flex h-full flex-col border-r border-white/10 bg-[linear-gradient(180deg,#1a0a0c_0%,#0f0506_100%)] px-4 py-5">
+    <aside className="flex h-full flex-col border-r border-white/10 bg-[#0d1117]/78 px-4 py-5 backdrop-blur-md">
       <div className="px-2">
-        <p className="font-[var(--font-display)] text-3xl leading-none text-[#f2dfbe]">fuxem</p>
-        <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-stone-400">Private member lounge</p>
+        {!isMobile && (
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] text-sm font-semibold text-stone-100 md:group-hover/sidebar:hidden">
+            F
+          </div>
+        )}
+
+        <p className={`font-[var(--font-display)] text-3xl leading-none text-stone-100 ${!isMobile ? 'hidden md:group-hover/sidebar:block' : ''}`}>
+          fuxem
+        </p>
+        <p className={`mt-2 text-[10px] uppercase tracking-[0.22em] text-stone-400 ${!isMobile ? 'hidden md:group-hover/sidebar:block' : ''}`}>
+          Private member lounge
+        </p>
       </div>
 
       <nav className="mt-7 space-y-1.5">
@@ -212,25 +179,25 @@ function Sidebar({
               href={item.href}
               onClick={onNavigate}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active
-                ? 'border border-[#c85a5a]/45 bg-[#5c1f1f]/70 text-[#f4d5d5] shadow-[0_8px_20px_rgba(0,0,0,0.35)]'
+                ? 'border border-white/20 bg-white/[0.08] text-stone-100'
                 : 'border border-transparent text-stone-300 hover:border-white/10 hover:bg-white/[0.03] hover:text-stone-100'
-                }`}
+                } ${!isMobile ? 'md:justify-center md:px-0 md:group-hover/sidebar:justify-start md:group-hover/sidebar:px-3' : ''}`}
             >
               <span className="opacity-90">
                 <NavIcon label={item.label} />
               </span>
-              <span>{item.label}</span>
+              <span className={!isMobile ? 'hidden md:group-hover/sidebar:inline' : ''}>{item.label}</span>
             </Link>
           )
         })}
       </nav>
 
-      <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-sm font-semibold text-[#f4d5d5]">
+      <div className={`mt-auto rounded-2xl border border-white/10 bg-white/[0.03] transition-all ${!isMobile ? 'md:px-2 md:py-2 md:group-hover/sidebar:p-3' : 'p-3'}`}>
+        <div className={`flex items-center ${!isMobile ? 'justify-center md:justify-start md:gap-3' : 'gap-3'}`}>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] text-sm font-semibold text-stone-100">
             {initials}
           </div>
-          <div className="min-w-0">
+          <div className={`min-w-0 ${!isMobile ? 'hidden md:group-hover/sidebar:block' : ''}`}>
             <p className="truncate text-sm font-medium text-stone-100">{fullName}</p>
             <p className="text-[11px] uppercase tracking-[0.15em] text-stone-400">Member</p>
           </div>
@@ -239,7 +206,7 @@ function Sidebar({
         <button
           type="button"
           onClick={onLogout}
-          className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-rose-200 transition hover:border-rose-300/40 hover:bg-rose-500/20"
+          className={`mt-3 inline-flex w-full items-center justify-center rounded-lg border border-white/15 bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-stone-200 transition hover:border-white/25 hover:bg-white/[0.05] ${!isMobile ? 'hidden md:group-hover/sidebar:inline-flex' : ''}`}
         >
           Logout
         </button>
@@ -256,22 +223,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [isRevealed, setIsRevealed] = useState(false)
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIsRevealed(true)
-      return
-    }
-
-    const raf = window.requestAnimationFrame(() => {
-      setIsRevealed(true)
-    })
-
-    return () => window.cancelAnimationFrame(raf)
-  }, [])
 
   const headerName = useMemo(() => getHeaderName(initialData.user), [initialData.user])
   const fullName = useMemo(() => initialData.user.displayName || initialData.user.firstName || initialData.user.username, [initialData.user])
@@ -303,56 +255,14 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0a0505] text-stone-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_2%,rgba(200,90,90,0.22),transparent_48%),radial-gradient(circle_at_82%_9%,rgba(150,60,60,0.16),transparent_40%),linear-gradient(168deg,#0a0506_2%,#1a080a_44%,#0a0505_100%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#090b10] text-stone-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
+        style={{ backgroundImage: "url('/welcome2.jpg')" }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
 
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0607]/85 backdrop-blur-md lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <p className="font-[var(--font-display)] text-2xl text-[#f2dfbe]">fuxem</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400">Dashboard</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-xs font-semibold text-[#f4d5d5]">
-              {initials}
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/[0.03]"
-              aria-label="Open menu"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setIsMobileMenuOpen(false)}
-            aria-label="Close menu overlay"
-          />
-          <div className="absolute inset-y-0 left-0 w-[84%] max-w-xs">
-            <Sidebar
-              currentPath={pathname}
-              fullName={fullName}
-              initials={initials}
-              onLogout={handleLogout}
-              isMobile
-              onNavigate={() => setIsMobileMenuOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64">
+      <div className="group/sidebar fixed inset-y-0 left-0 z-30 flex w-56 overflow-hidden md:w-[84px] md:hover:w-64 md:transition-[width] md:duration-300">
         <Sidebar
           currentPath={pathname}
           fullName={fullName}
@@ -362,10 +272,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         />
       </div>
 
-      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:pl-72 lg:pr-8 lg:pt-8">
-        <section className={`rounded-3xl border border-[#c85a5a]/25 bg-[linear-gradient(145deg,rgba(32,12,15,0.82),rgba(20,8,10,0.88))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.42)] transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-8">
+        <section className="rounded-3xl border border-white/12 bg-black/30 p-5 shadow-[0_8px_22px_rgba(0,0,0,0.22)] sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-xl font-semibold text-[#f4d5d5]">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/[0.04] text-xl font-semibold text-stone-100">
               {initialData.profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={initialData.profile.avatarUrl} alt={`${headerName} avatar`} className="h-full w-full object-cover" />
@@ -393,12 +303,12 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {initialData.profile.gender ? (
-                  <span className="rounded-full border border-[#c85a5a]/35 bg-[#c85a5a]/15 px-2.5 py-1 text-[11px] text-[#f4d5d5]">
+                  <span className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200">
                     {initialData.profile.gender}
                   </span>
                 ) : null}
                 {initialData.profile.sexualOrientation ? (
-                  <span className="rounded-full border border-[#c85a5a]/35 bg-[#c85a5a]/15 px-2.5 py-1 text-[11px] text-[#f4d5d5]">
+                  <span className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200">
                     {initialData.profile.sexualOrientation}
                   </span>
                 ) : null}
@@ -408,16 +318,16 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 {initialData.profile.bio.trim() || 'Tell members a little about your energy, style, and what kind of connection you enjoy.'}
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-5 flex flex-wrap items-center gap-4">
                 <Link
                   href={ROUTES.SEARCH}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#c85a5a]/55 bg-[linear-gradient(145deg,rgba(200,90,90,0.38),rgba(140,40,50,0.5))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#f4d5d5] transition hover:border-[#d87070]/70 hover:brightness-110"
+                  className="text-sm font-medium text-stone-200 underline decoration-white/35 underline-offset-4 transition hover:text-white hover:decoration-white"
                 >
-                  Search Members
+                  Search
                 </Link>
                 <Link
                   href={ROUTES.MESSAGESS}
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/[0.03] px-4 py-2 text-xs uppercase tracking-[0.15em] text-stone-200 transition hover:border-white/35 hover:bg-white/[0.06]"
+                  className="text-sm font-medium text-stone-300 underline decoration-white/25 underline-offset-4 transition hover:text-white hover:decoration-white"
                 >
                   Open Inbox
                 </Link>
@@ -426,30 +336,30 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/12 bg-black/20 p-3">
+            <div className="rounded-2xl border border-white/12 bg-black/25 p-3">
               <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Personal passcode</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="rounded-lg border border-[#c85a5a]/35 bg-[#5c1f1f]/50 px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-[#f4d5d5]">
+                <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-stone-100">
                   {maskedPasscode}
                 </span>
                 <button
                   type="button"
                   onClick={copyPasscode}
-                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-[#c85a5a]/40 hover:text-[#f4d5d5]"
+                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-white/25 hover:text-stone-100"
                 >
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/12 bg-black/20 p-3">
+            <div className="rounded-2xl border border-white/12 bg-black/25 p-3">
               <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Looking for</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {initialData.profile.lookingFor.length > 0 ? (
                   initialData.profile.lookingFor.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-rose-300/30 bg-rose-500/15 px-2.5 py-1 text-[11px] text-rose-100"
+                      className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200"
                     >
                       {tag}
                     </span>
@@ -462,60 +372,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         </section>
 
-        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/22 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.38)] transition-all delay-100 duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-[#c85a5a]/85">Members Near You</p>
-              <h2 className="mt-1 text-2xl font-semibold text-stone-100">Fresh faces in your orbit</h2>
-            </div>
-            <Link
-              href={ROUTES.SEARCH}
-              className="rounded-full border border-[#c85a5a]/40 bg-[#c85a5a]/15 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#f4d5d5] transition hover:border-[#d87070]/55 hover:bg-[#c85a5a]/22"
-            >
-              Browse all
-            </Link>
-          </div>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {STATIC_NEARBY_MEMBERS.map((member, index) => (
-              <article
-                key={member.id}
-                style={{ transitionDelay: `${120 + index * 65}ms` }}
-                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(32,12,15,0.75),rgba(18,8,10,0.86))] p-4 transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 hover:-translate-y-0.5 hover:border-[#c85a5a]/40 hover:shadow-[0_18px_32px_rgba(0,0,0,0.38)] motion-reduce:hover:translate-y-0 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-sm font-semibold text-[#f4d5d5]">
-                    {getInitials(member.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-stone-100">{member.name}</p>
-                    <p className="text-xs text-stone-400">
-                      {member.age} • {member.location}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-300">{member.bio}</p>
-
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={ROUTES.SEARCH}
-                    className="inline-flex flex-1 items-center justify-center rounded-lg border border-white/20 bg-white/[0.02] px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-stone-200 transition hover:border-white/35 hover:bg-white/[0.05] hover:text-stone-100"
-                  >
-                    View Profile
-                  </Link>
-                  <Link
-                    href={ROUTES.MESSAGESS}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#c85a5a]/50 bg-[linear-gradient(145deg,rgba(200,90,90,0.4),rgba(140,40,50,0.55))] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f4d5d5] shadow-[0_10px_20px_rgba(0,0,0,0.32)] transition hover:border-[#d87070]/65 hover:brightness-110"
-                  >
-                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#f4d5d5]" aria-hidden="true" />
-                    Message
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
       </main>
     </div>
   )

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, Manrope } from 'next/font/google'
+import { Bodoni_Moda, Manrope } from 'next/font/google'
 
 import { ROUTES } from '@/lib/constants'
 
@@ -10,7 +10,7 @@ const sans = Manrope({
   variable: '--font-sans',
 })
 
-const display = Cormorant_Garamond({
+const display = Bodoni_Moda({
   subsets: ['latin'],
   variable: '--font-display',
   weight: ['500', '600', '700'],

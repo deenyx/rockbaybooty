@@ -19,8 +19,30 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM || SMTP_USER || 'noreply@rockbaybooty.com'
 const SITE_NAME = 'RockBayBooty'
 
+function getBaseUrl() {
+  const rawCandidates = [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.APP_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  ]
+
+  for (const candidate of rawCandidates) {
+    const value = candidate?.trim()
+    if (!value) {
+      continue
+    }
+
+    if (/^https?:\/\//i.test(value)) {
+      return value.replace(/\/$/, '')
+    }
+  }
+
+  return 'http://localhost:3000'
+}
+
 export async function sendVerificationEmail(to: string, firstName: string, token: string) {
-  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+  const base = getBaseUrl()
   const link = `${base}/api/auth/verify-email?token=${token}`
 
   if (!SMTP_USER || !SMTP_PASS) {
