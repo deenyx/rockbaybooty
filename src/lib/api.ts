@@ -3,6 +3,7 @@
 import type {
   AuthResponse,
   ChatRoomTokenResponse,
+  CreateVideoInput,
   ConversationMessagesResponse,
   ConversationsResponse,
   LoginResponse,
@@ -12,7 +13,11 @@ import type {
   PasscodeValidationResponse,
   SendMessageResponse,
   UpdateMemberProfileInput,
+  UpdateVideoInput,
   UserIdAvailabilityResponse,
+  VideoListResponse,
+  VideoResponse,
+  VideoViewResponse,
 } from '@/lib/types'
 
 export async function apiCall(
@@ -191,5 +196,45 @@ export async function sendPoke(
   return apiCall('/api/messages', {
     method: 'POST',
     body: JSON.stringify({ recipientId, kind: 'poke' }),
+  })
+}
+
+export async function fetchPublicVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function fetchMyVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos?mine=true', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function createVideo(data: CreateVideoInput): Promise<VideoResponse> {
+  return apiCall('/api/videos', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateVideo(videoId: string, data: UpdateVideoInput): Promise<VideoResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteVideo(videoId: string): Promise<{ success: boolean }> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function incrementVideoViews(videoId: string): Promise<VideoViewResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}/view`, {
+    method: 'POST',
   })
 }

@@ -102,6 +102,9 @@ export const MESSAGES = {
   ERROR_GENERAL: 'An error occurred. Please try again.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
+  VIDEO_NOT_FOUND: 'Video not found',
+  VIDEO_FORBIDDEN: 'You cannot modify this video',
+  VIDEO_PREMIUM_REQUIRED: 'Only Premium members can make videos public',
 }
 
 export const MIN_AGE = 19
@@ -137,4 +140,6 @@ export const ROUTES = {
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
   MESSAGESS: '/messagess',
+  VIDEOS: '/videos',
+  MY_VIDEOS: '/videos/my',
 }
