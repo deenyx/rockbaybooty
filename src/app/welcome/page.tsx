@@ -77,12 +77,6 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
         >
           Members Only
         </h1>
-        <p
-          className="text-xs tracking-[0.15em] text-yellow-400 select-none -mt-6"
-          style={{ fontFamily: 'var(--font-copperplate)' }}
-        >
-          enter your pin, then your name
-        </p>
 
         <MembersGate
           initialError={searchParams?.error || ''}

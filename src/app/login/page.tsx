@@ -83,12 +83,6 @@ function LoginContent() {
           >
             Members Only
           </h1>
-          <p
-            className="mt-1 text-xs tracking-[0.15em] text-yellow-400 select-none"
-            style={{ fontFamily: CP }}
-          >
-            enter your passcode
-          </p>
         </div>
 
         <form
@@ -100,7 +94,7 @@ function LoginContent() {
               className="block text-center text-[8px] uppercase tracking-[0.28em] text-yellow-400 mb-2"
               style={{ fontFamily: CP }}
             >
-              Personal Passcode
+              PIN
             </span>
             <input
               type="password"

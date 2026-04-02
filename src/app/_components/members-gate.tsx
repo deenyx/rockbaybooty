@@ -102,7 +102,7 @@ function EntryStage({
   return (
     <div className="space-y-4">
       <div>
-        {fieldLabel('Enter Pin', 'text-yellow-400')}
+        {fieldLabel('NO PIN = 0000', 'text-yellow-400')}
         <input
           type="password"
           inputMode="numeric"
