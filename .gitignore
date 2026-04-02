@@ -27,6 +27,9 @@ yarn-error.log*
 # Vercel
 .vercel
 
+# TypeScript build info (generated artifact, not source)
+tsconfig.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/

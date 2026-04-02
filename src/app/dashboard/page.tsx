@@ -1,14 +1,12 @@
-import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
+import prisma from '@/lib/prisma'
 import type { AuthTokenPayload } from '@/lib/types'
 
 import DashboardClient from './_components/dashboard-client'
-
-const prisma = new PrismaClient()
 
 const DEFAULT_MEMBER_ID = 'default-member'
 
