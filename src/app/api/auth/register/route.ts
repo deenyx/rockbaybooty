@@ -129,7 +129,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    await sendVerificationEmail(email, name, token)
+    // Skip email send in development; auto-mark as verified
+    if (process.env.NODE_ENV !== 'production') {
+      await prisma.user.update({
+        where: { email },
+        data: { emailVerified: true, emailVerificationToken: null },
+      })
+    } else {
+      await sendVerificationEmail(email, name, token)
+    }
 
     return NextResponse.json(
       {
