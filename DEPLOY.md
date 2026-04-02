@@ -1,4 +1,57 @@
-# VPS Deployment
+# Deployment Targets
+
+Use the deployment flow that matches your target platform:
+
+- Vercel: `npm run build:vercel`
+- VPS: `npm run build:vps` then `npm run db:deploy` during rollout
+
+Do not mix the two flows.
+
+## Vercel Deployment
+
+Deploy this app to Vercel with a managed PostgreSQL database and environment
+variables configured in the Vercel project.
+
+### Required Build Command
+
+Use:
+
+```bash
+npm run build:vercel
+```
+
+This runs:
+
+1. `prisma migrate deploy`
+2. `next build`
+
+### Required Environment Variables (Vercel Project)
+
+Set these in Vercel for the target environments you use (Production/Preview):
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `NEXT_PUBLIC_API_URL`
+- `LIVEKIT_URL`
+- `LIVEKIT_API_KEY`
+- `LIVEKIT_API_SECRET`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
+### Vercel Notes
+
+- Use `prisma migrate deploy` for deploys. Do not use `prisma migrate dev`.
+- If the deployment fails, inspect logs from the failing deployment ID:
+
+```bash
+npx vercel inspect <deployment-id> --logs
+```
+
+## VPS Deployment
 
 Deploy this Next.js app to a Linux VPS with Nginx as a reverse proxy and
 `systemd` managing the Node process. PostgreSQL is hosted by a managed provider;
@@ -77,7 +130,7 @@ Never use `prisma migrate dev` in production.
 git clone https://github.com/deenyx/rockbaybooty.git /var/www/rockbaybooty
 cd /var/www/rockbaybooty
 npm ci --omit=dev
-npm run build
+npm run build:vps
 
 # 2. Run database migrations
 NODE_ENV=production npm run db:deploy
@@ -111,7 +164,7 @@ DATABASE_URL="..." npx prisma studio
 cd /var/www/rockbaybooty
 git pull
 npm ci --omit=dev
-npm run build
+npm run build:vps
 NODE_ENV=production npm run db:deploy
 sudo systemctl restart rockbaybooty
 ```
