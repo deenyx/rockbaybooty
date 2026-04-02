@@ -197,7 +197,7 @@ function Sidebar({
   onNavigate?: () => void
 }) {
   return (
-    <aside className="flex h-full flex-col border-r border-white/10 bg-[linear-gradient(180deg,#0a0508_0%,#060304_100%)] px-4 py-5">
+    <aside className="flex h-full flex-col border-r border-white/10 bg-[linear-gradient(180deg,#1a0a0c_0%,#0f0506_100%)] px-4 py-5">
       <div className="px-2">
         <p className="font-[var(--font-display)] text-3xl leading-none text-[#f2dfbe]">fuxem</p>
         <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-stone-400">Private member lounge</p>
@@ -212,7 +212,7 @@ function Sidebar({
               href={item.href}
               onClick={onNavigate}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active
-                ? 'border border-[#d5b06a]/35 bg-[#3b121f]/60 text-[#f6e4be] shadow-[0_8px_20px_rgba(0,0,0,0.25)]'
+                ? 'border border-[#c85a5a]/45 bg-[#5c1f1f]/70 text-[#f4d5d5] shadow-[0_8px_20px_rgba(0,0,0,0.35)]'
                 : 'border border-transparent text-stone-300 hover:border-white/10 hover:bg-white/[0.03] hover:text-stone-100'
                 }`}
             >
@@ -227,7 +227,7 @@ function Sidebar({
 
       <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.03] p-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d5b06a]/30 bg-[#3b121f]/50 text-sm font-semibold text-[#f6e4be]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-sm font-semibold text-[#f4d5d5]">
             {initials}
           </div>
           <div className="min-w-0">
@@ -303,10 +303,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050304] text-stone-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_2%,rgba(175,62,80,0.18),transparent_48%),radial-gradient(circle_at_82%_9%,rgba(185,143,73,0.12),transparent_40%),linear-gradient(168deg,#070405_2%,#12080c_44%,#080405_100%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#0a0505] text-stone-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_2%,rgba(200,90,90,0.22),transparent_48%),radial-gradient(circle_at_82%_9%,rgba(150,60,60,0.16),transparent_40%),linear-gradient(168deg,#0a0506_2%,#1a080a_44%,#0a0505_100%)]" />
 
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#090406]/85 backdrop-blur-md lg:hidden">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0607]/85 backdrop-blur-md lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <div>
             <p className="font-[var(--font-display)] text-2xl text-[#f2dfbe]">fuxem</p>
@@ -314,7 +314,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#d5b06a]/30 bg-[#3b121f]/50 text-xs font-semibold text-[#f6e4be]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-xs font-semibold text-[#f4d5d5]">
               {initials}
             </div>
             <button
@@ -363,9 +363,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       </div>
 
       <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 sm:px-6 lg:pl-72 lg:pr-8 lg:pt-8">
-        <section className={`rounded-3xl border border-[#d5b06a]/18 bg-[linear-gradient(145deg,rgba(17,8,12,0.78),rgba(10,5,7,0.84))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.38)] transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+        <section className={`rounded-3xl border border-[#c85a5a]/25 bg-[linear-gradient(145deg,rgba(32,12,15,0.82),rgba(20,8,10,0.88))] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.42)] transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-xl font-semibold text-[#f6e4be]">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-xl font-semibold text-[#f4d5d5]">
               {initialData.profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={initialData.profile.avatarUrl} alt={`${headerName} avatar`} className="h-full w-full object-cover" />
@@ -393,12 +393,12 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {initialData.profile.gender ? (
-                  <span className="rounded-full border border-[#d5b06a]/28 bg-[#d5b06a]/10 px-2.5 py-1 text-[11px] text-[#f4dfb3]">
+                  <span className="rounded-full border border-[#c85a5a]/35 bg-[#c85a5a]/15 px-2.5 py-1 text-[11px] text-[#f4d5d5]">
                     {initialData.profile.gender}
                   </span>
                 ) : null}
                 {initialData.profile.sexualOrientation ? (
-                  <span className="rounded-full border border-[#d5b06a]/28 bg-[#d5b06a]/10 px-2.5 py-1 text-[11px] text-[#f4dfb3]">
+                  <span className="rounded-full border border-[#c85a5a]/35 bg-[#c85a5a]/15 px-2.5 py-1 text-[11px] text-[#f4d5d5]">
                     {initialData.profile.sexualOrientation}
                   </span>
                 ) : null}
@@ -411,7 +411,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
                   href={ROUTES.SEARCH}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#d5b06a]/45 bg-[linear-gradient(145deg,rgba(181,128,44,0.32),rgba(123,28,55,0.45))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#fae8c2] transition hover:border-[#e2c37f]/60 hover:brightness-110"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#c85a5a]/55 bg-[linear-gradient(145deg,rgba(200,90,90,0.38),rgba(140,40,50,0.5))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#f4d5d5] transition hover:border-[#d87070]/70 hover:brightness-110"
                 >
                   Search Members
                 </Link>
@@ -429,13 +429,13 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             <div className="rounded-2xl border border-white/12 bg-black/20 p-3">
               <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Personal passcode</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="rounded-lg border border-[#d5b06a]/30 bg-[#3b121f]/40 px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-[#f4dfb3]">
+                <span className="rounded-lg border border-[#c85a5a]/35 bg-[#5c1f1f]/50 px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-[#f4d5d5]">
                   {maskedPasscode}
                 </span>
                 <button
                   type="button"
                   onClick={copyPasscode}
-                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-[#d5b06a]/35 hover:text-[#f4dfb3]"
+                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-[#c85a5a]/40 hover:text-[#f4d5d5]"
                 >
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
@@ -462,15 +462,15 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         </section>
 
-        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/18 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.32)] transition-all delay-100 duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
+        <section className={`mt-6 rounded-3xl border border-white/10 bg-black/22 p-5 shadow-[0_20px_45px_rgba(0,0,0,0.38)] transition-all delay-100 duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 sm:p-6 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-[#d5b06a]/80">Members Near You</p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#c85a5a]/85">Members Near You</p>
               <h2 className="mt-1 text-2xl font-semibold text-stone-100">Fresh faces in your orbit</h2>
             </div>
             <Link
               href={ROUTES.SEARCH}
-              className="rounded-full border border-[#d5b06a]/35 bg-[#d5b06a]/12 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#f4dfb3] transition hover:border-[#e2c37f]/55 hover:bg-[#d5b06a]/18"
+              className="rounded-full border border-[#c85a5a]/40 bg-[#c85a5a]/15 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-[#f4d5d5] transition hover:border-[#d87070]/55 hover:bg-[#c85a5a]/22"
             >
               Browse all
             </Link>
@@ -481,10 +481,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <article
                 key={member.id}
                 style={{ transitionDelay: `${120 + index * 65}ms` }}
-                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(17,8,12,0.7),rgba(8,4,6,0.82))] p-4 transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 hover:-translate-y-0.5 hover:border-[#d5b06a]/35 hover:shadow-[0_18px_32px_rgba(0,0,0,0.32)] motion-reduce:hover:translate-y-0 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+                className={`rounded-2xl border border-white/10 bg-[linear-gradient(160deg,rgba(32,12,15,0.75),rgba(18,8,10,0.86))] p-4 transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 hover:-translate-y-0.5 hover:border-[#c85a5a]/40 hover:shadow-[0_18px_32px_rgba(0,0,0,0.38)] motion-reduce:hover:translate-y-0 ${isRevealed ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d5b06a]/35 bg-[#3b121f]/50 text-sm font-semibold text-[#f4dfb3]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#c85a5a]/40 bg-[#5c1f1f]/60 text-sm font-semibold text-[#f4d5d5]">
                     {getInitials(member.name)}
                   </div>
                   <div className="min-w-0">
@@ -506,9 +506,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   </Link>
                   <Link
                     href={ROUTES.MESSAGESS}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#d5b06a]/40 bg-[linear-gradient(145deg,rgba(181,128,44,0.35),rgba(123,28,55,0.5))] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fae8c2] shadow-[0_10px_20px_rgba(0,0,0,0.25)] transition hover:border-[#e2c37f]/55 hover:brightness-110"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#c85a5a]/50 bg-[linear-gradient(145deg,rgba(200,90,90,0.4),rgba(140,40,50,0.55))] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f4d5d5] shadow-[0_10px_20px_rgba(0,0,0,0.32)] transition hover:border-[#d87070]/65 hover:brightness-110"
                   >
-                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#f7dfa9]" aria-hidden="true" />
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#f4d5d5]" aria-hidden="true" />
                     Message
                   </Link>
                 </div>
