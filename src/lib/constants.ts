@@ -98,6 +98,7 @@ export const MESSAGES = {
   EMAIL_EXISTS: 'An account with this email already exists',
   NAME_EXISTS: 'That name is already in use',
   EMAIL_SENT: 'Check your email to continue',
+  EMAIL_SERVICE_UNAVAILABLE: 'Signup is temporarily unavailable because email delivery is not configured.',
   INVALID_TOKEN: 'This link is invalid or has already been used',
   TOKEN_EXPIRED: 'This link has expired. Please sign up again.',
   PIN_MISMATCH: 'PIN does not match. Please try again.',

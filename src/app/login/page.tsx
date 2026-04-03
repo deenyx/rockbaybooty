@@ -21,7 +21,9 @@ function LoginContent() {
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || ROUTES.DASHBOARD
   const urlError = searchParams.get('error') || ''
+  const verified = searchParams.get('verified') === '1'
 
+  const [name, setName] = useState('')
   const [passcode, setPasscode] = useState('')
   const [error, setError] = useState(urlError)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
@@ -39,7 +41,7 @@ function LoginContent() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: code, returnTo }),
+        body: JSON.stringify({ passcode: code, name: name.trim(), returnTo }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -89,12 +91,39 @@ function LoginContent() {
           onSubmit={handleSubmit}
           className="w-full max-w-xs space-y-5 rounded-2xl border border-white/10 bg-black/45 p-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)] backdrop-blur-md"
         >
+          {verified && (
+            <p className="rounded-xl border border-emerald-300/35 bg-emerald-400/12 px-3 py-2 text-center text-[11px] text-emerald-100">
+              Email verified. Enter your name and PIN to continue.
+            </p>
+          )}
+
+          <div>
+            <span
+              className="block text-center text-[8px] uppercase tracking-[0.28em] text-sky-200 mb-2"
+              style={{ fontFamily: CP }}
+            >
+              Name
+            </span>
+            <input
+              type="text"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setError('')
+              }}
+              placeholder="your first name"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm tracking-[0.08em] text-stone-100 outline-none placeholder:text-stone-500 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
+              style={{ fontFamily: CP }}
+            />
+          </div>
+
           <div>
             <span
               className="block text-center text-[8px] uppercase tracking-[0.28em] text-yellow-400 mb-2"
               style={{ fontFamily: CP }}
             >
-              PIN
+              PIN / Personal Code
             </span>
             <input
               type="password"
@@ -111,6 +140,9 @@ function LoginContent() {
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-center text-2xl tracking-[0.4em] text-stone-100 outline-none placeholder:text-stone-700 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
               style={{ fontFamily: CP }}
             />
+            <p className="mt-2 text-center text-[10px] tracking-wide text-stone-400" style={{ fontFamily: CP }}>
+              PIN login uses Name + PIN. Personal code can be entered directly.
+            </p>
           </div>
 
           {error && <ErrorMsg msg={error} />}

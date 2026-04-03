@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -125,6 +126,12 @@ export default function MembersGate({ initialError = '' }: MembersGateProps) {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
+      <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-stone-300">
+        <Link href={ROUTES.LOGIN} className="hover:text-white transition-colors">Log In</Link>
+        <span className="text-stone-500">•</span>
+        <Link href={ROUTES.SIGNUP} className="hover:text-white transition-colors">Sign Up</Link>
+      </div>
+
       <button
         type="button"
         onClick={toggleAccess}

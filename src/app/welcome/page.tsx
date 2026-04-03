@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import MembersGate from '@/app/_components/members-gate'
+import { ROUTES } from '@/lib/constants'
 
 type WelcomePageProps = {
   searchParams?: {
@@ -77,6 +79,27 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
         >
           Members Only
         </h1>
+
+        {searchParams?.verified === '1' && (
+          <p className="rounded-xl border border-emerald-300/35 bg-emerald-400/12 px-4 py-2 text-center text-xs tracking-wide text-emerald-100">
+            Email verified. You can log in now.
+          </p>
+        )}
+
+        <div className="grid w-[min(92vw,34rem)] gap-2 sm:grid-cols-2">
+          <Link
+            href={`${ROUTES.LOGIN}?returnTo=${encodeURIComponent(safeReturnTo)}`}
+            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/35 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-stone-100 transition hover:border-white/45 hover:bg-black/55"
+          >
+            Log In
+          </Link>
+          <Link
+            href={ROUTES.SIGNUP}
+            className="inline-flex items-center justify-center rounded-full border border-sky-300/30 bg-sky-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-100 transition hover:border-sky-200/55 hover:bg-sky-300/15"
+          >
+            Sign Up
+          </Link>
+        </div>
 
         <MembersGate
           initialError={searchParams?.error || ''}

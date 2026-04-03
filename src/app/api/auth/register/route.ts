@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
 
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         email,
         firstName: name,
@@ -136,7 +136,17 @@ export async function POST(request: NextRequest) {
         data: { emailVerified: true, emailVerificationToken: null },
       })
     } else {
-      await sendVerificationEmail(email, name, token)
+      try {
+        await sendVerificationEmail(email, name, token)
+      } catch (error) {
+        await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => undefined)
+
+        if (error instanceof Error && error.message === 'Email service is not configured') {
+          return NextResponse.json({ error: MESSAGES.EMAIL_SERVICE_UNAVAILABLE }, { status: 503 })
+        }
+
+        return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
+      }
     }
 
     return NextResponse.json(
