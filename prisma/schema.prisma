@@ -32,7 +32,7 @@ model User {
   lastName       String?
 
   // PIN-based auth
-  loginPin                   String?            // 4-digit login PIN, matched with name at login
+  loginPin                   String?   @unique  // 4-digit login PIN, assigned after email verification
   emailVerificationToken     String?   @unique
   emailVerificationExpiresAt DateTime?
 
@@ -42,13 +42,9 @@ model User {
   // Messages
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
-  outgoingFriendships Friendship[] @relation("OutgoingFriendships")
-  incomingFriendships Friendship[] @relation("IncomingFriendships")
-  videos         Video[]
 
   // Account Status
   status         String   @default("active") // active, suspended, deleted
-  isPremium      Boolean  @default(false)
   emailVerified  Boolean  @default(false)
   onboardingStep String   @default("passcode") // passcode, interview, completed
 
@@ -58,38 +54,6 @@ model User {
 
   @@index([personalCode])
   @@index([loginPin])
-}
-
-model Video {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String
-  description  String?
-  videoUrl     String   // URL to stored video file (we'll use base64 or external storage later)
-  thumbnailUrl String?
-  isPublic     Boolean  @default(false) // Only Premium users can set this to true
-  views        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model Friendship {
-  id          String   @id @default(cuid())
-  requesterId String
-  recipientId String
-  status      String   @default("pending") // pending, accepted, declined
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  requester User @relation("OutgoingFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
-  recipient User @relation("IncomingFriendships", fields: [recipientId], references: [id], onDelete: Cascade)
-
-  @@unique([requesterId, recipientId])
-  @@index([requesterId, status])
-  @@index([recipientId, status])
 }
 
 model Profile {
@@ -165,8 +129,7 @@ model Message {
   id          String    @id @default(cuid())
   senderId    String
   recipientId String
-  kind        String    @default("text")
-  body        String    @default("")
+  body        String
   readAt      DateTime?
   createdAt   DateTime  @default(now())
 

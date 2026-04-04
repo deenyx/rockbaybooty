@@ -19,30 +19,8 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM || SMTP_USER || 'noreply@rockbaybooty.com'
 const SITE_NAME = 'RockBayBooty'
 
-function getBaseUrl() {
-  const rawCandidates = [
-    process.env.NEXT_PUBLIC_API_URL,
-    process.env.APP_URL,
-    process.env.NEXTAUTH_URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-  ]
-
-  for (const candidate of rawCandidates) {
-    const value = candidate?.trim()
-    if (!value) {
-      continue
-    }
-
-    if (/^https?:\/\//i.test(value)) {
-      return value.replace(/\/$/, '')
-    }
-  }
-
-  return 'http://localhost:3000'
-}
-
 export async function sendVerificationEmail(to: string, firstName: string, token: string) {
-  const base = getBaseUrl()
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
   const link = `${base}/api/auth/verify-email?token=${token}`
 
   if (!SMTP_USER || !SMTP_PASS) {
@@ -94,28 +72,4 @@ export async function sendLoginAlertEmail(to: string, firstName: string) {
       </div>
     `,
   }).catch((err) => console.error('[sendLoginAlertEmail]', err))
-}
-
-export async function sendAssignedPinEmail(to: string, firstName: string, pin: string) {
-  if (!SMTP_USER || !SMTP_PASS) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[sendAssignedPinEmail] SMTP credentials not configured. Skipping assigned PIN email.')
-    }
-    return
-  }
-
-  await transporter.sendMail({
-    from: `${SITE_NAME} <${FROM}>`,
-    to,
-    subject: `Your login PIN — ${SITE_NAME}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0d0a0b;color:#f5f5f4;border-radius:12px;">
-        <h2 style="color:#f9a8d4;margin-bottom:8px;">Hey ${firstName}!</h2>
-        <p style="color:#a8a29e;font-size:14px;">Thanks for signing up.</p>
-        <p style="color:#a8a29e;font-size:14px;">You can use this PIN to log in:</p>
-        <p style="font-family:monospace;font-size:30px;letter-spacing:0.4em;color:#fda4af;margin:16px 0;">${pin}</p>
-        <p style="color:#78716c;font-size:12px;">At login, enter your PIN first, then your name.</p>
-      </div>
-    `,
-  })
 }

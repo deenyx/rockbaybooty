@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   LiveKitRoom,
@@ -16,9 +15,9 @@ import type { TrackReferenceOrPlaceholder } from '@livekit/components-react'
 import { RoomEvent, Track } from 'livekit-client'
 import type { Participant } from 'livekit-client'
 
-import { fetchChatRoomToken, fetchConversations } from '@/lib/api'
+import { fetchChatRoomToken } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
-import type { ChatRoomTokenResponse, Conversation, DirectMessage, LiveChatMessage } from '@/lib/types'
+import type { ChatRoomTokenResponse, LiveChatMessage } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Outer component — fetches token then mounts the LiveKit room
@@ -107,41 +106,7 @@ function RoomScreen() {
   const [isMicOn, setIsMicOn] = useState(false)
   const [messages, setMessages] = useState<LiveChatMessage[]>([])
   const [inputText, setInputText] = useState('')
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [isConversationsLoading, setIsConversationsLoading] = useState(true)
-  const [conversationsError, setConversationsError] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadConversations() {
-      try {
-        setIsConversationsLoading(true)
-        setConversationsError('')
-        const data = await fetchConversations()
-        if (!cancelled) {
-          setConversations(data.conversations.slice(0, 5))
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setConversationsError(
-            error instanceof Error ? error.message : 'Unable to load messages.'
-          )
-        }
-      } finally {
-        if (!cancelled) {
-          setIsConversationsLoading(false)
-        }
-      }
-    }
-
-    void loadConversations()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   // Receive ephemeral text messages via LiveKit data channel
   useEffect(() => {
@@ -315,77 +280,6 @@ function RoomScreen() {
             </ul>
           </div>
 
-          {/* Persistent DMs */}
-          <div className="border-b border-white/10 p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Direct messages</p>
-              <Link
-                href={ROUTES.MESSAGESS}
-                className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-200/80 transition hover:text-amber-100"
-              >
-                Open inbox
-              </Link>
-            </div>
-
-            {isConversationsLoading && (
-              <div className="flex justify-center py-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
-              </div>
-            )}
-
-            {!isConversationsLoading && conversationsError && (
-              <p className="text-xs text-rose-300/80">{conversationsError}</p>
-            )}
-
-            {!isConversationsLoading && !conversationsError && conversations.length === 0 && (
-              <p className="text-xs text-stone-600">No conversations yet</p>
-            )}
-
-            {!isConversationsLoading && conversations.length > 0 && (
-              <ul className="space-y-2">
-                {conversations.map((conversation) => (
-                  <li key={conversation.partnerId}>
-                    <Link
-                      href={`${ROUTES.MESSAGESS}/${conversation.partnerId}`}
-                      className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-2 py-2 transition hover:border-amber-200/35 hover:bg-white/[0.05]"
-                    >
-                      {conversation.partnerAvatarUrl ? (
-                        <div
-                          className="h-8 w-8 flex-none rounded-lg border border-white/20 bg-cover bg-center"
-                          style={{ backgroundImage: `url(${conversation.partnerAvatarUrl})` }}
-                        />
-                      ) : (
-                        <div className="flex h-8 w-8 flex-none items-center justify-center rounded-lg border border-white/20 bg-amber-500/20 text-[10px] font-semibold text-amber-100">
-                          {getInitials(conversation.partnerDisplayName || conversation.partnerUsername)}
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-xs font-semibold text-stone-200">
-                            {conversation.partnerDisplayName}
-                          </p>
-                          <p className="shrink-0 text-[10px] text-stone-500">
-                            {formatRelativeTime(conversation.lastMessage.createdAt)}
-                          </p>
-                        </div>
-                        <p className="truncate text-[11px] text-stone-400">
-                          {formatConversationPreview(conversation.lastMessage)}
-                        </p>
-                      </div>
-
-                      {conversation.unreadCount > 0 && (
-                        <span className="flex h-4 min-w-[1rem] flex-none items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-black">
-                          {conversation.unreadCount}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
           {/* Messages */}
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {messages.length === 0 && (
@@ -432,32 +326,6 @@ function RoomScreen() {
       </div>
     </div>
   )
-}
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((part) => part.trim()[0])
-    .filter(Boolean)
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
-function formatRelativeTime(isoString: string) {
-  const diff = Date.now() - new Date(isoString).getTime()
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-  return new Date(isoString).toLocaleDateString()
-}
-
-function formatConversationPreview(message: DirectMessage) {
-  return message.kind === 'poke' ? 'Sent a poke' : message.body
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

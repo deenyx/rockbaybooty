@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import prisma from '@/lib/prisma'
+import { PrismaClient } from '@prisma/client'
 
 import {
   AUTH_COOKIE_NAME,
@@ -10,6 +10,7 @@ import {
   MIN_AGE,
 } from '@/lib/constants'
 
+const prisma = new PrismaClient()
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
 
 function generatePersonalCode(): string {
@@ -138,5 +139,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Quick register error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }

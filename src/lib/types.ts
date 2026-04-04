@@ -139,15 +139,12 @@ export interface UpdateMemberProfileInput {
 
 export interface MemberSearchFilters {
   q?: string
-  location?: string
   minAge?: number
   maxAge?: number
   gender?: string
   orientation?: string
   lookingFor?: string[]
   onlineOnly?: boolean
-  hasPhoto?: boolean
-  lastActive?: 'today' | 'week' | 'any'
   limit?: number
 }
 
@@ -162,91 +159,10 @@ export interface MemberSearchResult {
   interests: string[]
   lookingFor: string[]
   isOnline: boolean
-  friendshipStatus: FriendshipStatus
 }
 
 export interface MemberSearchResponse {
   members: MemberSearchResult[]
-}
-
-export type FriendshipStatus = 'none' | 'outgoing_pending' | 'incoming_pending' | 'friends'
-
-export type FriendshipDecisionAction = 'accept' | 'decline' | 'cancel'
-
-export interface PendingFriendRequest {
-  id: string
-  createdAt: string
-  status: 'pending'
-  direction: 'incoming' | 'outgoing'
-  member: {
-    id: string
-    username: string
-    displayName: string
-    avatarUrl: string | null
-  }
-}
-
-export interface FriendRequestResponse {
-  friendship: {
-    id: string
-    requesterId: string
-    recipientId: string
-    status: 'pending' | 'accepted' | 'declined'
-    createdAt: string
-  }
-}
-
-export interface FriendRequestsResponse {
-  incoming: PendingFriendRequest[]
-  outgoing: PendingFriendRequest[]
-}
-
-export interface VideoFeedItem {
-  id: string
-  userId: string
-  title: string
-  description: string | null
-  videoUrl: string
-  thumbnailUrl: string | null
-  isPublic: boolean
-  views: number
-  createdAt: string
-  updatedAt: string
-  user: {
-    id: string
-    username: string
-    displayName: string
-    avatarUrl: string | null
-  }
-}
-
-export interface VideoListResponse {
-  videos: VideoFeedItem[]
-  isPremium?: boolean
-}
-
-export interface VideoResponse {
-  video: VideoFeedItem
-}
-
-export interface VideoViewResponse {
-  views: number
-}
-
-export interface CreateVideoInput {
-  title: string
-  description?: string
-  videoUrl: string
-  thumbnailUrl?: string
-  isPublic?: boolean
-}
-
-export interface UpdateVideoInput {
-  title?: string
-  description?: string
-  videoUrl?: string
-  thumbnailUrl?: string
-  isPublic?: boolean
 }
 
 export interface ChatRoomTokenResponse {
@@ -262,13 +178,10 @@ export interface LiveChatMessage {
   sentAt: number
 }
 
-export type MessageKind = 'text' | 'poke' | 'wink' | 'wave'
-
 export interface DirectMessage {
   id: string
   senderId: string
   recipientId: string
-  kind: MessageKind
   body: string
   readAt: string | null
   createdAt: string
