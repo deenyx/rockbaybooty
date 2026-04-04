@@ -46,7 +46,7 @@ export async function apiCall(
 }
 
 export async function onboard(data: {
-  passcode: string
+  passcode?: string
   dateOfBirth: string
   displayName: string
   username: string

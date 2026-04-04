@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
 
     // Shortcut: 0000 starts account creation.
     if (code === '0000') {
-      const signupPath = ROUTES.SIGNUP
+      const signupPath = ROUTES.ONBOARDING
 
       if (requestKind === 'json') {
         return NextResponse.json(

@@ -69,7 +69,6 @@ function estimateDataUrlSize(dataUrl: string): number {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const normalizedPasscode = body.passcode?.trim().toUpperCase()
     const username = body.username?.trim().toLowerCase()
     const displayName = body.displayName?.trim()
     const dateOfBirthInput = body.dateOfBirth?.trim()
@@ -89,25 +88,6 @@ export async function POST(request: NextRequest) {
     const {
       email,
     } = body
-
-    // Validate passcode
-    if (!normalizedPasscode) {
-      return NextResponse.json(
-        { error: MESSAGES.PASSCODE_REQUIRED },
-        { status: 400 }
-      )
-    }
-
-    const inviteCode = await prisma.inviteCode.findUnique({
-      where: { code: normalizedPasscode },
-    })
-
-    if (!inviteCode || inviteCode.status !== 'active') {
-      return NextResponse.json(
-        { error: MESSAGES.PASSCODE_INVALID },
-        { status: 401 }
-      )
-    }
 
     if (!dateOfBirthInput) {
       return NextResponse.json(
@@ -250,16 +230,6 @@ export async function POST(request: NextRequest) {
         avatarUrl: profilePhoto,
         photoUrls: profilePhoto ? [profilePhoto] : [],
         isPublic: false,
-      },
-    })
-
-    // Mark invite code as used
-    await prisma.inviteCode.update({
-      where: { code: normalizedPasscode },
-      data: {
-        usedAt: new Date(),
-        usedBy: user.id,
-        status: 'used',
       },
     })
 

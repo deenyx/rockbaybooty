@@ -1,52 +1,78 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { Suspense, useMemo, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
-import { MIN_AGE, NEW_MEMBER_PIN } from '@/lib/constants'
+import { MESSAGES, MIN_AGE, ROUTES } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
-const inputCls =
-  'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none placeholder:text-stone-600 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition'
+type RegisterResponse = {
+  message?: string
+  pin?: string
+  error?: string
+}
 
-const submitCls =
-  'w-full rounded-full border border-pink-300/20 bg-gradient-to-r from-pink-600/90 to-rose-700/90 py-3 text-sm tracking-wide text-stone-100 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-wait'
+function getServerError(errorCode: string | null): string {
+  if (errorCode === 'expired') {
+    return MESSAGES.TOKEN_EXPIRED
+  }
 
-export default function SignupPage() {
+  if (errorCode === 'invalid_name') {
+    return MESSAGES.NAME_MISMATCH
+  }
+
+  return ''
+}
+
+function SignupContent() {
+  const searchParams = useSearchParams()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
-  const [error, setError] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'sent'>('idle')
-  const [assignedPin, setAssignedPin] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle')
+  const [error, setError] = useState(getServerError(searchParams.get('error')))
+  const [successMessage, setSuccessMessage] = useState('')
+  const [pin, setPin] = useState('')
 
-  function calculateAgeFromDob(dobValue: string) {
-    const dob = new Date(`${dobValue}T00:00:00.000Z`)
+  const maxDob = useMemo(() => {
     const now = new Date()
+    now.setFullYear(now.getFullYear() - MIN_AGE)
+    return now.toISOString().split('T')[0]
+  }, [])
 
-    let age = now.getFullYear() - dob.getUTCFullYear()
-    const monthDifference = now.getMonth() - dob.getUTCMonth()
-    const dayDifference = now.getDate() - dob.getUTCDate()
-
-    if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
-      age -= 1
+  const validateForm = (): string => {
+    if (!name.trim() || !email.trim() || !dateOfBirth) {
+      return MESSAGES.FIELD_REQUIRED
     }
 
-    return age
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase())
+    if (!validEmail) {
+      return MESSAGES.INVALID_EMAIL
+    }
+
+    const dob = new Date(`${dateOfBirth}T00:00:00.000Z`)
+    if (Number.isNaN(dob.getTime())) {
+      return MESSAGES.INVALID_DATE_OF_BIRTH
+    }
+
+    const ageDate = new Date()
+    ageDate.setFullYear(ageDate.getFullYear() - MIN_AGE)
+    if (dob > ageDate) {
+      return MESSAGES.INVALID_DATE_OF_BIRTH
+    }
+
+    return ''
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const submittedName = name.trim()
-    const mail = email.trim().toLowerCase()
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
 
-    if (!submittedName || !mail || !dateOfBirth) {
-      setError('All fields are required.')
-      return
-    }
-
-    if (calculateAgeFromDob(dateOfBirth) < MIN_AGE) {
-      setError('You must be over 18 years old.')
+    const validationError = validateForm()
+    if (validationError) {
+      setError(validationError)
       return
     }
 
@@ -54,167 +80,182 @@ export default function SignupPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: submittedName, email: mail, dateOfBirth }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          dateOfBirth,
+        }),
       })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong. Please try again.')
+
+      const data = (await response.json()) as RegisterResponse
+
+      if (!response.ok) {
+        setError(data.error || MESSAGES.ERROR_GENERAL)
         setStatus('idle')
         return
       }
-      setAssignedPin(data.pin || NEW_MEMBER_PIN)
-      setStatus('sent')
+
+      setSuccessMessage(data.message || MESSAGES.EMAIL_SENT)
+      setPin(data.pin || '')
+      setStatus('success')
     } catch {
-      setError('Network error. Please try again.')
+      setError(MESSAGES.ERROR_GENERAL)
       setStatus('idle')
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#060304] flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* Logo / heading */}
-        <div className="mb-8 text-center">
-          <h1
-            className="text-xl text-stone-200 tracking-[0.18em]"
-            style={{ fontFamily: CP }}
-          >
-            request access
-          </h1>
-          <p
-            className="mt-1 text-[9px] uppercase tracking-[0.22em] text-stone-600"
-            style={{ fontFamily: CP }}
-          >
-            members only
-          </p>
-        </div>
+    <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
+      <div className="absolute inset-0">
+        <Image
+          src="/welcome1.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: 'center 18%' }}
+        />
+      </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/55 px-8 py-8 backdrop-blur-md">
-          {status === 'sent' ? (
-            <div className="space-y-4 text-center">
-              <p
-                className="text-[9px] uppercase tracking-[0.28em] text-stone-500"
-                style={{ fontFamily: CP }}
-              >
-                your pin is ready
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(circle at 18% 16%, rgba(56,189,248,0.18), transparent 42%), radial-gradient(circle at 82% 14%, rgba(244,114,182,0.15), transparent 36%), linear-gradient(180deg, rgba(2,6,23,0.72), rgba(2,6,23,0.97))',
+        }}
+      />
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+        <div className="w-full max-w-xs rounded-2xl border border-white/8 bg-black/25 p-5 shadow-[0_12px_35px_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-6">
+          <h1
+            className="text-center text-xl tracking-[0.2em] text-stone-100"
+            style={{ fontFamily: CP }}
+          >
+            Sign Up
+          </h1>
+          <p className="mt-2 text-center text-xs text-stone-300" style={{ fontFamily: CP }}>
+            No invite code needed. Create your account below.
+          </p>
+
+          {status === 'success' ? (
+            <div className="mt-6 space-y-4">
+              <p className="rounded-xl border border-emerald-300/35 bg-emerald-400/12 px-4 py-3 text-sm text-emerald-100">
+                {successMessage}
               </p>
-              <p className="text-4xl tracking-[0.6em] text-pink-300 font-mono">
-                {assignedPin || NEW_MEMBER_PIN}
-              </p>
-              <p className="text-sm leading-relaxed text-stone-400" style={{ fontFamily: CP }}>
-                We sent a verification link to{' '}
-                <span className="text-pink-300">{email.trim().toLowerCase()}</span>.
-                <br />
-                Verify that email to activate this PIN.
-              </p>
-              <p
-                className="text-[9px] leading-relaxed text-stone-600"
-                style={{ fontFamily: CP }}
-              >
-                Come back, enter {assignedPin || NEW_MEMBER_PIN}, then enter your name.
-              </p>
+
+              {!!pin && (
+                <div className="rounded-xl border border-amber-200/30 bg-amber-100/10 px-4 py-3 text-center">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100/80" style={{ fontFamily: CP }}>
+                    Starter PIN
+                  </p>
+                  <p className="mt-2 text-2xl tracking-[0.35em] text-amber-100">{pin}</p>
+                </div>
+              )}
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Link
+                  href={ROUTES.LOGIN}
+                  className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-100 transition hover:bg-white/15"
+                >
+                  Go To Login
+                </Link>
+                <Link
+                  href={ROUTES.WELCOME}
+                  className="inline-flex items-center justify-center rounded-full border border-sky-300/25 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100 transition hover:bg-sky-300/15"
+                >
+                  Back To Welcome
+                </Link>
+              </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label
-                  className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
-                  style={{ fontFamily: CP }}
-                  htmlFor="name"
-                >
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <label className="block space-y-1">
+                <span className="block text-[10px] uppercase tracking-[0.22em] text-stone-400" style={{ fontFamily: CP }}>
                   Name
-                </label>
+                </span>
                 <input
-                  id="name"
                   type="text"
-                  required
                   autoComplete="name"
-                  autoFocus
                   value={name}
-                  onChange={(e) => { setName(e.target.value); setError('') }}
-                  placeholder="your name"
-                  className={inputCls}
-                  style={{ fontFamily: CP }}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
-                  style={{ fontFamily: CP }}
-                  htmlFor="dateOfBirth"
-                >
-                  Date of Birth
-                </label>
-                <input
-                  id="dateOfBirth"
-                  type="date"
-                  required
-                  value={dateOfBirth}
-                  onChange={(e) => {
-                    setDateOfBirth(e.target.value)
+                  onChange={(event) => {
+                    setName(event.target.value)
                     setError('')
                   }}
-                  className={inputCls}
-                  style={{ fontFamily: CP }}
+                  placeholder="Your first name"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
                 />
-                <p className="mt-1 text-[10px] text-stone-500" style={{ fontFamily: CP }}>
-                  Must be over 18.
-                </p>
-              </div>
+              </label>
 
-              <div>
-                <label
-                  className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
-                  style={{ fontFamily: CP }}
-                  htmlFor="email"
-                >
+              <label className="block space-y-1">
+                <span className="block text-[10px] uppercase tracking-[0.22em] text-stone-400" style={{ fontFamily: CP }}>
                   Email
-                </label>
+                </span>
                 <input
-                  id="email"
                   type="email"
-                  required
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError('') }}
-                  placeholder="your@email.com"
-                  className={inputCls}
-                  style={{ fontFamily: CP }}
+                  onChange={(event) => {
+                    setEmail(event.target.value)
+                    setError('')
+                  }}
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
                 />
-              </div>
+              </label>
+
+              <label className="block space-y-1">
+                <span className="block text-[10px] uppercase tracking-[0.22em] text-stone-400" style={{ fontFamily: CP }}>
+                  Date Of Birth
+                </span>
+                <input
+                  type="date"
+                  max={maxDob}
+                  value={dateOfBirth}
+                  onChange={(event) => {
+                    setDateOfBirth(event.target.value)
+                    setError('')
+                  }}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
+                />
+                <p className="text-[11px] text-stone-500">Must be at least {MIN_AGE}+ years old.</p>
+              </label>
 
               {error && (
-                <p className="rounded-xl border border-rose-500/25 bg-rose-950/50 px-3 py-2 text-center text-[10px] text-rose-300">
+                <p className="rounded-xl border border-rose-500/25 bg-rose-950/50 px-3 py-2 text-center text-[11px] text-rose-300">
                   {error}
                 </p>
               )}
 
               <button
                 type="submit"
-                disabled={status !== 'idle'}
-                className={submitCls}
+                disabled={status === 'loading'}
+                className="w-full rounded-full border border-pink-300/20 bg-gradient-to-r from-pink-600/90 to-rose-700/90 py-3 text-sm tracking-wide text-stone-100 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-70"
                 style={{ fontFamily: CP }}
               >
-                {status === 'loading' ? 'sending…' : 'send verification email'}
+                {status === 'loading' ? 'creating account...' : 'create account'}
               </button>
+
+              <p className="text-center text-[10px] uppercase tracking-[0.2em] text-stone-500" style={{ fontFamily: CP }}>
+                <Link href={ROUTES.LOGIN} className="hover:text-stone-300 transition-colors">
+                  already a member? log in
+                </Link>
+              </p>
             </form>
           )}
         </div>
-
-        <p
-          className="mt-6 text-center text-[9px] uppercase tracking-[0.22em] text-stone-600"
-          style={{ fontFamily: CP }}
-        >
-          already have a pin?{' '}
-          <a href="/welcome" className="text-pink-400/70 hover:text-pink-300 transition-colors">
-            log in
-          </a>
-        </p>
       </div>
-    </main>
+    </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupContent />
+    </Suspense>
   )
 }

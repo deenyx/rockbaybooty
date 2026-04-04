@@ -22,9 +22,6 @@ type MembersGateProps = {
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 const PASSCODE_PATTERN = /^[A-Z0-9]{6,8}$/
 
-const accessButtonCls =
-  'inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-10 py-4 text-2xl font-medium text-white/40 backdrop-blur-sm transition hover:bg-white/10 hover:text-white/60'
-
 const cardCls =
   'w-[min(92vw,34rem)] rounded-[1.8rem] border border-white/15 bg-black/45 p-5 backdrop-blur-md sm:p-6'
 
@@ -45,19 +42,12 @@ function ErrorMessage({ message }: { message: string }) {
 export default function MembersGate({ initialError = '' }: MembersGateProps) {
   const router = useRouter()
 
-  const [isAccessOpen, setIsAccessOpen] = useState(false)
   const [identity, setIdentity] = useState('')
   const [passcode, setPasscode] = useState('')
   const [quickPin, setQuickPin] = useState('')
   const [error, setError] = useState(initialError)
   const [quickPinError, setQuickPinError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
-
-  const toggleAccess = () => {
-    setIsAccessOpen((previousValue) => !previousValue)
-    setError('')
-    setQuickPinError('')
-  }
 
   const handlePrimarySubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -132,22 +122,12 @@ export default function MembersGate({ initialError = '' }: MembersGateProps) {
         <Link href={ROUTES.SIGNUP} className="hover:text-white transition-colors">Sign Up</Link>
       </div>
 
-      <button
-        type="button"
-        onClick={toggleAccess}
-        className={accessButtonCls}
-        style={{ fontFamily: 'SignPainter, SignPainter-HouseScript, "Snell Roundhand", "Bradley Hand", "Brush Script MT", cursive', letterSpacing: '0.01em' }}
-      >
-        Access
-      </button>
-
-      {isAccessOpen && (
-        <div className={cardCls}>
-          <div className="grid gap-5 sm:grid-cols-[1.4fr_1fr]">
-            <form onSubmit={handlePrimarySubmit} className="space-y-3">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-stone-400" style={{ fontFamily: CP }}>
-                Guest Access
-              </p>
+      <div className={cardCls}>
+        <div className="grid gap-5 sm:grid-cols-[1.4fr_1fr]">
+          <form onSubmit={handlePrimarySubmit} className="space-y-3">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-stone-400" style={{ fontFamily: CP }}>
+              Member Login
+            </p>
 
               <label className="space-y-1">
                 <span className="block text-[9px] uppercase tracking-[0.22em] text-stone-500" style={{ fontFamily: CP }}>
@@ -188,45 +168,44 @@ export default function MembersGate({ initialError = '' }: MembersGateProps) {
 
               {error && <ErrorMessage message={error} />}
 
-              <button type="submit" disabled={status !== 'idle'} className={actionButtonCls}>
-                {status === 'loading' ? 'Checking access...' : 'Continue to onboarding'}
-              </button>
-            </form>
+            <button type="submit" disabled={status !== 'idle'} className={actionButtonCls}>
+              {status === 'loading' ? 'Checking...' : 'Continue to onboarding'}
+            </button>
+          </form>
 
-            <form onSubmit={handleQuickPinSubmit} className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400" style={{ fontFamily: CP }}>
-                I have PIN
-              </p>
+          <form onSubmit={handleQuickPinSubmit} className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400" style={{ fontFamily: CP }}>
+              I have PIN
+            </p>
 
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={4}
-                value={quickPin}
-                onChange={(event) => {
-                  setQuickPin(event.target.value.replace(/\D/g, '').slice(0, 4))
-                  setQuickPinError('')
-                }}
-                placeholder="0000"
-                className={inputCls + ' text-center text-base tracking-[0.45em]'}
-              />
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              value={quickPin}
+              onChange={(event) => {
+                setQuickPin(event.target.value.replace(/\D/g, '').slice(0, 4))
+                setQuickPinError('')
+              }}
+              placeholder="0000"
+              className={inputCls + ' text-center text-base tracking-[0.45em]'}
+            />
 
-              {quickPinError && <ErrorMessage message={quickPinError} />}
+            {quickPinError && <ErrorMessage message={quickPinError} />}
 
-              <button
-                type="submit"
-                className="inline-flex w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-100 transition hover:bg-white/15"
-              >
-                Quick join
-              </button>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-100 transition hover:bg-white/15"
+            >
+              Quick join
+            </button>
 
-              <p className="text-center text-[9px] uppercase tracking-[0.18em] text-stone-500" style={{ fontFamily: CP }}>
-                Temporary PIN: {QUICK_JOIN_PIN}
-              </p>
-            </form>
-          </div>
+            <p className="text-center text-[9px] uppercase tracking-[0.18em] text-stone-500" style={{ fontFamily: CP }}>
+              Temporary PIN: {QUICK_JOIN_PIN}
+            </p>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   )
 }

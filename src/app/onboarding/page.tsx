@@ -5,7 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { checkUsernameAvailability, onboard, validatePasscode } from '@/lib/api'
+import { checkUsernameAvailability, onboard } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   INTEREST_TAG_OPTIONS,
@@ -142,8 +142,6 @@ function OnboardingContent() {
   const [usernameState, setUsernameState] = useState<
     'idle' | 'checking' | 'available' | 'taken' | 'invalid'
   >('idle')
-  const [inviteState, setInviteState] = useState<'checking' | 'valid' | 'invalid'>('checking')
-  const [inviteMessage, setInviteMessage] = useState('Verifying your invite passcode...')
 
   const currentStepConfig = STEPS[currentStep]
   const progress = ((currentStep + 1) / STEPS.length) * 100
@@ -171,44 +169,6 @@ function OnboardingContent() {
     () => [formData.city, formData.state, formData.country].filter(Boolean).join(', '),
     [formData.city, formData.state, formData.country]
   )
-
-  useEffect(() => {
-    let isMounted = true
-
-    const verifyInvite = async () => {
-      if (!passcode) {
-        if (isMounted) {
-          setInviteState('invalid')
-          setInviteMessage(MESSAGES.PASSCODE_GATE_INVALID)
-        }
-        return
-      }
-
-      try {
-        await validatePasscode(passcode)
-
-        if (isMounted) {
-          setInviteState('valid')
-          setInviteMessage('Invite verified. Continue your profile setup below.')
-        }
-      } catch (error) {
-        if (isMounted) {
-          setInviteState('invalid')
-          setInviteMessage(
-            error instanceof Error && error.message
-              ? error.message
-              : MESSAGES.PASSCODE_GATE_INVALID
-          )
-        }
-      }
-    }
-
-    verifyInvite()
-
-    return () => {
-      isMounted = false
-    }
-  }, [passcode])
 
   useEffect(() => {
     if (!prefilledDob || !/^\d{4}-\d{2}-\d{2}$/.test(prefilledDob)) {
@@ -422,15 +382,10 @@ function OnboardingContent() {
   }
 
   const handleSubmit = async () => {
-    if (!passcode) {
-      setErrors({ submit: MESSAGES.PASSCODE_REQUIRED })
-      return
-    }
-
     setIsLoading(true)
     try {
       const response = await onboard({
-        passcode,
+        passcode: passcode || undefined,
         dateOfBirth: formData.dateOfBirth,
         displayName: formData.displayName.trim(),
         username: formData.username.trim().toLowerCase(),
@@ -782,21 +737,8 @@ function OnboardingContent() {
           <h1 className="mb-3 text-2xl font-semibold text-white">Your Private Interview</h1>
           <p className="mb-4 text-sm text-stone-200/80">A few intentional steps and your profile is live.</p>
 
-          <div
-            className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
-              inviteState === 'valid'
-                ? 'border-amber-200/35 bg-amber-200/12 text-amber-100'
-                : inviteState === 'invalid'
-                  ? 'border-[#b86a7b]/40 bg-[#5f1e30]/45 text-rose-100'
-                  : 'border-amber-100/30 bg-white/10 text-amber-50'
-            }`}
-          >
-            <p className="flex items-center gap-2">
-              {inviteState === 'checking' && (
-                <span className="h-3.5 w-3.5 rounded-full border-2 border-amber-200/40 border-t-amber-100 animate-spin" />
-              )}
-              <span>{inviteMessage}</span>
-            </p>
+          <div className="mb-4 rounded-xl border border-amber-100/30 bg-white/10 px-4 py-3 text-sm text-amber-50">
+            <p>Signup is open. Complete the steps below to create your member profile.</p>
           </div>
 
           <div className="h-2 w-full rounded-full bg-white/15">
@@ -826,23 +768,7 @@ function OnboardingContent() {
 
       {/* Form */}
       <div className="max-w-md mx-auto px-4 py-12">
-        {inviteState === 'invalid' ? (
-          <div className="rounded-2xl border border-[#a85f72]/35 bg-[#160c0f]/90 p-8 text-center shadow-2xl">
-            <h2 className="text-xl font-semibold text-rose-100">Invite required</h2>
-            <p className="mt-3 text-sm text-rose-100/80">{inviteMessage}</p>
-            <button
-              onClick={() => router.push(ROUTES.HOME)}
-              className="mt-6 inline-flex items-center justify-center rounded-xl border border-amber-200/25 bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-50 transition hover:brightness-110"
-            >
-              Return to landing page
-            </button>
-          </div>
-        ) : inviteState === 'checking' ? (
-          <div className="rounded-2xl border border-white/15 bg-[#130b0e]/85 p-8 text-center shadow-2xl">
-            <div className="mx-auto h-7 w-7 rounded-full border-2 border-amber-100/35 border-t-amber-100 animate-spin" />
-            <p className="mt-4 text-stone-200/85">Checking your invite access...</p>
-          </div>
-        ) : generatedPasscode ? (
+        {generatedPasscode ? (
           <div className="rounded-2xl border border-amber-100/20 bg-[#130c0e]/92 p-8 text-center shadow-2xl">
             <p className="text-xs uppercase tracking-[0.2em] text-amber-200/80">Profile Created</p>
             <h2 className="mt-2 text-2xl font-bold text-stone-100">Your Personal Passcode</h2>
@@ -907,7 +833,7 @@ function OnboardingContent() {
             </button>
             <button
               onClick={handleNext}
-              disabled={isLoading || inviteState !== 'valid'}
+              disabled={isLoading}
               className="flex-1 rounded-xl bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-4 py-2.5 text-sm font-semibold text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? 'Creating profile...' : nextButtonLabel}
