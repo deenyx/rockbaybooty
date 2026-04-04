@@ -229,7 +229,7 @@ function RoomScreen() {
   const onlineCount = participants.length
 
   return (
-    <div className="flex h-dvh flex-col bg-[radial-gradient(circle_at_top,_rgba(255,180,0,0.08),_transparent_34%),linear-gradient(160deg,#0b0608_18%,#1a0b10_60%,#341113_100%)] text-stone-100">
+    <div className="flex h-dvh flex-col bg-[linear-gradient(165deg,rgba(8,4,7,0.76),rgba(20,6,10,0.72)),url('/3.jpg')] bg-cover bg-center bg-no-repeat text-stone-100">
       {/* ── Header ── */}
       <header className="flex flex-shrink-0 items-center justify-between border-b border-white/10 bg-black/20 px-4 py-3 backdrop-blur">
         <div>

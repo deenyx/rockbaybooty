@@ -68,11 +68,23 @@ export async function POST(request: NextRequest) {
 
     const recipient = await prisma.user.findUnique({
       where: { id: recipientId },
-      select: { id: true, status: true },
-    })
+      select: {
+        id: true,
+        status: true,
+        profile: {
+          select: {
+            allowFriendRequests: true,
+          },
+        },
+      },
+    } as never) as { id: string; status: string; profile: { allowFriendRequests: boolean | null } | null } | null
 
     if (!recipient || recipient.status !== 'active') {
       return NextResponse.json({ error: MESSAGES.FRIEND_REQUEST_INVALID_TARGET }, { status: 404 })
+    }
+
+    if (recipient.profile?.allowFriendRequests === false) {
+      return NextResponse.json({ error: MESSAGES.FRIEND_REQUESTS_DISABLED }, { status: 403 })
     }
 
     const existing = await prisma.friendship.findMany({

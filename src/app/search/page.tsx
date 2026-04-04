@@ -19,6 +19,7 @@ import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
+  { label: 'Settings', href: ROUTES.SETTINGS },
   { label: 'Search', href: ROUTES.SEARCH },
   { label: 'Videos', href: ROUTES.VIDEOS },
   { label: 'Messages', href: ROUTES.MESSAGESS },
@@ -72,6 +73,15 @@ function NavIcon({ label }: { label: string }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <circle cx="11" cy="11" r="6.5" />
         <path d="m16 16 4.5 4.5" />
+      </svg>
+    )
+  }
+
+  if (label === 'Settings') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.36.31.76.33 1.17V10a2 2 0 0 1 0 4h-.09c-.41.02-.81.13-1.17.33z" />
       </svg>
     )
   }

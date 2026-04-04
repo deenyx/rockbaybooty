@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { ROUTES } from '@/lib/constants'
 
@@ -37,6 +37,7 @@ type DashboardClientProps = {
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: ROUTES.DASHBOARD },
+  { label: 'Settings', href: ROUTES.SETTINGS },
   { label: 'Search', href: ROUTES.SEARCH },
   { label: 'Videos', href: ROUTES.VIDEOS },
   { label: 'Messages', href: ROUTES.MESSAGESS },
@@ -55,22 +56,6 @@ function getInitials(name: string) {
     .toUpperCase()
 }
 
-function maskPersonalCode(code: string) {
-  if (code.length <= 4) {
-    return code
-  }
-
-  return '•'.repeat(code.length - 4) + code.slice(-4)
-}
-
-function getHeaderName(user: DashboardViewData['user']) {
-  const candidates = [user.firstName, user.displayName, user.username]
-    .map((value) => value.trim())
-    .filter(Boolean)
-
-  return candidates[0] || 'Member'
-}
-
 function NavIcon({ label }: { label: string }) {
   if (label === 'Dashboard') {
     return (
@@ -86,6 +71,15 @@ function NavIcon({ label }: { label: string }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <circle cx="11" cy="11" r="6.5" />
         <path d="m16 16 4.5 4.5" />
+      </svg>
+    )
+  }
+
+  if (label === 'Settings') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 .33 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.36.31.76.33 1.17V10a2 2 0 0 1 0 4h-.09c-.41.02-.81.13-1.17.33z" />
       </svg>
     )
   }
@@ -223,16 +217,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [copied, setCopied] = useState(false)
-
-  const headerName = useMemo(() => getHeaderName(initialData.user), [initialData.user])
   const fullName = useMemo(() => initialData.user.displayName || initialData.user.firstName || initialData.user.username, [initialData.user])
   const initials = useMemo(() => getInitials(fullName || 'Member'), [fullName])
-  const maskedPasscode = useMemo(() => maskPersonalCode(initialData.user.personalCode), [initialData.user.personalCode])
-  const location = useMemo(
-    () => initialData.profile.location || [initialData.profile.city, initialData.profile.state, initialData.profile.country].filter(Boolean).join(', '),
-    [initialData.profile]
-  )
 
   const handleLogout = async () => {
     try {
@@ -242,16 +228,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     }
 
     router.push(ROUTES.WELCOME)
-  }
-
-  const copyPasscode = async () => {
-    try {
-      await navigator.clipboard.writeText(initialData.user.personalCode)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
-    } catch {
-      setCopied(false)
-    }
   }
 
   return (
@@ -272,107 +248,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         />
       </div>
 
-      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-8">
-        <section className="rounded-3xl border border-white/12 bg-black/30 p-5 shadow-[0_8px_22px_rgba(0,0,0,0.22)] sm:p-6">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/[0.04] text-xl font-semibold text-stone-100">
-              {initialData.profile.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={initialData.profile.avatarUrl} alt={`${headerName} avatar`} className="h-full w-full object-cover" />
-              ) : (
-                <span>{initials}</span>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">Welcome back</p>
-              <h1 className="mt-1 text-3xl font-semibold text-stone-50">{headerName}</h1>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {initialData.profile.age ? (
-                  <span className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1 text-xs text-stone-200">
-                    {initialData.profile.age} years old
-                  </span>
-                ) : null}
-                {location ? (
-                  <span className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1 text-xs text-stone-200">
-                    {location}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {initialData.profile.gender ? (
-                  <span className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200">
-                    {initialData.profile.gender}
-                  </span>
-                ) : null}
-                {initialData.profile.sexualOrientation ? (
-                  <span className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200">
-                    {initialData.profile.sexualOrientation}
-                  </span>
-                ) : null}
-              </div>
-
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-stone-300">
-                {initialData.profile.bio.trim() || 'Tell members a little about your energy, style, and what kind of connection you enjoy.'}
-              </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-4">
-                <Link
-                  href={ROUTES.SEARCH}
-                  className="text-sm font-medium text-stone-200 underline decoration-white/35 underline-offset-4 transition hover:text-white hover:decoration-white"
-                >
-                  Search
-                </Link>
-                <Link
-                  href={ROUTES.MESSAGESS}
-                  className="text-sm font-medium text-stone-300 underline decoration-white/25 underline-offset-4 transition hover:text-white hover:decoration-white"
-                >
-                  Open Inbox
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/12 bg-black/25 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Personal passcode</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm tracking-[0.22em] text-stone-100">
-                  {maskedPasscode}
-                </span>
-                <button
-                  type="button"
-                  onClick={copyPasscode}
-                  className="rounded-lg border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-stone-200 transition hover:border-white/25 hover:text-stone-100"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/12 bg-black/25 p-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-stone-400">Looking for</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {initialData.profile.lookingFor.length > 0 ? (
-                  initialData.profile.lookingFor.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-[11px] text-stone-200"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-stone-400">Add your intentions in Profile to improve matches.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </main>
+      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-8" />
     </div>
   )
 }

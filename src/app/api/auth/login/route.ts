@@ -349,8 +349,13 @@ export async function POST(request: NextRequest) {
       { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
     )
 
+    const profileSettings = await prisma.profile.findUnique({
+      where: { userId: user.id },
+      select: { emailLoginAlerts: true },
+    })
+
     // Send login alert in background — do not await
-    if (user.email) {
+    if (user.email && profileSettings?.emailLoginAlerts !== false) {
       sendLoginAlertEmail(user.email, user.firstName ?? user.displayName)
     }
 

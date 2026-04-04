@@ -144,11 +144,22 @@ export async function POST(request: NextRequest) {
 
     const recipient = await prisma.user.findUnique({
       where: { id: recipientId },
-      select: { id: true },
-    })
+      select: {
+        id: true,
+        profile: {
+          select: {
+            allowDirectMessages: true,
+          },
+        },
+      },
+    } as never) as { id: string; profile: { allowDirectMessages: boolean | null } | null } | null
 
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient not found' }, { status: 404 })
+    }
+
+    if (recipient.profile?.allowDirectMessages === false) {
+      return NextResponse.json({ error: MESSAGES.DIRECT_MESSAGES_DISABLED }, { status: 403 })
     }
 
     const message = await prisma.message.create({

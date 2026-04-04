@@ -137,6 +137,30 @@ export interface UpdateMemberProfileInput {
   avatarUrl?: string
 }
 
+export interface MemberSettings {
+  isPublic: boolean
+  allowDirectMessages: boolean
+  allowFriendRequests: boolean
+  showOnlineStatus: boolean
+  emailLoginAlerts: boolean
+}
+
+export interface MemberSettingsResponse {
+  settings: MemberSettings
+}
+
+export interface UpdateMemberSettingsInput {
+  isPublic?: boolean
+  allowDirectMessages?: boolean
+  allowFriendRequests?: boolean
+  showOnlineStatus?: boolean
+  emailLoginAlerts?: boolean
+}
+
+export interface AccountActionResponse {
+  message: string
+}
+
 export interface MemberSearchFilters {
   q?: string
   location?: string

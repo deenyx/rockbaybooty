@@ -1,6 +1,7 @@
 // Utility functions for API calls
 
 import type {
+  AccountActionResponse,
   AuthResponse,
   ChatRoomTokenResponse,
   CreateVideoInput,
@@ -13,8 +14,10 @@ import type {
   MemberSearchFilters,
   MemberSearchResponse,
   MemberProfileResponse,
+  MemberSettingsResponse,
   PasscodeValidationResponse,
   SendMessageResponse,
+  UpdateMemberSettingsInput,
   UpdateVideoInput,
   VideoListResponse,
   VideoResponse,
@@ -107,6 +110,35 @@ export async function updateMemberProfile(
   return apiCall('/api/member/profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
+  })
+}
+
+export async function fetchMemberSettings(): Promise<MemberSettingsResponse> {
+  return apiCall('/api/member/settings', {
+    method: 'GET',
+  })
+}
+
+export async function updateMemberSettings(
+  data: UpdateMemberSettingsInput
+): Promise<MemberSettingsResponse> {
+  return apiCall('/api/member/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function disableMyAccount(): Promise<AccountActionResponse> {
+  return apiCall('/api/member/account', {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'disable' }),
+  })
+}
+
+export async function deleteMyAccount(): Promise<AccountActionResponse> {
+  return apiCall('/api/member/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ confirm: 'DELETE' }),
   })
 }
 

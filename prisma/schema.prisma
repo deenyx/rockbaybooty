@@ -118,6 +118,10 @@ model Profile {
   
   // Preferences
   isPublic        Boolean  @default(false) // Visible in member search
+  allowDirectMessages Boolean @default(true)
+  allowFriendRequests Boolean @default(true)
+  showOnlineStatus Boolean @default(true)
+  emailLoginAlerts Boolean @default(true)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
