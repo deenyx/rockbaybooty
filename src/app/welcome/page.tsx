@@ -2,6 +2,14 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import MembersGate from '@/app/_components/members-gate'
 
+type WelcomePageProps = {
+  searchParams?: {
+    error?: string
+    returnTo?: string
+    verified?: string
+  }
+}
+
 export const metadata: Metadata = {
   title: 'Private Entry',
   description:
@@ -28,20 +36,27 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Welcome() {
+export default function Welcome({ searchParams }: WelcomePageProps) {
+  const safeReturnTo =
+    searchParams?.returnTo &&
+    searchParams.returnTo.startsWith('/') &&
+    !searchParams.returnTo.startsWith('//')
+      ? searchParams.returnTo
+      : '/dashboard'
+
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
       <div className="absolute inset-0">
         <Image
-          src="/welcome2.jpg"
+          src="/welcome1.jpg"
           alt=""
           fill
           priority
+          quality={95}
           sizes="100vw"
           className="object-cover"
           style={{
-            objectPosition: 'center 18%',
-            filter: 'saturate(1.08) contrast(1.02)',
+            objectPosition: 'center 16%',
           }}
         />
       </div>
@@ -49,8 +64,8 @@ export default function Welcome() {
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at 18% 16%, rgba(56, 189, 248, 0.26), transparent 42%), radial-gradient(circle at 82% 14%, rgba(244, 114, 182, 0.2), transparent 36%), linear-gradient(180deg, rgba(2, 6, 23, 0.56), rgba(2, 6, 23, 0.9))',
-          opacity: 0.08,
+            'linear-gradient(180deg, rgba(2, 6, 23, 0.16), rgba(2, 6, 23, 0.34)), linear-gradient(120deg, rgba(8, 47, 73, 0.16), rgba(17, 24, 39, 0.08) 42%, rgba(67, 20, 7, 0.14))',
+          opacity: 1,
         }}
       />
 
@@ -62,14 +77,12 @@ export default function Welcome() {
         >
           Members Only
         </h1>
-        <p
-          className="text-xs tracking-[0.15em] text-yellow-400 select-none -mt-6"
-          style={{ fontFamily: 'var(--font-copperplate)' }}
-        >
-          access code required
-        </p>
 
-        <MembersGate />
+        <MembersGate
+          initialError={searchParams?.error || ''}
+          returnTo={safeReturnTo}
+          verified={searchParams?.verified === '1'}
+        />
       </div>
 
     </div>

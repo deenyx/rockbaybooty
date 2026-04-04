@@ -1,13 +1,13 @@
-import { Prisma, PrismaClient } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import { AUTH_COOKIE_NAME, MAX_AGE, MESSAGES, MIN_AGE } from '@/lib/constants'
-import type { AuthTokenPayload } from '@/lib/types'
+import type { AuthTokenPayload, FriendshipStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
-const prisma = new PrismaClient()
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 60
 const ONLINE_WINDOW_MINUTES = 15
@@ -94,10 +94,13 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const q = searchParams.get('q')?.trim() || ''
+    const location = searchParams.get('location')?.trim() || ''
     const gender = searchParams.get('gender')?.trim() || ''
     const orientation = searchParams.get('orientation')?.trim() || ''
     const lookingFor = parseList(searchParams.get('lookingFor'))
     const onlineOnly = parseBoolean(searchParams.get('onlineOnly'))
+    const hasPhoto = parseBoolean(searchParams.get('hasPhoto'))
+    const lastActive = searchParams.get('lastActive') as 'today' | 'week' | 'any' | null
     const parsedMinAge = parseNumber(searchParams.get('minAge'))
     const parsedMaxAge = parseNumber(searchParams.get('maxAge'))
     const parsedLimit = parseNumber(searchParams.get('limit'))
@@ -114,6 +117,7 @@ export async function GET(request: NextRequest) {
         gte: ageFloor,
         lte: ageCeiling,
       },
+      ...(hasPhoto ? { avatarUrl: { not: null } } : {}),
       ...(gender
         ? {
             gender: {
@@ -137,9 +141,46 @@ export async function GET(request: NextRequest) {
             },
           }
         : {}),
+      ...(location
+        ? {
+            OR: [
+              {
+                location: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                city: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                state: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                country: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
     }
 
     const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60 * 1000)
+
+    const lastActiveCutoff =
+      lastActive === 'today'
+        ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+        : lastActive === 'week'
+          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          : null
 
     const where: Prisma.UserWhereInput = {
       id: {
@@ -152,7 +193,13 @@ export async function GET(request: NextRequest) {
               gte: onlineCutoff,
             },
           }
-        : {}),
+        : lastActiveCutoff
+          ? {
+              updatedAt: {
+                gte: lastActiveCutoff,
+              },
+            }
+          : {}),
       profile: {
         is: profileFilters,
       },
@@ -237,6 +284,57 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const relationshipRecords = await prisma.friendship.findMany({
+      where: {
+        OR: [
+          {
+            requesterId: currentUserId,
+            recipientId: {
+              in: users.map((user) => user.id),
+            },
+          },
+          {
+            recipientId: currentUserId,
+            requesterId: {
+              in: users.map((user) => user.id),
+            },
+          },
+        ],
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      select: {
+        requesterId: true,
+        recipientId: true,
+        status: true,
+      },
+    })
+
+    const relationshipByUser = new Map<string, FriendshipStatus>()
+
+    for (const relationship of relationshipRecords) {
+      const partnerId = relationship.requesterId === currentUserId
+        ? relationship.recipientId
+        : relationship.requesterId
+
+      if (relationshipByUser.get(partnerId) === 'friends') {
+        continue
+      }
+
+      if (relationship.status === 'accepted') {
+        relationshipByUser.set(partnerId, 'friends')
+        continue
+      }
+
+      if (relationship.status === 'pending') {
+        relationshipByUser.set(
+          partnerId,
+          relationship.requesterId === currentUserId ? 'outgoing_pending' : 'incoming_pending'
+        )
+      }
+    }
+
     const members = users.map((user) => {
       const profile = user.profile
       const fallbackLocation = [profile?.city, profile?.state, profile?.country]
@@ -254,6 +352,7 @@ export async function GET(request: NextRequest) {
         interests: profile?.interests || [],
         lookingFor: profile?.lookingFor || [],
         isOnline: user.updatedAt >= onlineCutoff,
+        friendshipStatus: relationshipByUser.get(user.id) || 'none',
       }
     })
 
@@ -265,7 +364,5 @@ export async function GET(request: NextRequest) {
       { error: MESSAGES.ERROR_GENERAL },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

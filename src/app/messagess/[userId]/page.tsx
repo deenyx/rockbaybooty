@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-import { fetchConversationMessages, sendMessage } from '@/lib/api'
-import { ROUTES } from '@/lib/constants'
+import { fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
+import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { ConversationMessagesResponse, DirectMessage } from '@/lib/types'
 
 const NAV_ITEMS = [
@@ -41,6 +41,22 @@ function formatDate(isoString: string) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatMessageBody(message: DirectMessage, isMine: boolean) {
+  if (message.kind === 'poke') {
+    return isMine ? 'You sent a poke' : 'Sent you a poke'
+  }
+
+  if (message.kind === 'wink') {
+    return isMine ? 'You sent a wink' : 'Sent you a wink'
+  }
+
+  if (message.kind === 'wave') {
+    return isMine ? 'You sent a wave' : 'Sent you a wave'
+  }
+
+  return message.body
+}
+
 export default function ConversationPage() {
   const params = useParams()
   const partnerId = typeof params.userId === 'string' ? params.userId : ''
@@ -52,41 +68,93 @@ export default function ConversationPage() {
   const [loadError, setLoadError] = useState('')
   const [inputValue, setInputValue] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [activeGesture, setActiveGesture] = useState<'poke' | 'wink' | 'wave' | null>(null)
+  const [showGestureMenu, setShowGestureMenu] = useState(false)
   const [sendError, setSendError] = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const previousMessageCountRef = useRef(0)
 
   useEffect(() => {
     if (!partnerId) return
     let cancelled = false
+    let abortController: AbortController | null = null
+    let isLoading_ = false
+    let lastFocusTime = 0
 
-    async function load() {
+    async function load(options?: { silent?: boolean }) {
+      const silent = options?.silent === true
+
+      // Guard: prevent overlapping requests
+      if (isLoading_) return
+
       try {
-        setIsLoading(true)
+        isLoading_ = true
+        if (!silent) setIsLoading(true)
         setLoadError('')
-        const result = await fetchConversationMessages(partnerId)
+
+        // Cancel previous request
+        if (abortController) abortController.abort()
+        abortController = new AbortController()
+
+        const result = await fetchConversationMessages(partnerId, abortController.signal)
         if (!cancelled) {
           setData(result)
           setMessages(result.messages)
         }
       } catch (error) {
+        // Ignore abort errors silently
+        if (error instanceof Error && error.name === 'AbortError') {
+          return
+        }
+
         if (!cancelled) {
           setLoadError(
             error instanceof Error ? error.message : 'Unable to load conversation.'
           )
         }
       } finally {
-        if (!cancelled) setIsLoading(false)
+        isLoading_ = false
+        if (!cancelled && !silent) setIsLoading(false)
       }
     }
 
-    load()
-    return () => { cancelled = true }
+    const refreshIfVisible = () => {
+      if (document.visibilityState !== 'visible') return
+
+      // Debounce focus events: skip if last focus was within 500ms
+      const now = Date.now()
+      if (now - lastFocusTime < 500) return
+
+      lastFocusTime = now
+      void load({ silent: true })
+    }
+
+    void load()
+
+    const intervalId = window.setInterval(() => {
+      refreshIfVisible()
+    }, MESSAGING_POLL_INTERVAL_MS)
+
+    window.addEventListener('focus', refreshIfVisible)
+    document.addEventListener('visibilitychange', refreshIfVisible)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshIfVisible)
+      document.removeEventListener('visibilitychange', refreshIfVisible)
+      if (abortController) abortController.abort()
+    }
   }, [partnerId])
 
-  // Scroll to bottom when messages change
+  // Only scroll when new messages are added.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > previousMessageCountRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    previousMessageCountRef.current = messages.length
   }, [messages])
 
   async function handleSend() {
@@ -106,6 +174,25 @@ export default function ConversationPage() {
       )
     } finally {
       setIsSending(false)
+    }
+  }
+
+  async function handleGesture(kind: 'poke' | 'wink' | 'wave') {
+    if (!partnerId || activeGesture) return
+
+    setSendError('')
+    setActiveGesture(kind)
+
+    try {
+      const result = await sendGesture(partnerId, kind)
+      setMessages((prev) => [...prev, result.message])
+      setShowGestureMenu(false)
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : 'Failed to send gesture.'
+      )
+    } finally {
+      setActiveGesture(null)
     }
   }
 
@@ -131,12 +218,18 @@ export default function ConversationPage() {
   const partner = data?.partner
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,180,120,0.24),_transparent_40%),radial-gradient(circle_at_top_right,_rgba(255,125,95,0.2),_transparent_42%),linear-gradient(160deg,#12080b_8%,#220d13_48%,#3f141f_100%)] text-stone-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-[#090b10] text-stone-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
+        style={{ backgroundImage: "url('/welcome2.jpg')" }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-black/30 p-5 backdrop-blur-xl md:block">
-          <p className="text-xs uppercase tracking-[0.22em] text-amber-100/70">Member Area</p>
-          <h1 className="mt-3 font-[family:var(--font-display)] text-3xl text-amber-100">Messages</h1>
+        <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-[#0d1117]/78 p-5 backdrop-blur-md md:block">
+          <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Member Area</p>
+          <h1 className="mt-3 font-[family:var(--font-display)] text-3xl text-stone-100">Messages</h1>
 
           <nav className="mt-8 space-y-2">
             {NAV_ITEMS.map((item) => {
@@ -145,9 +238,10 @@ export default function ConversationPage() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  title={`Open ${item.label}`}
                   className={`block rounded-xl px-4 py-3 text-sm transition ${
                     active
-                      ? 'bg-amber-200/20 text-amber-100'
+                      ? 'border border-white/20 bg-white/[0.08] text-stone-100'
                       : 'text-stone-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -164,6 +258,7 @@ export default function ConversationPage() {
           <div className="flex items-center gap-3 border-b border-white/10 p-4 sm:p-5">
             <Link
               href={ROUTES.MESSAGESS}
+              title="Back to all conversations"
               className="mr-1 rounded-lg border border-white/15 p-1.5 text-stone-300 transition hover:border-white/30 hover:text-white"
               aria-label="Back to conversations"
             >
@@ -188,6 +283,14 @@ export default function ConversationPage() {
                   <p className="font-semibold text-white">{partner.displayName}</p>
                   <p className="text-xs text-stone-400">@{partner.username}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGestureMenu((current) => !current)}
+                  disabled={Boolean(activeGesture)}
+                  className="ml-auto rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-200 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {activeGesture ? 'Sending...' : 'Poke...'}
+                </button>
               </>
             ) : (
               <div className="h-5 w-32 animate-pulse rounded bg-white/10" />
@@ -232,12 +335,14 @@ export default function ConversationPage() {
                       >
                         <div
                           className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                            isMine
-                              ? 'rounded-br-sm bg-amber-400/25 text-amber-50'
-                              : 'rounded-bl-sm bg-white/10 text-stone-100'
+                            msg.kind === 'poke' || msg.kind === 'wink' || msg.kind === 'wave'
+                              ? 'border border-amber-200/20 bg-amber-300/10 text-amber-100'
+                              : isMine
+                                ? 'rounded-br-sm bg-amber-400/25 text-amber-50'
+                                : 'rounded-bl-sm bg-white/10 text-stone-100'
                           }`}
                         >
-                          <p>{msg.body}</p>
+                          <p>{formatMessageBody(msg, isMine)}</p>
                           <p className={`mt-1 text-[10px] ${isMine ? 'text-amber-100/50' : 'text-stone-400'}`}>
                             {formatTime(msg.createdAt)}
                           </p>
@@ -283,7 +388,44 @@ export default function ConversationPage() {
                 )}
                 <span className="sr-only">Send</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setShowGestureMenu((current) => !current)}
+                disabled={Boolean(activeGesture)}
+                className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {activeGesture ? 'Sending...' : 'Poke...'}
+              </button>
             </div>
+
+            {showGestureMenu && (
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:max-w-xs">
+                <button
+                  type="button"
+                  onClick={() => handleGesture('poke')}
+                  disabled={Boolean(activeGesture)}
+                  className="rounded-lg border border-amber-200/35 bg-amber-300/15 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/25 disabled:opacity-50"
+                >
+                  Poke
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGesture('wink')}
+                  disabled={Boolean(activeGesture)}
+                  className="rounded-lg border border-fuchsia-200/30 bg-fuchsia-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-fuchsia-100 transition hover:bg-fuchsia-300/20 disabled:opacity-50"
+                >
+                  Wink
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGesture('wave')}
+                  disabled={Boolean(activeGesture)}
+                  className="rounded-lg border border-sky-200/30 bg-sky-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-100 transition hover:bg-sky-300/20 disabled:opacity-50"
+                >
+                  Wave
+                </button>
+              </div>
+            )}
           </div>
         </main>
       </div>

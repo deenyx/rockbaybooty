@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from 'react'
 
+import { MIN_AGE, NEW_MEMBER_PIN } from '@/lib/constants'
+
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
 const inputCls =
@@ -11,18 +13,43 @@ const submitCls =
   'w-full rounded-full border border-pink-300/20 bg-gradient-to-r from-pink-600/90 to-rose-700/90 py-3 text-sm tracking-wide text-stone-100 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-wait'
 
 export default function SignupPage() {
-  const [firstName, setFirstName] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [inviteCode, setInviteCode] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent'>('idle')
+  const [assignedPin, setAssignedPin] = useState('')
+
+  function calculateAgeFromDob(dobValue: string) {
+    const dob = new Date(`${dobValue}T00:00:00.000Z`)
+    const now = new Date()
+
+    let age = now.getFullYear() - dob.getUTCFullYear()
+    const monthDifference = now.getMonth() - dob.getUTCMonth()
+    const dayDifference = now.getDate() - dob.getUTCDate()
+
+    if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
+      age -= 1
+    }
+
+    return age
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const name = firstName.trim()
+    const submittedName = name.trim()
     const mail = email.trim().toLowerCase()
-    const code = inviteCode.trim().toUpperCase()
-    if (!name || !mail || !code) { setError('All fields are required.'); return }
+
+    if (!submittedName || !mail || !dateOfBirth) {
+      setError('All fields are required.')
+      return
+    }
+
+    if (calculateAgeFromDob(dateOfBirth) < MIN_AGE) {
+      setError('You must be over 18 years old.')
+      return
+    }
+
     setStatus('loading')
     setError('')
 
@@ -30,7 +57,7 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName: name, email: mail, inviteCode: code }),
+        body: JSON.stringify({ name: submittedName, email: mail, dateOfBirth }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -38,6 +65,7 @@ export default function SignupPage() {
         setStatus('idle')
         return
       }
+      setAssignedPin(data.pin || NEW_MEMBER_PIN)
       setStatus('sent')
     } catch {
       setError('Network error. Please try again.')
@@ -71,19 +99,22 @@ export default function SignupPage() {
                 className="text-[9px] uppercase tracking-[0.28em] text-stone-500"
                 style={{ fontFamily: CP }}
               >
-                check your email
+                your pin is ready
+              </p>
+              <p className="text-4xl tracking-[0.6em] text-pink-300 font-mono">
+                {assignedPin || NEW_MEMBER_PIN}
               </p>
               <p className="text-sm leading-relaxed text-stone-400" style={{ fontFamily: CP }}>
                 We sent a verification link to{' '}
                 <span className="text-pink-300">{email.trim().toLowerCase()}</span>.
                 <br />
-                Click it to receive your private login PIN.
+                Verify that email to activate this PIN.
               </p>
               <p
                 className="text-[9px] leading-relaxed text-stone-600"
                 style={{ fontFamily: CP }}
               >
-                The link expires in 24 hours.
+                Come back, enter {assignedPin || NEW_MEMBER_PIN}, then enter your name.
               </p>
             </div>
           ) : (
@@ -92,19 +123,19 @@ export default function SignupPage() {
                 <label
                   className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
                   style={{ fontFamily: CP }}
-                  htmlFor="firstName"
+                  htmlFor="name"
                 >
-                  First name
+                  Name
                 </label>
                 <input
-                  id="firstName"
+                  id="name"
                   type="text"
                   required
-                  autoComplete="given-name"
+                  autoComplete="name"
                   autoFocus
-                  value={firstName}
-                  onChange={(e) => { setFirstName(e.target.value); setError('') }}
-                  placeholder="your first name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setError('') }}
+                  placeholder="your name"
                   className={inputCls}
                   style={{ fontFamily: CP }}
                 />
@@ -114,20 +145,25 @@ export default function SignupPage() {
                 <label
                   className="block mb-1.5 text-[8px] uppercase tracking-[0.28em] text-stone-600"
                   style={{ fontFamily: CP }}
-                  htmlFor="inviteCode"
+                  htmlFor="dateOfBirth"
                 >
-                  Access code
+                  Date of Birth
                 </label>
                 <input
-                  id="inviteCode"
-                  type="text"
+                  id="dateOfBirth"
+                  type="date"
                   required
-                  value={inviteCode}
-                  onChange={(e) => { setInviteCode(e.target.value.toUpperCase()); setError('') }}
-                  placeholder="enter your invite code"
+                  value={dateOfBirth}
+                  onChange={(e) => {
+                    setDateOfBirth(e.target.value)
+                    setError('')
+                  }}
                   className={inputCls}
                   style={{ fontFamily: CP }}
                 />
+                <p className="mt-1 text-[10px] text-stone-500" style={{ fontFamily: CP }}>
+                  Must be over 18.
+                </p>
               </div>
 
               <div>

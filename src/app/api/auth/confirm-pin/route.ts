@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { MESSAGES } from '@/lib/constants'
-
-const prisma = new PrismaClient()
 
 interface PinRevealPayload {
   userId: string
@@ -15,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const submittedPin = body.pin?.trim()
-    const submittedName = body.firstName?.trim().toLowerCase()
+    const submittedName = (body.name || body.firstName || '').trim().toLowerCase()
 
     if (!submittedPin || !submittedName) {
       return NextResponse.json({ error: MESSAGES.FIELD_REQUIRED }, { status: 400 })

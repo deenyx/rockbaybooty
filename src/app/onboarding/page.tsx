@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -136,6 +137,7 @@ function OnboardingContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
   const [generatedPasscode, setGeneratedPasscode] = useState('')
+  const [redirectCountdown, setRedirectCountdown] = useState(0)
   const [customInterestInput, setCustomInterestInput] = useState('')
   const [usernameState, setUsernameState] = useState<
     'idle' | 'checking' | 'available' | 'taken' | 'invalid'
@@ -145,6 +147,22 @@ function OnboardingContent() {
 
   const currentStepConfig = STEPS[currentStep]
   const progress = ((currentStep + 1) / STEPS.length) * 100
+
+  useEffect(() => {
+    if (!generatedPasscode) return
+    setRedirectCountdown(8)
+    const interval = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          router.push(ROUTES.DASHBOARD)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [generatedPasscode, router])
 
   const canGoBack = currentStep > 0 && !isLoading && !generatedPasscode
   const nextButtonLabel = currentStep === STEPS.length - 1 ? 'Create My Profile' : 'Continue'
@@ -703,11 +721,15 @@ function OnboardingContent() {
           </div>
 
           {formData.profilePhoto && (
-            <img
-              src={formData.profilePhoto}
-              alt="Profile preview"
-              className="h-52 w-full rounded-2xl object-cover shadow"
-            />
+            <div className="relative h-52 w-full overflow-hidden rounded-2xl shadow">
+              <Image
+                src={formData.profilePhoto}
+                alt="Profile preview"
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            </div>
           )}
           {errors.profilePhoto && <p className="text-sm text-red-500">{errors.profilePhoto}</p>}
         </div>
@@ -824,7 +846,7 @@ function OnboardingContent() {
           <div className="rounded-2xl border border-amber-100/20 bg-[#130c0e]/92 p-8 text-center shadow-2xl">
             <p className="text-xs uppercase tracking-[0.2em] text-amber-200/80">Profile Created</p>
             <h2 className="mt-2 text-2xl font-bold text-stone-100">Your Personal Passcode</h2>
-            <p className="mt-2 text-sm text-stone-300/80">Save this - it's your login key forever.</p>
+            <p className="mt-2 text-sm text-stone-300/80">Save this - it&apos;s your login key forever.</p>
 
             <div className="mt-6 rounded-2xl border border-dashed border-amber-200/35 bg-amber-100/10 p-5">
               <p className="text-4xl font-black tracking-[0.15em] text-amber-100">{generatedPasscode}</p>
@@ -838,14 +860,16 @@ function OnboardingContent() {
               {isCopying ? 'Copied ✓' : 'Copy Passcode'}
             </button>
 
-            <p className="mt-4 text-xs text-stone-400">Save this code — you'll need it every time you log in.</p>
+            <p className="mt-4 text-xs text-stone-400">Save this code — you&apos;ll need it every time you log in.</p>
 
             <button
               type="button"
               onClick={() => router.push(ROUTES.DASHBOARD)}
               className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-5 py-3 text-sm font-semibold text-amber-50 transition hover:brightness-110"
             >
-              Enter the building →
+              {redirectCountdown > 0
+                ? `Enter the building (${redirectCountdown})`
+                : 'Enter the building →'}
             </button>
           </div>
         ) : (

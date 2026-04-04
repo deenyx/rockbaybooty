@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
@@ -13,6 +12,43 @@ function isPublicPath(pathname: string) {
 
     return pathname === path || pathname.startsWith(`${path}/`)
   })
+}
+
+function decodeBase64Url(value: string): string | null {
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+    return atob(padded)
+  } catch {
+    return null
+  }
+}
+
+function isLikelyValidToken(token: string): boolean {
+  const parts = token.split('.')
+
+  if (parts.length !== 3) {
+    return false
+  }
+
+  const payloadJson = decodeBase64Url(parts[1])
+
+  if (!payloadJson) {
+    return false
+  }
+
+  try {
+    const payload = JSON.parse(payloadJson) as { exp?: number }
+
+    if (typeof payload.exp !== 'number') {
+      return true
+    }
+
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+    return payload.exp > nowInSeconds
+  } catch {
+    return false
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -36,14 +72,10 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET
-    if (!jwtSecret) {
-      const loginUrl = new URL(ROUTES.LOGIN, request.url)
-      loginUrl.searchParams.set('returnTo', `${pathname}${search}`)
-      return NextResponse.redirect(loginUrl)
+    if (!isLikelyValidToken(token)) {
+      throw new Error('Invalid token payload')
     }
 
-    jwt.verify(token, jwtSecret)
     return NextResponse.next()
   } catch {
     const loginUrl = new URL(ROUTES.LOGIN, request.url)

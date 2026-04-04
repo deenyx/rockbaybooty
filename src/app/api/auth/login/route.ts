@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import {
   AUTH_COOKIE_NAME,
@@ -22,8 +22,6 @@ function getSafeReturnTo(returnTo: string | null): string {
 
   return returnTo
 }
-
-const prisma = new PrismaClient()
 
 type ParsedLoginInput = {
   code: string
@@ -51,7 +49,7 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     const body = await request.json()
     return {
       code: (body.passcode || body.pin || '').trim(),
-      firstName: (body.firstName || '').trim().toLowerCase(),
+      firstName: (body.name || body.firstName || '').trim().toLowerCase(),
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -60,7 +58,7 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
   const formData = await request.formData()
   return {
     code: String(formData.get('passcode') || '').trim(),
-    firstName: String(formData.get('firstName') || '').trim().toLowerCase(),
+    firstName: String(formData.get('name') || formData.get('firstName') || '').trim().toLowerCase(),
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.DASHBOARD)),
     requestKind,
   }
@@ -269,8 +267,14 @@ export async function POST(request: NextRequest) {
     let user: LoginUser | null = null
 
     if (firstName) {
-      user = await prisma.user.findUnique({
-        where: { loginPin: code },
+      const pinUser = await prisma.user.findFirst({
+        where: {
+          loginPin: code,
+          firstName: {
+            equals: firstName,
+            mode: 'insensitive',
+          },
+        },
         select: {
           id: true,
           username: true,
@@ -283,12 +287,38 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      if (!user || user.status !== 'active' || !user.emailVerified) {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-      }
+      if (pinUser && pinUser.status === 'active') {
+        // Legacy PIN path — require email verification
+        if (!pinUser.emailVerified) {
+          return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
+        }
+        user = pinUser
+      } else {
+        // Fallback: match personalCode + first/display name (all onboarded users)
+        const codeUser = await prisma.user.findUnique({
+          where: { personalCode: code.toUpperCase() },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            personalCode: true,
+            firstName: true,
+            email: true,
+            status: true,
+            emailVerified: true,
+          },
+        })
 
-      if ((user.firstName?.trim().toLowerCase() ?? '') !== firstName) {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+        const nameMatches =
+          codeUser &&
+          (codeUser.firstName?.toLowerCase() === firstName.toLowerCase() ||
+            codeUser.displayName?.toLowerCase() === firstName.toLowerCase())
+
+        if (!codeUser || codeUser.status !== 'active' || !nameMatches) {
+          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+        }
+
+        user = codeUser
       }
     } else {
       user = await prisma.user.findUnique({

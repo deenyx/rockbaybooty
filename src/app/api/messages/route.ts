@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
 
 import { AUTH_COOKIE_NAME, MESSAGES } from '@/lib/constants'
 import type { AuthTokenPayload } from '@/lib/types'
-
-const prisma = new PrismaClient()
 
 function getBearerToken(header: string | null): string | null {
   if (!header) return null
@@ -80,6 +78,7 @@ export async function GET(request: NextRequest) {
         id: true,
         senderId: true,
         recipientId: true,
+        kind: true,
         body: true,
         readAt: true,
         createdAt: true,
@@ -102,8 +101,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Messages fetch error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -118,16 +115,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const recipientId = typeof body.recipientId === 'string' ? body.recipientId.trim() : ''
     const messageBody = typeof body.body === 'string' ? body.body.trim() : ''
+    const messageKind =
+      body.kind === 'poke' || body.kind === 'wink' || body.kind === 'wave'
+        ? body.kind
+        : body.kind === undefined || body.kind === 'text'
+          ? 'text'
+          : ''
 
     if (!recipientId) {
       return NextResponse.json({ error: 'recipientId is required' }, { status: 400 })
     }
 
-    if (!messageBody) {
+    if (!messageKind) {
+      return NextResponse.json({ error: 'Invalid message kind' }, { status: 400 })
+    }
+
+    if (messageKind === 'text' && !messageBody) {
       return NextResponse.json({ error: 'Message body is required' }, { status: 400 })
     }
 
-    if (messageBody.length > 2000) {
+    if (messageKind === 'text' && messageBody.length > 2000) {
       return NextResponse.json({ error: 'Message must be 2000 characters or fewer' }, { status: 400 })
     }
 
@@ -148,12 +155,14 @@ export async function POST(request: NextRequest) {
       data: {
         senderId: currentUserId,
         recipientId,
-        body: messageBody,
+        kind: messageKind,
+        body: messageKind === 'text' ? messageBody : '',
       },
       select: {
         id: true,
         senderId: true,
         recipientId: true,
+        kind: true,
         body: true,
         readAt: true,
         createdAt: true,
@@ -173,7 +182,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Message send error:', error)
     return NextResponse.json({ error: MESSAGES.ERROR_GENERAL }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

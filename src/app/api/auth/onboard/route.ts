@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 
 import {
   AUTH_COOKIE_NAME,
@@ -10,7 +10,6 @@ import {
   MIN_AGE,
 } from '@/lib/constants'
 
-const prisma = new PrismaClient()
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
 const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
 
@@ -314,7 +313,5 @@ export async function POST(request: NextRequest) {
       { error: MESSAGES.ERROR_CREATING_ACCOUNT },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

@@ -3,14 +3,22 @@
 import type {
   AuthResponse,
   ChatRoomTokenResponse,
+  CreateVideoInput,
   ConversationMessagesResponse,
   ConversationsResponse,
+  FriendRequestsResponse,
+  FriendRequestResponse,
+  FriendshipDecisionAction,
   LoginResponse,
   MemberSearchFilters,
   MemberSearchResponse,
   MemberProfileResponse,
   PasscodeValidationResponse,
   SendMessageResponse,
+  UpdateVideoInput,
+  VideoListResponse,
+  VideoResponse,
+  VideoViewResponse,
   UpdateMemberProfileInput,
   UserIdAvailabilityResponse,
 } from '@/lib/types'
@@ -116,6 +124,10 @@ export async function searchMembers(
     params.set('q', filters.q)
   }
 
+  if (filters.location) {
+    params.set('location', filters.location)
+  }
+
   if (typeof filters.minAge === 'number') {
     params.set('minAge', String(filters.minAge))
   }
@@ -140,6 +152,14 @@ export async function searchMembers(
     params.set('onlineOnly', 'true')
   }
 
+  if (filters.hasPhoto) {
+    params.set('hasPhoto', 'true')
+  }
+
+  if (filters.lastActive && filters.lastActive !== 'any') {
+    params.set('lastActive', filters.lastActive)
+  }
+
   if (typeof filters.limit === 'number') {
     params.set('limit', String(filters.limit))
   }
@@ -152,14 +172,19 @@ export async function searchMembers(
   })
 }
 
-export async function fetchConversations(): Promise<ConversationsResponse> {
-  return apiCall('/api/messages/conversations')
+export async function fetchConversations(signal?: AbortSignal): Promise<ConversationsResponse> {
+  return apiCall('/api/messages/conversations', {
+    signal,
+  })
 }
 
 export async function fetchConversationMessages(
-  userId: string
+  userId: string,
+  signal?: AbortSignal
 ): Promise<ConversationMessagesResponse> {
-  return apiCall(`/api/messages?with=${encodeURIComponent(userId)}`)
+  return apiCall(`/api/messages?with=${encodeURIComponent(userId)}`, {
+    signal,
+  })
 }
 
 export async function sendMessage(
@@ -169,5 +194,85 @@ export async function sendMessage(
   return apiCall('/api/messages', {
     method: 'POST',
     body: JSON.stringify({ recipientId, body }),
+  })
+}
+
+export async function sendPoke(
+  recipientId: string
+): Promise<SendMessageResponse> {
+  return sendGesture(recipientId, 'poke')
+}
+
+export async function sendGesture(
+  recipientId: string,
+  kind: 'poke' | 'wink' | 'wave'
+): Promise<SendMessageResponse> {
+  return apiCall('/api/messages', {
+    method: 'POST',
+    body: JSON.stringify({ recipientId, kind }),
+  })
+}
+
+export async function sendFriendRequest(recipientId: string): Promise<FriendRequestResponse> {
+  return apiCall('/api/friends/request', {
+    method: 'POST',
+    body: JSON.stringify({ recipientId }),
+  })
+}
+
+export async function fetchFriendRequests(signal?: AbortSignal): Promise<FriendRequestsResponse> {
+  return apiCall('/api/friends/requests', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function decideFriendRequest(
+  friendshipId: string,
+  action: FriendshipDecisionAction
+): Promise<FriendRequestResponse> {
+  return apiCall('/api/friends/requests', {
+    method: 'PATCH',
+    body: JSON.stringify({ friendshipId, action }),
+  })
+}
+
+export async function fetchPublicVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function fetchMyVideos(signal?: AbortSignal): Promise<VideoListResponse> {
+  return apiCall('/api/videos?mine=true', {
+    method: 'GET',
+    signal,
+  })
+}
+
+export async function createVideo(data: CreateVideoInput): Promise<VideoResponse> {
+  return apiCall('/api/videos', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateVideo(videoId: string, data: UpdateVideoInput): Promise<VideoResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteVideo(videoId: string): Promise<{ success: boolean }> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function incrementVideoViews(videoId: string): Promise<VideoViewResponse> {
+  return apiCall(`/api/videos/${encodeURIComponent(videoId)}/view`, {
+    method: 'POST',
   })
 }

@@ -70,6 +70,17 @@ export const INTEREST_TAG_OPTIONS = [
   'Aftercare-focused',
 ]
 
+export const SEARCH_LOCATION_OPTIONS = [
+  'Harbor District',
+  'Old Town',
+  'Riverfront',
+  'Midtown',
+  'North End',
+  'South Docks',
+  'West Quarter',
+  'East Heights',
+]
+
 export const MESSAGES = {
   PASSCODE_REQUIRED: 'Passcode is required',
   PASSCODE_INVALID: 'Invalid or expired passcode',
@@ -80,10 +91,12 @@ export const MESSAGES = {
   GROUP_CLOSED: 'Registrations are currently closed',
   GROUP_FULL: 'Member limit reached. Registrations are temporarily paused.',
   LOGIN_INVALID: 'Invalid passcode',
+  EMAIL_VERIFICATION_REQUIRED: 'Verify your email before using this PIN.',
   AUTH_REQUIRED: 'Authentication required',
   LOGIN_SUCCESS: 'Logged in successfully',
   LOGOUT_SUCCESS: 'Logged out successfully',
   EMAIL_EXISTS: 'An account with this email already exists',
+  NAME_EXISTS: 'That name is already in use',
   EMAIL_SENT: 'Check your email to continue',
   INVALID_TOKEN: 'This link is invalid or has already been used',
   TOKEN_EXPIRED: 'This link has expired. Please sign up again.',
@@ -93,21 +106,41 @@ export const MESSAGES = {
   ACCOUNT_CREATED: 'Account created successfully',
   FIELD_REQUIRED: 'This field is required',
   INVALID_EMAIL: 'Please enter a valid email',
-  INVALID_DATE_OF_BIRTH: 'You must be at least 19 years old',
+  INVALID_AGE: 'You must be over 18 years old',
+  INVALID_DATE_OF_BIRTH: 'You must be over 18 years old',
   INVALID_USER_ID: 'User ID must be 3-20 characters and use only letters, numbers, or underscores',
   ERROR_CREATING_ACCOUNT: 'Failed to create account. Please try again.',
   ERROR_GENERAL: 'An error occurred. Please try again.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
+  FRIEND_REQUEST_SENT: 'Friend request sent',
+  FRIEND_REQUEST_ALREADY_SENT: 'Friend request already sent',
+  FRIEND_REQUEST_ALREADY_FRIENDS: 'You are already friends',
+  FRIEND_REQUEST_RECEIVED_PENDING: 'This member already sent you a request',
+  FRIEND_REQUEST_INVALID_TARGET: 'Member not found',
+  FRIEND_REQUEST_SELF: 'You cannot add yourself',
+  FRIEND_REQUEST_NOT_FOUND: 'Friend request not found',
+  FRIEND_REQUEST_NO_PERMISSION: 'You cannot update this friend request',
+  FRIEND_REQUEST_NOT_PENDING: 'This friend request is no longer pending',
+  FRIEND_REQUEST_ACCEPTED: 'Friend request accepted',
+  FRIEND_REQUEST_DECLINED: 'Friend request declined',
+  FRIEND_REQUEST_CANCELLED: 'Friend request cancelled',
+  VIDEO_NOT_FOUND: 'Video not found',
+  VIDEO_FORBIDDEN: 'You cannot modify this video',
+  VIDEO_PREMIUM_REQUIRED: 'Only Premium members can make videos public',
 }
 
 export const MIN_AGE = 19
 export const MAX_AGE = 120
+export const NEW_MEMBER_PIN = '5555'
+export const QUICK_JOIN_PIN = '0000'
+export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
 
 const parsedMaxMembers = Number.parseInt(process.env.MAX_MEMBER_COUNT || '20', 10)
 export const MAX_MEMBER_COUNT = Number.isFinite(parsedMaxMembers) && parsedMaxMembers > 0
@@ -117,6 +150,7 @@ export const CLOSED_GROUP_ENABLED = process.env.CLOSED_GROUP_ENABLED !== 'false'
 export const REQUIRE_SIGNUP_INVITE = process.env.REQUIRE_SIGNUP_INVITE !== 'false'
 
 export const CHAT_ROOM_NAME = 'members-lounge'
+export const MESSAGING_POLL_INTERVAL_MS = 2500
 
 export const ROUTES = {
   HOME: '/',
@@ -132,4 +166,6 @@ export const ROUTES = {
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
   MESSAGESS: '/messagess',
+  VIDEOS: '/videos',
+  MY_VIDEOS: '/videos/my',
 }

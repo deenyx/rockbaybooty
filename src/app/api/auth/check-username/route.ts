@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import prisma from '@/lib/prisma'
 
 import { MESSAGES } from '@/lib/constants'
-
-const prisma = new PrismaClient()
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
 
@@ -34,7 +32,5 @@ export async function POST(request: NextRequest) {
       { error: MESSAGES.ERROR_GENERAL },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
