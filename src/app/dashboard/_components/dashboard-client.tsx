@@ -242,7 +242,108 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         />
       </div>
 
-      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-24 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-24" />
+      <main className="relative z-10 w-full px-4 pb-16 pt-24 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-24">
+        <div className="mx-auto max-w-4xl space-y-6">
+
+          {/* Welcome card */}
+          <div className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-8">
+            <p className="text-xs uppercase tracking-[0.24em] text-stone-400">Welcome back</p>
+            <h1 className="mt-2 font-[family:var(--font-display)] text-4xl text-stone-100 sm:text-5xl">
+              {initialData.user.displayName || initialData.user.username}
+            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-400">
+              <span>@{initialData.user.username}</span>
+              {initialData.profile.location ? (
+                <span>&middot; {initialData.profile.location}</span>
+              ) : null}
+              {initialData.profile.age ? (
+                <span>&middot; {initialData.profile.age} yrs</span>
+              ) : null}
+            </div>
+            {initialData.profile.bio ? (
+              <p className="mt-4 max-w-xl text-sm leading-7 text-stone-300">{initialData.profile.bio}</p>
+            ) : null}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href={ROUTES.PROFILE}
+                className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]"
+              >
+                Edit profile
+              </Link>
+              <Link
+                href={ROUTES.SEARCH}
+                className="rounded-xl border border-white/20 px-4 py-2 text-sm text-stone-200 transition hover:border-white/35 hover:bg-white/[0.04] hover:text-white"
+              >
+                Browse members
+              </Link>
+            </div>
+          </div>
+
+          {/* Looking for / Interests */}
+          {(initialData.profile.lookingFor.length > 0 || initialData.profile.interests.length > 0) && (
+            <div className="rounded-3xl border border-white/10 bg-black/20 p-6 backdrop-blur-xl">
+              {initialData.profile.lookingFor.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Looking for</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {initialData.profile.lookingFor.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-amber-400/20 bg-amber-400/[0.07] px-3 py-1 text-xs text-amber-300/80"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {initialData.profile.interests.length > 0 && (
+                <div className={initialData.profile.lookingFor.length > 0 ? 'mt-5' : ''}>
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Interests</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {initialData.profile.interests.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-stone-300"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick links */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { label: 'Browse Members', desc: 'Find matches near you', href: ROUTES.SEARCH },
+              { label: 'Messages', desc: 'View conversations', href: ROUTES.MESSAGESS },
+              { label: 'Live Chat', desc: 'Join the members lounge', href: ROUTES.CHAT },
+              { label: 'Videos', desc: 'Watch member videos', href: ROUTES.VIDEOS },
+              { label: 'My Videos', desc: 'Upload and manage your clips', href: ROUTES.MY_VIDEOS },
+              { label: 'Settings', desc: 'Privacy and account controls', href: ROUTES.SETTINGS },
+            ].map(({ label, desc, href }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur transition hover:border-white/20 hover:bg-white/[0.06]"
+              >
+                <p className="text-sm font-semibold text-stone-100 group-hover:text-white">{label}</p>
+                <p className="mt-1 text-xs text-stone-400">{desc}</p>
+              </Link>
+            ))}
+          </div>
+
+          {/* Member code */}
+          <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 backdrop-blur">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Your member code</p>
+            <p className="mt-2 font-mono text-lg tracking-widest text-stone-100">{initialData.user.personalCode}</p>
+          </div>
+
+        </div>
+      </main>
     </div>
   )
 }
