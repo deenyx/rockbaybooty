@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
-import { MEMBER_MENU_ITEMS } from '@/lib/constants'
+import { MEMBER_MENU_ITEMS, ROUTES } from '@/lib/constants'
 
 type DashboardViewData = {
   user: {

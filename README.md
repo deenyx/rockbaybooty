@@ -74,6 +74,8 @@ Copy `.env.example` to `.env.local` and update:
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/social_network"
 JWT_SECRET="your-secret-key-here"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="unsigned-upload-preset"
 ```
 
 ### 3. Run Migrations

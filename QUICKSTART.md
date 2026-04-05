@@ -32,6 +32,9 @@ cp .env.example .env.local
 
 # Edit .env.local with your database credentials
 # DATABASE_URL="postgresql://postgres:password@localhost:5432/social_network"
+# JWT_SECRET="replace-with-long-random-secret"
+# NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+# NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="unsigned-upload-preset"
 ```
 
 ## 4️⃣ Database Migration

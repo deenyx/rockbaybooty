@@ -470,6 +470,7 @@ function OnboardingContent() {
         dateOfBirth: formData.dateOfBirth,
         displayName: formData.displayName.trim(),
         username: formData.username.trim().toLowerCase(),
+        password: formData.password,
         city: formData.city.trim(),
         state: formData.state.trim() || undefined,
         country: formData.country.trim() || undefined,
@@ -480,7 +481,9 @@ function OnboardingContent() {
         lookingFor: formData.lookingFor,
         bio: formData.bio.trim() || undefined,
         interests: formData.interests,
-        profilePhoto: formData.profilePhoto || undefined,
+        kinks: formData.kinks,
+        avatarUrl: formData.avatarUrl || undefined,
+        adultContentConfirmed: formData.adultContentConfirmed,
       })
 
       setGeneratedPasscode(response.personalCode)
@@ -745,27 +748,100 @@ function OnboardingContent() {
     if (currentStep === 6) {
       return (
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700">Password</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(event) => setFieldValue('password', event.target.value)}
+              placeholder="At least 8 characters"
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
+            />
+            {errors.password && <p className="mt-2 text-sm text-red-500">{errors.password}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700">Confirm password</label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(event) => setFieldValue('confirmPassword', event.target.value)}
+              placeholder="Re-enter your password"
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
+            />
+            {errors.confirmPassword && <p className="mt-2 text-sm text-red-500">{errors.confirmPassword}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700">Kinks</label>
+            <p className="mt-1 text-xs text-slate-500">Pick one or more interests from this list.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {KINK_OPTIONS.map((kink) => {
+                const isSelected = formData.kinks.includes(kink)
+                return (
+                  <button
+                    key={kink}
+                    type="button"
+                    onClick={() => toggleKink(kink)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                      isSelected
+                        ? 'border-[#6d102e] bg-[#6d102e] text-amber-50'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-[#8c1f43]'
+                    }`}
+                  >
+                    {kink}
+                  </button>
+                )
+              })}
+            </div>
+            {errors.kinks && <p className="mt-2 text-sm text-red-500">{errors.kinks}</p>}
+          </div>
+        </div>
+      )
+    }
+
+    if (currentStep === 7) {
+      return (
+        <div className="space-y-4">
           <label className="block text-sm font-semibold text-slate-700">Upload profile photo</label>
           <div className="rounded-2xl border border-dashed border-slate-300 p-4">
             <input
               type="file"
               accept="image/*"
               onChange={(event) => handlePhotoUpload(event.target.files?.[0])}
+              disabled={isUploadingPhoto}
               className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-amber-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-amber-800 hover:file:bg-amber-200"
             />
-            <p className="mt-2 text-xs text-slate-500">One image only, maximum 5MB.</p>
+            <p className="mt-2 text-xs text-slate-500">One image only, maximum 5MB. Uploading stores your photo with Cloudinary.</p>
+            {isUploadingPhoto && <p className="mt-2 text-sm text-amber-600">Uploading photo...</p>}
           </div>
 
-          {formData.profilePhoto && (
+          {formData.avatarUrl && (
             <div className="relative h-52 w-full overflow-hidden rounded-2xl shadow">
               <Image
-                src={formData.profilePhoto}
+                src={formData.avatarUrl}
                 alt="Profile preview"
                 fill
                 unoptimized
                 className="object-cover"
               />
             </div>
+          )}
+
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={formData.adultContentConfirmed}
+              onChange={(event) => setFieldValue('adultContentConfirmed', event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#8c1f43] focus:ring-[#d4b16a]"
+            />
+            <span>
+              I understand this is an adult (18+/19+) platform and my uploaded avatar may contain NSFW content that follows platform rules and consent boundaries.
+            </span>
+          </label>
+
+          {errors.adultContentConfirmed && (
+            <p className="text-sm text-red-500">{errors.adultContentConfirmed}</p>
           )}
           {errors.profilePhoto && <p className="text-sm text-red-500">{errors.profilePhoto}</p>}
         </div>
@@ -798,6 +874,11 @@ function OnboardingContent() {
         <div className="rounded-xl border border-slate-200 p-3">
           <p className="text-xs uppercase tracking-wide text-slate-500">About me / Desires</p>
           <p className="mt-1 whitespace-pre-wrap text-slate-900">{formData.bio || 'No description added'}</p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Kinks</p>
+          <p className="mt-1 text-slate-900">{formData.kinks.length > 0 ? formData.kinks.join(', ') : 'Not provided'}</p>
         </div>
       </div>
     )
@@ -914,7 +995,7 @@ function OnboardingContent() {
             </button>
             <button
               onClick={handleNext}
-              disabled={isLoading}
+              disabled={isLoading || isUploadingPhoto}
               className="flex-1 rounded-xl bg-gradient-to-r from-[#8c1f43] via-[#a0354f] to-[#6d102e] px-4 py-2.5 text-sm font-semibold text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? 'Creating profile...' : nextButtonLabel}
