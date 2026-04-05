@@ -103,12 +103,14 @@ export interface PasscodeValidationResponse {
 
 export interface LoginResponse {
   message: string
+  returnTo?: string
+  requiresCredentials?: boolean
   user: {
     id: string
     username: string
     displayName: string
     personalCode: string
-  }
+  } | null
 }
 
 export interface ErrorResponse {

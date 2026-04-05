@@ -106,6 +106,7 @@ export const SEARCH_LOCATION_OPTIONS = [
 
 export const MESSAGES = {
   PASSCODE_REQUIRED: 'Passcode is required',
+  ENTRY_PIN_REQUIRED: 'Entry PIN is required',
   PASSCODE_INVALID: 'Invalid or expired passcode',
   PASSCODE_GATE_INVALID: 'Invalid or used passcode',
   PASSCODE_VALID: 'Passcode verified successfully',
@@ -114,6 +115,10 @@ export const MESSAGES = {
   GROUP_CLOSED: 'Registrations are currently closed',
   GROUP_FULL: 'Member limit reached. Registrations are temporarily paused.',
   LOGIN_INVALID: 'Invalid passcode',
+  LOGIN_CREDENTIALS_REQUIRED: 'Enter your user ID or email and a secret',
+  LOGIN_PASSWORD_REQUIRED: 'Enter your password',
+  LOGIN_PASSCODE_REQUIRED: 'Enter your personal passcode',
+  LOGIN_PASSWORD_NOT_SET: 'This account does not have a password yet. Use passcode login.',
   EMAIL_VERIFICATION_REQUIRED: 'Verify your email before using this PIN.',
   AUTH_REQUIRED: 'Authentication required',
   LOGIN_SUCCESS: 'Logged in successfully',
@@ -188,6 +193,7 @@ export const ROUTES = {
   WELCOME: '/welcome',
   ONBOARDING: '/onboarding',
   DASHBOARD: '/dashboard',
+  LOG_IN: '/log-in',
   LOGIN: '/login',
   SIGNUP: '/signup',
   PIN_REVEAL: '/pin-reveal',

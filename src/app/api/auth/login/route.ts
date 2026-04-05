@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
@@ -26,6 +27,9 @@ function getSafeReturnTo(returnTo: string | null): string {
 type ParsedLoginInput = {
   code: string
   firstName: string
+  identifier: string
+  secret: string
+  secretType: 'password' | 'passcode'
   returnTo: string
   requestKind: 'json' | 'form'
 }
@@ -37,6 +41,8 @@ type LoginUser = {
   personalCode: string
   firstName: string | null
   email: string | null
+  loginPin: string | null
+  passwordHash: string | null
   status: string
   emailVerified: boolean
 }
@@ -50,6 +56,9 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     return {
       code: (body.passcode || body.pin || '').trim(),
       firstName: (body.name || body.firstName || '').trim().toLowerCase(),
+      identifier: (body.identifier || body.email || body.username || '').trim().toLowerCase(),
+      secret: (body.secret || body.password || '').trim(),
+      secretType: body.secretType === 'passcode' ? 'passcode' : 'password',
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -59,10 +68,26 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
   return {
     code: String(formData.get('passcode') || '').trim(),
     firstName: String(formData.get('name') || formData.get('firstName') || '').trim().toLowerCase(),
+    identifier: String(formData.get('identifier') || formData.get('email') || formData.get('username') || '').trim().toLowerCase(),
+    secret: String(formData.get('secret') || formData.get('password') || '').trim(),
+    secretType: String(formData.get('secretType') || 'password') === 'passcode' ? 'passcode' : 'password',
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.DASHBOARD)),
     requestKind,
   }
 }
+
+const loginUserSelect = {
+  id: true,
+  username: true,
+  displayName: true,
+  personalCode: true,
+  firstName: true,
+  email: true,
+  loginPin: true,
+  passwordHash: true,
+  status: true,
+  emailVerified: true,
+} as const
 
 function withAuthCookie(response: NextResponse, token: string) {
   response.cookies.set({
@@ -130,16 +155,7 @@ async function generateUniquePersonalCode(baseCode: string) {
 async function getOrCreateDefaultUser(): Promise<LoginUser> {
   const existing = await prisma.user.findUnique({
     where: { username: 'defaultuser' },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      personalCode: true,
-      firstName: true,
-      email: true,
-      status: true,
-      emailVerified: true,
-    },
+    select: loginUserSelect,
   })
 
   if (existing) {
@@ -151,16 +167,7 @@ async function getOrCreateDefaultUser(): Promise<LoginUser> {
           emailVerified: true,
           firstName: existing.firstName || 'Default',
         },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          personalCode: true,
-          firstName: true,
-          email: true,
-          status: true,
-          emailVerified: true,
-        },
+        select: loginUserSelect,
       })
 
       return reactivated
@@ -191,16 +198,7 @@ async function getOrCreateDefaultUser(): Promise<LoginUser> {
         },
       },
     },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      personalCode: true,
-      firstName: true,
-      email: true,
-      status: true,
-      emailVerified: true,
-    },
+    select: loginUserSelect,
   })
 
   return created
@@ -208,15 +206,15 @@ async function getOrCreateDefaultUser(): Promise<LoginUser> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, firstName, returnTo, requestKind } = await parseLoginInput(request)
-
-    if (!code) {
-      return buildErrorResponse(request, requestKind, MESSAGES.PASSCODE_REQUIRED, 400)
-    }
+    const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
 
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
       return buildErrorResponse(request, requestKind, MESSAGES.ERROR_GENERAL, 500)
+    }
+
+    if (!code && !(identifier && secret)) {
+      return buildErrorResponse(request, requestKind, MESSAGES.ENTRY_PIN_REQUIRED, 400)
     }
 
     // Shortcut: 0000 starts account creation.
@@ -264,9 +262,61 @@ export async function POST(request: NextRequest) {
       return withAuthCookie(response, token)
     }
 
+    // 5555 unlocks credential login mode.
+    if (code === '5555' && !identifier && !secret) {
+      if (requestKind === 'json') {
+        return NextResponse.json(
+          {
+            message: MESSAGES.PASSCODE_VALID,
+            requiresCredentials: true,
+            returnTo: ROUTES.LOGIN,
+          },
+          { status: 200 }
+        )
+      }
+
+      return NextResponse.redirect(new URL(ROUTES.LOGIN, request.url))
+    }
+
     let user: LoginUser | null = null
 
-    if (firstName) {
+    if (code === '5555') {
+      if (!identifier || !secret) {
+        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
+      }
+
+      user = await prisma.user.findFirst({
+        where: identifier.includes('@')
+          ? { email: identifier }
+          : { username: identifier },
+        select: loginUserSelect,
+      })
+
+      if (!user || user.status !== 'active') {
+        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+      }
+
+      if (secretType === 'passcode') {
+        const normalizedSecret = secret.toUpperCase()
+        const passcodeMatches = user.personalCode === normalizedSecret || user.loginPin === secret
+
+        if (!passcodeMatches) {
+          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+        }
+      } else {
+        if (!user.passwordHash || user.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
+          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_NOT_SET, 401)
+        }
+
+        const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
+
+        if (!passwordMatches) {
+          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+        }
+      }
+    }
+
+    if (!user && firstName) {
       const pinUser = await prisma.user.findFirst({
         where: {
           loginPin: code,
@@ -275,16 +325,7 @@ export async function POST(request: NextRequest) {
             mode: 'insensitive',
           },
         },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          personalCode: true,
-          firstName: true,
-          email: true,
-          status: true,
-          emailVerified: true,
-        },
+        select: loginUserSelect,
       })
 
       if (pinUser && pinUser.status === 'active') {
@@ -297,16 +338,7 @@ export async function POST(request: NextRequest) {
         // Fallback: match personalCode + first/display name (all onboarded users)
         const codeUser = await prisma.user.findUnique({
           where: { personalCode: code.toUpperCase() },
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
-            personalCode: true,
-            firstName: true,
-            email: true,
-            status: true,
-            emailVerified: true,
-          },
+          select: loginUserSelect,
         })
 
         const nameMatches =
@@ -320,19 +352,14 @@ export async function POST(request: NextRequest) {
 
         user = codeUser
       }
-    } else {
+    } else if (!user) {
+      if (!code) {
+        return buildErrorResponse(request, requestKind, MESSAGES.PASSCODE_REQUIRED, 400)
+      }
+
       user = await prisma.user.findUnique({
         where: { personalCode: code.toUpperCase() },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          personalCode: true,
-          firstName: true,
-          email: true,
-          status: true,
-          emailVerified: true,
-        },
+        select: loginUserSelect,
       })
 
       if (!user || user.status !== 'active') {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
-const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.WELCOME, ROUTES.ONBOARDING, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.PIN_REVEAL]
+const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.WELCOME, ROUTES.ONBOARDING, ROUTES.LOG_IN, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.PIN_REVEAL]
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => {
