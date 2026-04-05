@@ -70,6 +70,29 @@ export const INTEREST_TAG_OPTIONS = [
   'Aftercare-focused',
 ]
 
+export const KINK_OPTIONS = [
+  'BDSM',
+  'Bondage',
+  'Dominance & Submission',
+  'Fetish',
+  'Roleplay',
+  'Voyeurism',
+  'Exhibitionism',
+  'Sensory Play',
+  'Impact Play',
+  'Rope Play',
+  'Power Exchange',
+  'Aftercare',
+  'Leather',
+  'Latex',
+  'Cuckold',
+  'Feet',
+  'Public Play',
+  'Switch Dynamics',
+  'Edging',
+  'Praise/Degradation',
+]
+
 export const SEARCH_LOCATION_OPTIONS = [
   'Harbor District',
   'Old Town',
@@ -146,6 +169,9 @@ export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
+export const MIN_PASSWORD_LENGTH = 8
+export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
+export const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
 
 const parsedMaxMembers = Number.parseInt(process.env.MAX_MEMBER_COUNT || '20', 10)
 export const MAX_MEMBER_COUNT = Number.isFinite(parsedMaxMembers) && parsedMaxMembers > 0

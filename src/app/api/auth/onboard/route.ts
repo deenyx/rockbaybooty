@@ -6,12 +6,13 @@ import prisma from '@/lib/prisma'
 import {
   AUTH_COOKIE_NAME,
   AUTH_TOKEN_MAX_AGE_SECONDS,
+  KINK_OPTIONS,
+  MAX_PROFILE_PHOTO_BYTES,
   MESSAGES,
   MIN_AGE,
+  MIN_PASSWORD_LENGTH,
+  USERNAME_REGEX,
 } from '@/lib/constants'
-
-const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
-const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
 
 // Generate a unique personal passcode
 function generatePersonalCode(): string {
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const username = body.username?.trim().toLowerCase()
+    const password = body.password
     const displayName = body.displayName?.trim()
     const dateOfBirthInput = body.dateOfBirth?.trim()
     const city = body.city?.trim()
@@ -84,7 +86,15 @@ export async function POST(request: NextRequest) {
     const interests = Array.isArray(body.interests)
       ? body.interests.filter((value: unknown) => typeof value === 'string').map((value: string) => value.trim()).filter(Boolean)
       : []
+    const kinks = Array.isArray(body.kinks)
+      ? body.kinks
+          .filter((value: unknown) => typeof value === 'string')
+          .map((value: string) => value.trim())
+          .filter((value: string) => KINK_OPTIONS.includes(value))
+      : []
+    const avatarUrl = body.avatarUrl?.trim() || null
     const profilePhoto = body.profilePhoto?.trim() || null
+    const adultContentConfirmed = body.adultContentConfirmed === true
     const {
       email,
     } = body
@@ -118,6 +128,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json(
+        { error: MESSAGES.PASSWORD_MIN_LENGTH },
+        { status: 400 }
+      )
+    }
+
     if (!city || !gender || !sexualOrientation || lookingFor.length === 0) {
       return NextResponse.json(
         { error: MESSAGES.FIELD_REQUIRED },
@@ -135,6 +152,27 @@ export async function POST(request: NextRequest) {
     if (sexualOrientation === 'Other' && !orientationOther) {
       return NextResponse.json(
         { error: MESSAGES.FIELD_REQUIRED },
+        { status: 400 }
+      )
+    }
+
+    if (!adultContentConfirmed) {
+      return NextResponse.json(
+        { error: 'Please confirm the adult content warning before continuing' },
+        { status: 400 }
+      )
+    }
+
+    if (kinks.length === 0) {
+      return NextResponse.json(
+        { error: 'Select at least one kink' },
+        { status: 400 }
+      )
+    }
+
+    if (avatarUrl && !/^https?:\/\//.test(avatarUrl)) {
+      return NextResponse.json(
+        { error: 'Invalid avatar image URL' },
         { status: 400 }
       )
     }
@@ -176,9 +214,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create password hash (TODO: require password from user)
-    const tempPassword = Math.random().toString(36).substring(2, 15)
-    const passwordHash = await bcrypt.hash(tempPassword, 10)
+    const passwordHash = await bcrypt.hash(password, 10)
 
     // Generate unique personal code
     let personalCode = generatePersonalCode()
@@ -210,8 +246,9 @@ export async function POST(request: NextRequest) {
 
     const location = [city, state, country].filter(Boolean).join(', ')
 
-    // Create profile
-    await prisma.profile.create({
+    const resolvedAvatarUrl = avatarUrl || profilePhoto
+
+    const profile = await prisma.profile.create({
       data: {
         userId: user.id,
         age: getAge(dateOfBirth),
@@ -227,11 +264,30 @@ export async function POST(request: NextRequest) {
         lookingFor,
         bio,
         interests,
-        avatarUrl: profilePhoto,
-        photoUrls: profilePhoto ? [profilePhoto] : [],
+        kinks,
+        avatarUrl: resolvedAvatarUrl,
+        photoUrls: resolvedAvatarUrl ? [resolvedAvatarUrl] : [],
         isPublic: false,
       },
+      select: {
+        age: true,
+        city: true,
+        state: true,
+        country: true,
+        location: true,
+        gender: true,
+        sexualOrientation: true,
+        lookingFor: true,
+        bio: true,
+        interests: true,
+        kinks: true,
+        avatarUrl: true,
+      },
     })
+
+    const profileKinks = Array.isArray(profile.kinks)
+      ? profile.kinks.filter((value): value is string => typeof value === 'string')
+      : []
 
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
@@ -250,7 +306,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
     )
 
-    // TODO: Send welcome email with temporary password
+    // TODO: Send welcome email
     const response = NextResponse.json(
       {
         message: MESSAGES.ACCOUNT_CREATED,
@@ -261,6 +317,20 @@ export async function POST(request: NextRequest) {
           username: user.username,
           displayName: user.displayName,
           personalCode: user.personalCode,
+        },
+        profile: {
+          age: profile.age,
+          city: profile.city,
+          state: profile.state,
+          country: profile.country,
+          location: profile.location,
+          gender: profile.gender,
+          sexualOrientation: profile.sexualOrientation,
+          lookingFor: profile.lookingFor,
+          bio: profile.bio,
+          interests: profile.interests,
+          kinks: profileKinks,
+          avatarUrl: profile.avatarUrl,
         },
       },
       { status: 201 }

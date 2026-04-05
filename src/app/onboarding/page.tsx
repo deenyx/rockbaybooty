@@ -9,11 +9,15 @@ import { checkUsernameAvailability, onboard } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   INTEREST_TAG_OPTIONS,
+  KINK_OPTIONS,
+  MAX_PROFILE_PHOTO_BYTES,
   MESSAGES,
   MIN_AGE,
+  MIN_PASSWORD_LENGTH,
   ORIENTATION_OPTIONS,
   ROLE_OPTIONS,
   ROUTES,
+  USERNAME_REGEX,
 } from '@/lib/constants'
 
 type StepConfig = {
@@ -26,6 +30,8 @@ type OnboardingFormData = {
   dateOfBirth: string
   displayName: string
   username: string
+  password: string
+  confirmPassword: string
   city: string
   state: string
   country: string
@@ -36,7 +42,9 @@ type OnboardingFormData = {
   lookingFor: string[]
   bio: string
   interests: string[]
-  profilePhoto: string
+  kinks: string[]
+  avatarUrl: string
+  adultContentConfirmed: boolean
 }
 
 const STEPS: StepConfig[] = [
@@ -71,6 +79,11 @@ const STEPS: StepConfig[] = [
     subtitle: 'Write a short vibe check and pick tags if you want.',
   },
   {
+    key: 'credentials-kinks',
+    title: 'Credentials & Kinks',
+    subtitle: 'Set your password and pick the kinks you want visible on your profile.',
+  },
+  {
     key: 'photo',
     title: 'Photo',
     subtitle: 'Add one profile photo to complete your first impression.',
@@ -82,13 +95,12 @@ const STEPS: StepConfig[] = [
   },
 ]
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
-const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024
-
 const initialFormData: OnboardingFormData = {
   dateOfBirth: '',
   displayName: '',
   username: '',
+  password: '',
+  confirmPassword: '',
   city: '',
   state: '',
   country: '',
@@ -99,7 +111,9 @@ const initialFormData: OnboardingFormData = {
   lookingFor: [],
   bio: '',
   interests: [],
-  profilePhoto: '',
+  kinks: [],
+  avatarUrl: '',
+  adultContentConfirmed: false,
 }
 
 function getAgeFromDob(value: string): number {
@@ -125,6 +139,35 @@ function isAtLeastMinimumAge(dateOfBirth: string): boolean {
   return Number.isFinite(age) && age >= MIN_AGE
 }
 
+async function uploadAvatarToCloudinary(file: File): Promise<string> {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Avatar upload is unavailable right now. Please try again later.')
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', uploadPreset)
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    throw new Error('Avatar upload failed. Please try another image.')
+  }
+
+  const payload = await response.json()
+  if (typeof payload.secure_url !== 'string' || !payload.secure_url) {
+    throw new Error('Avatar upload returned an invalid URL.')
+  }
+
+  return payload.secure_url
+}
+
 function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -136,6 +179,7 @@ function OnboardingContent() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [isCopying, setIsCopying] = useState(false)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [generatedPasscode, setGeneratedPasscode] = useState('')
   const [redirectCountdown, setRedirectCountdown] = useState(0)
   const [customInterestInput, setCustomInterestInput] = useState('')
@@ -296,8 +340,32 @@ function OnboardingContent() {
       nextErrors.lookingFor = 'Select a role'
     }
 
-    if (stepIndex === 6 && !formData.profilePhoto) {
-      nextErrors.profilePhoto = 'Please upload a profile photo'
+    if (stepIndex === 6) {
+      if (!formData.password) {
+        nextErrors.password = 'Password is required'
+      } else if (formData.password.length < MIN_PASSWORD_LENGTH) {
+        nextErrors.password = MESSAGES.PASSWORD_MIN_LENGTH
+      }
+
+      if (!formData.confirmPassword) {
+        nextErrors.confirmPassword = 'Please confirm your password'
+      } else if (formData.password !== formData.confirmPassword) {
+        nextErrors.confirmPassword = 'Passwords do not match'
+      }
+
+      if (formData.kinks.length === 0) {
+        nextErrors.kinks = 'Select at least one kink'
+      }
+    }
+
+    if (stepIndex === 7) {
+      if (!formData.avatarUrl) {
+        nextErrors.profilePhoto = 'Please upload a profile photo'
+      }
+
+      if (!formData.adultContentConfirmed) {
+        nextErrors.adultContentConfirmed = 'Please confirm the adult content warning'
+      }
     }
 
     setErrors((previous) => ({
@@ -333,6 +401,14 @@ function OnboardingContent() {
     setFieldValue('interests', nextValues)
   }
 
+  const toggleKink = (kink: string) => {
+    const isSelected = formData.kinks.includes(kink)
+    const nextValues = isSelected
+      ? formData.kinks.filter((item) => item !== kink)
+      : [...formData.kinks, kink]
+    setFieldValue('kinks', nextValues)
+  }
+
   const handlePhotoUpload = async (file: File | undefined) => {
     if (!file) {
       return
@@ -354,13 +430,18 @@ function OnboardingContent() {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setFieldValue('profilePhoto', reader.result)
-      }
+    try {
+      setIsUploadingPhoto(true)
+      const uploadedUrl = await uploadAvatarToCloudinary(file)
+      setFieldValue('avatarUrl', uploadedUrl)
+    } catch (error) {
+      setErrors((previous) => ({
+        ...previous,
+        profilePhoto: error instanceof Error ? error.message : 'Avatar upload failed',
+      }))
+    } finally {
+      setIsUploadingPhoto(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleNext = () => {

@@ -53,6 +53,7 @@ export async function onboard(data: {
   dateOfBirth: string
   displayName: string
   username: string
+  password: string
   city: string
   state?: string
   country?: string
@@ -63,7 +64,9 @@ export async function onboard(data: {
   lookingFor: string[]
   bio?: string
   interests?: string[]
-  profilePhoto?: string
+  kinks?: string[]
+  avatarUrl?: string
+  adultContentConfirmed: boolean
 }): Promise<AuthResponse> {
   return apiCall('/api/auth/onboard', {
     method: 'POST',

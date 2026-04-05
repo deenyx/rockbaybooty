@@ -110,6 +110,7 @@ model Profile {
   location        String?
   bio             String?
   interests       String[] @default([]) // Array of interest tags
+  kinks           Json     @default("[]")
   lookingFor      String[] @default([]) // dating, hookups, friends, networking, other
   
   // Media

@@ -30,6 +30,7 @@ export interface Profile {
   location?: string
   bio?: string
   interests: string[]
+  kinks?: string[]
   lookingFor: string[]
   avatarUrl?: string
   photoUrls: string[]
@@ -75,6 +76,20 @@ export interface AuthResponse {
     username: string
     displayName: string
     personalCode: string
+  }
+  profile?: {
+    age: number | null
+    city: string | null
+    state: string | null
+    country: string | null
+    location: string | null
+    gender: string | null
+    sexualOrientation: string | null
+    lookingFor: string[]
+    bio: string | null
+    interests: string[]
+    kinks: string[]
+    avatarUrl: string | null
   }
 }
 
