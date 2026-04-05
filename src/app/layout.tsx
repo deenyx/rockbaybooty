@@ -14,6 +14,7 @@ const display = Bodoni_Moda({
   subsets: ['latin'],
   variable: '--font-display',
   weight: ['500', '600', '700'],
+  adjustFontFallback: false,
 })
 
 export const metadata: Metadata = {
