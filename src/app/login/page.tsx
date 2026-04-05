@@ -177,7 +177,8 @@ function LoginContent() {
                 style={{ fontFamily: CP }}
               />
               <p className="mt-2 text-center text-[10px] tracking-wide text-stone-400" style={{ fontFamily: CP }}>
-                No code = 0000. 9999 = default member. 5555 = credentials login.
+                No code = 0000
+            
               </p>
             </div>
 
