@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+import TopQuickNav from '@/app/_components/top-quick-nav'
 import { deleteMyAccount, disableMyAccount, fetchMemberSettings, updateMemberSettings } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
 import type { MemberSettings } from '@/lib/types'
@@ -183,12 +184,14 @@ export default function SettingsClient() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 py-8 text-stone-100 sm:px-6 lg:px-8">
+    <main className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
         style={{ backgroundImage: "url('/3.jpg')" }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.7)_0%,rgba(6,8,12,0.84)_100%)]" />
+
+      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
 
       <div className="relative z-10 mx-auto max-w-4xl space-y-6">
         <section className="rounded-3xl border border-white/10 bg-black/35 p-6 backdrop-blur-xl sm:p-8">

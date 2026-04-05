@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+import TopQuickNav from '@/app/_components/top-quick-nav'
 import { searchMembers, sendFriendRequest, sendGesture } from '@/lib/api'
 import {
+  MEMBER_MENU_ITEMS,
   GENDER_OPTIONS,
   LOOKING_FOR_OPTIONS,
   MAX_AGE,
@@ -17,16 +19,7 @@ import {
 } from '@/lib/constants'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: ROUTES.DASHBOARD },
-  { label: 'Settings', href: ROUTES.SETTINGS },
-  { label: 'Search', href: ROUTES.SEARCH },
-  { label: 'Videos', href: ROUTES.VIDEOS },
-  { label: 'Messages', href: ROUTES.MESSAGESS },
-  { label: 'Live Chat', href: ROUTES.CHAT },
-  { label: 'Groups', href: ROUTES.GROUPS },
-  { label: 'Profile', href: ROUTES.PROFILE },
-]
+const NAV_ITEMS = [...MEMBER_MENU_ITEMS]
 
 const INITIAL_FILTERS: MemberSearchFilters = {
   q: '',
@@ -305,6 +298,8 @@ export default function SearchPage() {
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
 
+      <TopQuickNav className="left-60 right-4 md:left-28 md:right-6" />
+
       <div className="group/sidebar fixed inset-y-0 left-0 z-30 flex w-56 overflow-hidden border-r border-white/10 bg-[#0d1117]/78 px-4 py-5 backdrop-blur-md md:w-[84px] md:hover:w-64 md:transition-[width] md:duration-300">
         <aside className="flex h-full w-full flex-col">
           <div className="px-2">
@@ -347,7 +342,7 @@ export default function SearchPage() {
         </aside>
       </div>
 
-      <main className="relative z-10 mx-auto w-full space-y-5 px-4 pb-16 pt-6 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-8">
+      <main className="relative z-10 mx-auto w-full space-y-5 px-4 pb-16 pt-24 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-24">
           <header className="rounded-3xl border border-white/12 bg-black/30 p-4 backdrop-blur-lg sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>

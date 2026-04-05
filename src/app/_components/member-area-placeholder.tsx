@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import TopQuickNav from '@/app/_components/top-quick-nav'
 import { ROUTES } from '@/lib/constants'
 
 type MemberAreaPlaceholderProps = {
@@ -16,14 +17,16 @@ export default function MemberAreaPlaceholder({
   highlights,
 }: MemberAreaPlaceholderProps) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 py-8 text-stone-100 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
         style={{ backgroundImage: "url('/welcome2.jpg')" }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
 
-      <div className="relative z-10 mx-auto max-w-5xl space-y-6">
+      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
+
+      <main className="relative z-10 mx-auto max-w-5xl space-y-6">
         <div className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-8">
           <p className="text-xs uppercase tracking-[0.24em] text-stone-300/80">{eyebrow}</p>
           <h1 className="mt-3 font-[family:var(--font-display)] text-4xl text-stone-100 sm:text-5xl">
@@ -67,7 +70,7 @@ export default function MemberAreaPlaceholder({
             This page is intentionally live as a protected placeholder so member navigation works end to end while the real feature is being built.
           </p>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

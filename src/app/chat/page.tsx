@@ -1,5 +1,7 @@
 import dynamic from 'next/dynamic'
 
+import TopQuickNav from '@/app/_components/top-quick-nav'
+
 // Loaded client-only: the LiveKit SDK uses WebRTC browser APIs that must not
 // run during SSR. The loading fallback mirrors the in-room spinner so there
 // is no layout shift once the script bundle appears.
@@ -19,5 +21,10 @@ const LiveRoomClient = dynamic(
 )
 
 export default function ChatPage() {
-  return <LiveRoomClient />
+  return (
+    <div className="relative min-h-screen">
+      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
+      <LiveRoomClient />
+    </div>
+  )
 }

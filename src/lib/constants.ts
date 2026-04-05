@@ -175,3 +175,14 @@ export const ROUTES = {
   VIDEOS: '/videos',
   MY_VIDEOS: '/videos/my',
 }
+
+export const MEMBER_MENU_ITEMS = [
+  { label: 'Dashboard', href: ROUTES.DASHBOARD },
+  { label: 'Settings', href: ROUTES.SETTINGS },
+  { label: 'Search', href: ROUTES.SEARCH },
+  { label: 'Videos', href: ROUTES.VIDEOS },
+  { label: 'Messages', href: ROUTES.MESSAGESS },
+  { label: 'Live Chat', href: ROUTES.CHAT },
+  { label: 'Groups', href: ROUTES.GROUPS },
+  { label: 'Profile', href: ROUTES.PROFILE },
+] as const

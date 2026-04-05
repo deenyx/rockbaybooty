@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 
-import { ROUTES } from '@/lib/constants'
+import TopQuickNav from '@/app/_components/top-quick-nav'
+import { MEMBER_MENU_ITEMS, ROUTES } from '@/lib/constants'
 
 type DashboardViewData = {
   user: {
@@ -35,16 +36,7 @@ type DashboardClientProps = {
   initialData: DashboardViewData
 }
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: ROUTES.DASHBOARD },
-  { label: 'Settings', href: ROUTES.SETTINGS },
-  { label: 'Search', href: ROUTES.SEARCH },
-  { label: 'Videos', href: ROUTES.VIDEOS },
-  { label: 'Messages', href: ROUTES.MESSAGESS },
-  { label: 'Live Chat', href: ROUTES.CHAT },
-  { label: 'Groups', href: ROUTES.GROUPS },
-  { label: 'Profile', href: ROUTES.PROFILE },
-]
+const NAV_ITEMS = [...MEMBER_MENU_ITEMS]
 
 function getInitials(name: string) {
   return name
@@ -238,6 +230,8 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
 
+      <TopQuickNav className="left-60 right-4 md:left-28 md:right-6" />
+
       <div className="group/sidebar fixed inset-y-0 left-0 z-30 flex w-56 overflow-hidden md:w-[84px] md:hover:w-64 md:transition-[width] md:duration-300">
         <Sidebar
           currentPath={pathname}
@@ -248,7 +242,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         />
       </div>
 
-      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-6 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-8" />
+      <main className="relative z-10 mx-auto w-full px-4 pb-16 pt-24 pl-60 sm:px-6 md:pl-28 md:pr-8 md:pt-24" />
     </div>
   )
 }

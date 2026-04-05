@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
+import TopQuickNav from '@/app/_components/top-quick-nav'
 import { fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { ConversationMessagesResponse, DirectMessage } from '@/lib/types'
@@ -225,7 +226,9 @@ export default function ConversationPage() {
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 pb-6 pt-24 sm:px-6 lg:px-8">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-[#0d1117]/78 p-5 backdrop-blur-md md:block">
           <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Member Area</p>
