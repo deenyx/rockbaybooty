@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Rockbay Booty</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #181828; color: #fff; margin: 0; padding: 0; }
+    .container { max-width: 400px; margin: 80px auto; background: #23234a; border-radius: 10px; box-shadow: 0 2px 12px #0008; padding: 32px; }
+    h1 { text-align: center; margin-bottom: 24px; }
+    .tabs { display: flex; margin-bottom: 24px; }
+    .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: #23234a; border-radius: 6px 6px 0 0; color: #aaa; transition: background 0.2s, color 0.2s; }
+    .tab.active { background: #fff; color: #23234a; font-weight: bold; }
+    form { display: none; }
+    form.active { display: block; }
+    label { display: block; margin: 12px 0 4px; }
+    input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 8px; border-radius: 4px; border: none; margin-bottom: 16px; }
+    button { width: 100%; padding: 10px; background: #ff4b8b; color: #fff; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+    button:hover { background: #ff2670; }
+    .footer { text-align: center; margin-top: 24px; color: #888; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Rockbay Booty</h1>
+    <div class="tabs">
+      <div class="tab active" id="signInTab">Sign In</div>
+      <div class="tab" id="signUpTab">Sign Up</div>
+    </div>
+    <form id="signInForm" class="active">
+      <label for="signin-email">Email</label>
+      <input type="email" id="signin-email" required>
+      <label for="signin-password">Password</label>
+      <input type="password" id="signin-password" required>
+      <button type="submit">Sign In</button>
+    </form>
+    <form id="signUpForm">
+      <label for="signup-email">Email</label>
+      <input type="email" id="signup-email" required>
+      <label for="signup-username">Username</label>
+      <input type="text" id="signup-username" required>
+      <label for="signup-password">Password</label>
+      <input type="password" id="signup-password" required>
+      <button type="submit">Sign Up</button>
+    </form>
+    <div class="footer">&copy; 2026 Rockbay Booty. All rights reserved.</div>
+  </div>
+  <script>
+    const signInTab = document.getElementById('signInTab');
+    const signUpTab = document.getElementById('signUpTab');
+    const signInForm = document.getElementById('signInForm');
+    const signUpForm = document.getElementById('signUpForm');
+
+    signInTab.onclick = () => {
+      signInTab.classList.add('active');
+      signUpTab.classList.remove('active');
+      signInForm.classList.add('active');
+      signUpForm.classList.remove('active');
+    };
+    signUpTab.onclick = () => {
+      signUpTab.classList.add('active');
+      signInTab.classList.remove('active');
+      signUpForm.classList.add('active');
+      signInForm.classList.remove('active');
+    };
+    signInForm.onsubmit = e => {
+      e.preventDefault();
+      alert('Sign in not implemented yet.');
+    };
+    signUpForm.onsubmit = e => {
+      e.preventDefault();
+      alert('Sign up not implemented yet.');
+    };
+  </script>
+</body>
+</html>
