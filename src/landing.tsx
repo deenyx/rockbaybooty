@@ -66,8 +66,8 @@ export default function Landing() {
       </div>
     );
   }
-          Where desire meets discretion.
-          <br />
+        <p className="text-white/80 text-2xl mt-8 mb-2 text-center">
+          Where desire meets discretion.<br />
           <span className="text-white/40 text-xl sm:text-2xl">No judgment. No limits. Just your kind of people.</span>
         </p>
 
