@@ -18,74 +18,54 @@ export default function Landing() {
   const [loginUserId, setLoginUserId] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [loginError, setLoginError] = useState("");
-  const router = useRouter();
+  import { useState } from "react";
+  import { useRouter } from "next/navigation";
 
-  // Passcode for onboarding
-  const INVITE_PASSCODE = "0000";
+  export default function Landing() {
+    const [pin, setPin] = useState("");
+    const [error, setError] = useState("");
+    const router = useRouter();
 
-  const handlePasscodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passcode.trim() === INVITE_PASSCODE) {
-      setError("");
-      router.push("/onboarding");
-    } else {
-      setError("Invalid passcode. Please try again.");
-    }
-  };
-
-  // Login handler: check profiles.json for user
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    if (!loginUserId || !loginPass) {
-      setLoginError("Please enter both User ID and Passcode/Words.");
-      return;
-    }
-    try {
-      const filePath = path.join(process.cwd(), "src", "profiles.json");
-      let profiles = [];
-      if (fs.existsSync(filePath)) {
-        profiles = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-      }
-      const found = profiles.find(
-        (p) => p.userId === loginUserId && p.passcode === loginPass
-      );
-      if (found) {
-        setLoginError("");
-        // router.push("/members/feed");
-        alert("Login successful! (Redirect to members area here.)");
+    function handleSubmit(e: React.FormEvent) {
+      e.preventDefault();
+      const code = pin.trim();
+      if (code === "0000") {
+        router.push("/onboarding");
+      } else if (code === "5555") {
+        router.push("/login");
+      } else if (code === "9999") {
+        router.push("/dashboard");
       } else {
-        setLoginError("Invalid User ID or Passcode.");
-      }
-    } catch (err) {
-      setLoginError("Login failed. Please try again.");
+        setError("Invalid PIN. Try 0000, 5555, or 9999.");
     }
-  };
+    }
 
-  return (
-    <div
-      className="relative flex min-h-[calc(100vh-64px)] flex-col items-center justify-center overflow-hidden"
-      style={{
-        backgroundImage: [
-          "linear-gradient(180deg, rgba(10,3,20,0.72) 0%, rgba(20,6,38,0.55) 40%, rgba(10,3,20,0.80) 100%)",
-          "url('/welcomebackground1.jpg')",
-        ].join(", "),
-        backgroundSize: "113% 113%",
-        backgroundPosition: "center center",
-        backgroundRepeat: "no-repeat",
-        backgroundColor: "#0a0314",
-      }}
-    >
-      {/* Glow orbs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-700/20 blur-[120px]" />
-        <div className="absolute right-1/4 bottom-1/4 h-[300px] w-[300px] rounded-full bg-pink-600/15 blur-[100px]" />
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
+        <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-5 p-6">
+          <label className="block mb-2 text-lg font-semibold">PIN</label>
+          <input
+            type="password"
+            autoFocus
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            value={pin}
+            onChange={(e) => {
+              setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
+              setError("");
+            }}
+            placeholder="Enter PIN (0000, 5555, 9999)"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-center text-2xl text-white outline-none"
+          />
+          {error && <div className="text-red-400 text-xs">{error}</div>}
+          <button type="submit" className="w-full rounded-full bg-purple-700 px-4 py-3 mt-2">
+            Continue
+          </button>
+        </form>
       </div>
-
-      {/* Hero content */}
-      <main className="relative z-10 flex flex-col items-center gap-8 px-8 text-center">
-        {/* Logo mark */}
-        {/* Tagline */}
-        <p className="max-w-2xl text-3xl text-white/60 leading-tight sm:text-4xl" style={playfulScript}>
+    );
+  }
           Where desire meets discretion.
           <br />
           <span className="text-white/40 text-xl sm:text-2xl">No judgment. No limits. Just your kind of people.</span>

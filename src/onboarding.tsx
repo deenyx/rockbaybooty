@@ -1,6 +1,6 @@
-import { useState } from "react";
-import fs from "fs";
-import path from "path";
+import { useState, ChangeEvent, FormEvent } from "react";
+
+import { registerUser } from "./lib/api";
 
 const questions = [
   { label: "What is your display name?", key: "displayName", type: "text" },
@@ -15,32 +15,28 @@ export default function Onboarding() {
   const [userId, setUserId] = useState("");
   const [userPass, setUserPass] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLTextAreaElement>) => {
     setAnswers({ ...answers, [questions[step].key]: e.target.value });
   };
 
-  const handleNext = async (e) => {
+  const handleNext = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (step < questions.length - 1) {
       setStep(step + 1);
     } else {
-      // Generate user ID and passcode
-      const newUserId = Math.random().toString(36).substring(2, 10);
-      const newUserPass = Math.random().toString(36).substring(2, 10);
-      setUserId(newUserId);
-      setUserPass(newUserPass);
-
-      // Save profile to profiles.json (basic file write, works only in Node/server)
+      // Register user via backend API
       try {
-        const filePath = path.join(process.cwd(), "src", "profiles.json");
-        let profiles = [];
-        if (fs.existsSync(filePath)) {
-          profiles = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        const res = await registerUser({
+          displayName: answers.displayName,
+          lookingFor: answers.lookingFor,
+          about: answers.about,
+        });
+        if (res && res.pin && res.message) {
+          setUserId(res.userId || "");
+          setUserPass(res.pin);
         }
-        profiles.push({ ...answers, userId: newUserId, passcode: newUserPass });
-        fs.writeFileSync(filePath, JSON.stringify(profiles, null, 2));
       } catch (err) {
-        // Ignore file write errors in browser
+        // Handle error (could show error message)
       }
       setDone(true);
     }
