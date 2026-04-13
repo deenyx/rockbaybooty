@@ -1,20 +1,39 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { loginUser } from '../../lib/api';
 
 export default function PinEntryBox() {
   const router = useRouter();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (pin === "0000") {
-      router.push("/onboarding");
+      router.push("/signup");
     } else if (pin === "5555") {
       router.push("/login");
     } else if (pin === "9999") {
-      router.push("/dashboard");
+      // Attempt to login as test user, create if needed
+      setError("");
+      const email = "test@fuxem.xyz";
+      const password = "testuserpass";
+      let result = await loginUser({ email, password });
+      if (result.error) {
+        // Try to register the test user if login failed
+        await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "testuser", email, password }),
+        });
+        result = await loginUser({ email, password });
+      }
+      if (result.error) {
+        setError("Test user login failed.");
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       setError("Invalid PIN. Try 0000, 5555, or 9999.");
     }
