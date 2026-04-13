@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "dev": "next dev"
+    "dev": "next dev",
+    "vercel-build": "cd werk && npm install && npm run build"
   },
   "dependencies": {
     "@types/react": "^19.2.14",
