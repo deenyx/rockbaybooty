@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
-const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.WELCOME, ROUTES.ONBOARDING, ROUTES.LOG_IN, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.PIN_REVEAL]
+// Only onboarding, welcome, login, signup, and home are public
+const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal'];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => {
@@ -58,6 +59,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/auth/')) {
     return NextResponse.next()
   }
+
 
   if (isPublicPath(pathname)) {
     return NextResponse.next()

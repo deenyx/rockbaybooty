@@ -38,3 +38,5 @@ tsconfig.tsbuildinfo
 
 # OS
 Thumbs.db
+# next
+.next

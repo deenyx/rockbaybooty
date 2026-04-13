@@ -153,26 +153,47 @@ async function generateUniquePersonalCode(baseCode: string) {
 }
 
 async function getOrCreateDefaultUser(): Promise<LoginUser> {
-  const existing = await prisma.user.findUnique({
+  const TEST_EMAIL = 'test@fuxem.xyz'
+  const TEST_PASSWORD = 'testuserpass'
+  const bcrypt = require('bcryptjs')
+  const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10)
+
+  let existing = await prisma.user.findUnique({
     where: { username: 'defaultuser' },
     select: loginUserSelect,
   })
 
   if (existing) {
-    if (existing.status !== 'active' || !existing.emailVerified) {
-      const reactivated = await prisma.user.update({
+    // Patch any missing/incorrect fields
+    let needsUpdate = false
+    const updateData: any = {}
+    if (existing.status !== 'active') {
+      updateData.status = 'active'
+      needsUpdate = true
+    }
+    if (!existing.emailVerified) {
+      updateData.emailVerified = true
+      needsUpdate = true
+    }
+    if (!existing.firstName || existing.firstName !== 'Default') {
+      updateData.firstName = 'Default'
+      needsUpdate = true
+    }
+    if (!existing.email || existing.email !== TEST_EMAIL) {
+      updateData.email = TEST_EMAIL
+      needsUpdate = true
+    }
+    if (!existing.passwordHash || existing.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
+      updateData.passwordHash = passwordHash
+      needsUpdate = true
+    }
+    if (needsUpdate) {
+      existing = await prisma.user.update({
         where: { id: existing.id },
-        data: {
-          status: 'active',
-          emailVerified: true,
-          firstName: existing.firstName || 'Default',
-        },
+        data: updateData,
         select: loginUserSelect,
       })
-
-      return reactivated
     }
-
     return existing
   }
 
@@ -184,7 +205,8 @@ async function getOrCreateDefaultUser(): Promise<LoginUser> {
       displayName: 'Default User',
       firstName: 'Default',
       personalCode,
-      passwordHash: 'LEGACY_PREVIEW_ACCOUNT',
+      passwordHash,
+      email: TEST_EMAIL,
       emailVerified: true,
       status: 'active',
       onboardingStep: 'completed',

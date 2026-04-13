@@ -1,26 +1,16 @@
-# SocialNet - Social Networking Platform
+# fuxem
 
-An exclusive, invite-only social networking platform with passcode-based onboarding. Users can connect for dating, hookups, friendships, or networking.
+## Purpose
 
-## Features (Prioritized)
+fuxem is an adults-only social networking platform inspired by sites like Fetlife, Squirt.org, and Adult FriendFinder, but with a unique focus: serving crossdressers—especially men who act as temporary girlfriends for otherwise straight men. The platform aims to provide a safe, inclusive, and feature-rich environment for this niche community, blending social networking, dating, and community-building tools.
 
-### ✅ Phase 1: Core - Landing Page & Onboarding (Current)
-- **Landing Page**: Beautiful hero page with invite button
-- **Passcode Entry**: Initial gate with passcode validation
-- **Interview-Style Onboarding**: Multi-step form collecting:
-  - Basic info (name, email, age)
-  - Profile details (gender, location)
-  - Interests & intentions (what they're looking for)
-  - Optional bio and interests
-- **Profile Creation**: Auto-generates unique personal passcode for user
-- **Database Ready**: PostgreSQL schema for users, profiles, and invite codes
+## Key Features
 
-### 📋 Phase 2: Core Features (Coming Soon)
-- Member Search & Discovery
-- Video Chat Rooms
-- Real-time Messaging
-- Groups & Communities
-- Classified Sections
+- Members-only access
+- Real-time video, audio, and text chat rooms
+- User profiles, onboarding, and settings
+- Classifieds, groups, and other community features
+- Designed for crossdressers and those seeking meaningful, discreet connections
 
 ## Project Structure
 

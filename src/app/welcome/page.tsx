@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
+import PinEntryBox from './PinEntryBox'
 
 type WelcomePageProps = {
   searchParams?: {
@@ -64,26 +64,13 @@ export default function Welcome({ searchParams }: WelcomePageProps) {
 
       {/* Nav */}
       <div className="pointer-events-auto absolute right-6 top-6 z-30 flex gap-6">
-        <Link
-          href="/login"
-          className="text-sm font-semibold uppercase tracking-widest text-white/80 transition hover:text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]"
-          style={{ fontFamily: 'var(--font-copperplate)' }}
-        >
-          Log In
-        </Link>
-        <Link
-          href="/signup"
-          className="text-sm font-semibold uppercase tracking-widest text-white/80 transition hover:text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]"
-          style={{ fontFamily: 'var(--font-copperplate)' }}
-        >
-          Sign Up
-        </Link>
+        {/* Nav removed, replaced by PIN entry */}
       </div>
 
       {/* Content */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-10 px-4">
+        <PinEntryBox />
       </div>
-
     </div>
   )
 }

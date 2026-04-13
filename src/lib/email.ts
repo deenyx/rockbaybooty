@@ -93,7 +93,7 @@ export async function sendLoginAlertEmail(to: string, firstName: string) {
         <p style="color:#57534e;font-size:12px;">If this wasn't you, contact us immediately.</p>
       </div>
     `,
-  }).catch((err) => console.error('[sendLoginAlertEmail]', err))
+  }).catch((err: unknown) => console.error('[sendLoginAlertEmail]', err))
 }
 
 export async function sendAssignedPinEmail(to: string, firstName: string, pin: string) {

@@ -149,6 +149,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-login after signup (development only, skip if prod)
+    if (process.env.NODE_ENV !== 'production') {
+      // Fetch the user (should be verified now)
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, username: true, displayName: true, personalCode: true },
+      })
+      if (user) {
+        const jwt = require('jsonwebtoken')
+        const { AUTH_COOKIE_NAME, AUTH_TOKEN_MAX_AGE_SECONDS } = require('@/lib/constants')
+        const payload = { userId: user.id, personalCode: user.personalCode }
+        const jwtSecret = process.env.JWT_SECRET || 'devsecret'
+        const token = jwt.sign(payload, jwtSecret, { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS })
+        const response = NextResponse.json(
+          {
+            message: 'Verify your email to activate your PIN.',
+            pin: NEW_MEMBER_PIN,
+            user: {
+              id: user.id,
+              username: user.username,
+              displayName: user.displayName,
+              personalCode: user.personalCode,
+            },
+          },
+          { status: 200 }
+        )
+        response.cookies.set({
+          name: AUTH_COOKIE_NAME,
+          value: token,
+          httpOnly: true,
+          secure: false,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: AUTH_TOKEN_MAX_AGE_SECONDS,
+        })
+        return response
+      }
+    }
     return NextResponse.json(
       {
         message: 'Verify your email to activate your PIN.',
