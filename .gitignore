@@ -1,2 +1,15 @@
 node_modules
 .vercel
+
+# Next.js
+.next/
+out/
+.next-dev/
+
+# Turbopack cache (the real villain)
+.turbopack/
+
+# Production
+dist/
+build/
+
