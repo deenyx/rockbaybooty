@@ -52,8 +52,15 @@ export default function Welcome() {
           opacity: 1,
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center gap-10 px-4">
-        <PinEntryBox />
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <PinEntryBox />
+        </div>
+        <div className="w-full flex justify-center pb-6">
+          <span className="text-[10px] text-white/30 tracking-widest select-none" style={{letterSpacing: '0.12em'}}>
+            No PIN? 0000
+          </span>
+        </div>
       </div>
     </div>
   )
