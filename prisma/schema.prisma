@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  usedBy    String?
+  status    String   @default("active") // active, used, revoked
+
+  @@index([code])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String?  @unique
+  username       String   @unique
+  displayName    String
+  personalCode   String   @unique // Referral / sharing code
+  passwordHash   String?           // Optional — new users use PIN-based auth
+  firstName      String?
+  lastName       String?
+
+  // PIN-based auth
+  loginPin                   String?            // 4-digit login PIN, matched with name at login
+  emailVerificationToken     String?   @unique
+  emailVerificationExpiresAt DateTime?
+
+  // Profile
+  profile        Profile?
+
+  // Messages
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  outgoingFriendships Friendship[] @relation("OutgoingFriendships")
+  incomingFriendships Friendship[] @relation("IncomingFriendships")
+  videos         Video[]
+
+  // Account Status
+  status         String   @default("active") // active, suspended, deleted
+  isPremium      Boolean  @default(false)
+  emailVerified  Boolean  @default(false)
+  onboardingStep String   @default("passcode") // passcode, interview, completed
+
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([personalCode])
+  @@index([loginPin])
+}
+
+model Video {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  videoUrl     String   // URL to stored video file (we'll use base64 or external storage later)
+  thumbnailUrl String?
+  isPublic     Boolean  @default(false) // Only Premium users can set this to true
+  views        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      String   @default("pending") // pending, accepted, declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("OutgoingFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient User @relation("IncomingFriendships", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, recipientId])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Interview Answers
+  age             Int?
+  dateOfBirth     DateTime?
+  gender          String?
+  genderOther     String?
+  sexualOrientation String?
+  orientationOther String?
+  city            String?
+  state           String?
+  country         String?
+  location        String?
+  bio             String?
+  interests       String[] @default([]) // Array of interest tags
+  kinks           Json     @default("[]")
+  lookingFor      String[] @default([]) // dating, hookups, friends, networking, other
+  
+  // Media
+  avatarUrl       String?
+  photoUrls       String[] @default([]) // Multiple profile photos
+  
+  // Preferences
+  isPublic        Boolean  @default(false) // Visible in member search
+  allowDirectMessages Boolean @default(true)
+  allowFriendRequests Boolean @default(true)
+  showOnlineStatus Boolean @default(true)
+  emailLoginAlerts Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OnboardingResponse {
+  id        String   @id @default(cuid())
+  userId    String
+  question  String
+  answer    String
+  order     Int      // Question number in sequence
+  createdAt DateTime @default(now())
+
+  @@unique([userId, order])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  creatorId   String
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChatRoom {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // private, group, public
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Classified {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  recipientId String
+  kind        String    @default("text")
+  body        String    @default("")
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([senderId, recipientId, createdAt])
+}

@@ -1,109 +1,159 @@
-"use client";
-import { useRouter } from 'next/navigation';
-import { useState, useRef } from 'react';
-import { loginUser } from '../../lib/api';
+'use client'
+
+import { FormEvent, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+import { MESSAGES, ROUTES } from '@/lib/constants'
+
+type LoginResponse = {
+  error?: string
+  returnTo?: string
+  requiresCredentials?: boolean
+}
+
+const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
+
+/** 3×3 dot grid — universally recognised as a PIN/keypad symbol */
+function KeypadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor" aria-hidden="true">
+      <circle cx="5"  cy="5"  r="1.5" />
+      <circle cx="12" cy="5"  r="1.5" />
+      <circle cx="19" cy="5"  r="1.5" />
+      <circle cx="5"  cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+      <circle cx="5"  cy="19" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
+      <circle cx="19" cy="19" r="1.5" />
+    </svg>
+  )
+}
 
 export default function PinEntryBox() {
-  const router = useRouter();
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
-  const [active, setActive] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading'>('idle')
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (pin === "0000") {
-      router.push("/signup");
-    } else if (pin === "5555") {
-      router.push("/login");
-    } else if (pin === "9999") {
-      setError("");
-      const email = "test@fuxem.xyz";
-      const password = "testuserpass";
-      let result = await loginUser({ email, password });
-      if (result.error) {
-        await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "testuser", email, password }),
-        });
-        result = await loginUser({ email, password });
+  function toggleOpen() {
+    setOpen((prev) => {
+      if (!prev) setTimeout(() => inputRef.current?.focus(), 50)
+      return !prev
+    })
+    setError('')
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!pin) {
+      setError(MESSAGES.ENTRY_PIN_REQUIRED)
+      return
+    }
+
+    setStatus('loading')
+    setError('')
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode: pin }),
+      })
+
+      const data = (await response.json()) as LoginResponse
+
+      if (!response.ok) {
+        setError(data.error || MESSAGES.LOGIN_INVALID)
+        setStatus('idle')
+        return
       }
-      if (result.error) {
-        setError("Test user login failed.");
-      } else {
-        router.push("/dashboard");
+
+      if (pin === '0000') {
+        router.push(ROUTES.SIGNUP)
+        return
       }
-    } else {
-      setError("Invalid PIN. Try 0000, 5555, or 9999.");
+
+      if (pin === '5555' || data.requiresCredentials) {
+        router.push(ROUTES.LOGIN)
+        return
+      }
+
+      router.push(data.returnTo || ROUTES.LOGIN)
+    } catch {
+      setError(MESSAGES.ERROR_GENERAL)
+      setStatus('idle')
     }
   }
 
-  // Hide input when not active, show lock icon
   return (
-    <div className="flex flex-col items-center justify-center">
-      <form
-        onSubmit={handleSubmit}
-        className="relative flex flex-col items-center"
-        autoComplete="off"
-        onMouseLeave={() => setActive(false)}
+    <div className="flex flex-col items-center gap-4">
+      {/* Keypad icon button — always visible */}
+      <button
+        type="button"
+        aria-label="Open PIN entry"
+        onClick={toggleOpen}
+        className="inline-flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-white/70 bg-black/70 text-white shadow-[0_0_40px_rgba(255,255,255,0.18),0_8px_32px_rgba(0,0,0,0.7)] backdrop-blur-sm transition hover:scale-105 hover:border-white hover:shadow-[0_0_55px_rgba(255,255,255,0.28)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
       >
-        {!active && (
-          <button
-            type="button"
-            aria-label="Enter PIN"
-            tabIndex={0}
-            className="group flex items-center justify-center w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 shadow-lg border border-white/10 transition-all cursor-pointer"
-            onMouseEnter={() => setActive(true)}
-            onClick={() => {
-              setActive(true);
-              setTimeout(() => inputRef.current?.focus(), 80);
-            }}
+        <KeypadIcon />
+      </button>
+
+      {/* Always-visible hint */}
+      <p
+        className="text-[11px] tracking-[0.18em] text-white/70 select-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
+        style={{ fontFamily: CP }}
+      >
+        No pin = 0000
+      </p>
+
+      {/* Collapsible PIN form */}
+      {open && (
+        <form
+          onSubmit={handleSubmit}
+          className="w-72 space-y-3 rounded-2xl border border-white/15 bg-black/60 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur-md"
+        >
+          <label
+            className="block text-center text-[10px] uppercase tracking-[0.26em] text-stone-200"
+            style={{ fontFamily: CP }}
           >
-            {/* Lock icon (Heroicons outline lock) */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6 text-white/80 group-hover:text-white"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.5 10.5V7.5a4.5 4.5 0 10-9 0v3m12 0A2.25 2.25 0 0119.5 12.75v6A2.25 2.25 0 0117.25 21h-10.5A2.25 2.25 0 014.5 18.75v-6A2.25 2.25 0 016.75 10.5h10.5z"
-              />
-            </svg>
-          </button>
-        )}
-        {active && (
+            PIN
+          </label>
+
           <input
             ref={inputRef}
-            id="pin"
             type="password"
             inputMode="numeric"
             autoComplete="off"
             maxLength={4}
             value={pin}
-            onChange={e => {
-              setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
-              setError("");
+            onChange={(e) => {
+              setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+              if (error) setError('')
             }}
-            placeholder="PIN"
-            className="w-24 rounded-md border border-white/10 bg-black/60 px-3 py-2 text-center text-lg text-white outline-none shadow-lg backdrop-blur-sm placeholder-white/30 focus:bg-black/80 transition-all"
-            style={{letterSpacing: '0.3em'}}
-            onBlur={() => setActive(false)}
-            autoFocus
+            placeholder="••••"
+            className="w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-center text-xl tracking-[0.4em] text-stone-100 outline-none placeholder:text-stone-500 focus:border-sky-300/45 focus:ring-1 focus:ring-sky-200/25 transition"
+            style={{ fontFamily: CP }}
           />
-        )}
-        {/* Error message, very subtle */}
-        {error && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 text-xs text-red-400 bg-black/60 rounded px-2 py-1 mt-1 pointer-events-none select-none shadow" style={{fontSize: '10px'}}>
-            {error}
-          </div>
-        )}
-      </form>
+
+          {error && (
+            <p className="rounded-lg border border-rose-400/35 bg-rose-950/45 px-3 py-2 text-center text-[11px] text-rose-200">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={status === 'loading'}
+            className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 text-xs uppercase tracking-[0.22em] text-stone-100 transition hover:bg-white/18 disabled:cursor-wait disabled:opacity-60"
+            style={{ fontFamily: CP }}
+          >
+            {status === 'loading' ? 'Checking…' : 'Enter'}
+          </button>
+        </form>
+      )}
     </div>
-  );
+  )
 }

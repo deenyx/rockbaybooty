@@ -1,7 +1,6 @@
-
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import PinEntryBox from './PinEntryBox'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Private Entry',
@@ -31,38 +30,97 @@ export const metadata: Metadata = {
 
 export default function Welcome() {
   return (
-    <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
-      <div className="pointer-events-none absolute inset-0 z-0">
-        <Image
-          src="/welcome2.jpg"
-          alt=""
-          fill
-          priority
-          quality={95}
-          sizes="100vw"
-          className="object-cover"
-          style={{ objectPosition: 'center 16%' }}
-        />
-      </div>
+    <div
+      className="relative isolate text-slate-100"
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundImage: 'url(/0.jpg)',
+        backgroundSize: 'contain',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center center',
+        backgroundColor: '#020617',
+      }}
+    >
       <div
         className="pointer-events-none absolute inset-0 z-0"
         style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
           background:
-            'linear-gradient(180deg, rgba(2, 6, 23, 0.16), rgba(2, 6, 23, 0.34)), linear-gradient(120deg, rgba(8, 47, 73, 0.16), rgba(17, 24, 39, 0.08) 42%, rgba(67, 20, 7, 0.14))',
+            'linear-gradient(180deg, rgba(2, 6, 23, 0.03), rgba(2, 6, 23, 0.12)), linear-gradient(120deg, rgba(8, 47, 73, 0.02), rgba(17, 24, 39, 0.03) 42%, rgba(67, 20, 7, 0.02))',
           opacity: 1,
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center">
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <PinEntryBox />
-        </div>
-        <div className="w-full flex justify-center pb-6">
-          <span className="text-[10px] text-white/30 tracking-widest select-none" style={{letterSpacing: '0.12em'}}>
-            No PIN? 0000
-          </span>
-        </div>
-      </div>
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(120% 90% at 50% 50%, rgba(2, 6, 23, 0) 64%, rgba(2, 6, 23, 0.08) 100%)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(44% 34% at 84% 64%, rgba(245, 245, 244, 0.14), rgba(245, 245, 244, 0) 72%)',
+        }}
+      />
+
+      <Link
+        href="/login"
+        style={{
+          position: 'absolute',
+          top: 24,
+          left: 24,
+          zIndex: 30,
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 6,
+          color: 'rgba(255,255,255,0.7)',
+          textDecoration: 'none',
+          fontSize: 12,
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          padding: '7px 14px',
+        }}
+      >
+        Log In
+      </Link>
+      <Link
+        href="/signup"
+        style={{
+          position: 'absolute',
+          top: 24,
+          right: 24,
+          zIndex: 30,
+          background: 'rgba(255,255,255,0.12)',
+          border: '1px solid rgba(255,255,255,0.25)',
+          borderRadius: 6,
+          color: 'rgba(255,255,255,0.9)',
+          textDecoration: 'none',
+          fontSize: 12,
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          padding: '7px 14px',
+        }}
+      >
+        Sign Up
+      </Link>
     </div>
   )
 }
-
