@@ -48,6 +48,7 @@ function formatConversationPreview(message: DirectMessage) {
 
 export default function MessagesPage() {
   const pathname = usePathname()
+  const safePathname = pathname ?? ROUTES.MESSAGESS
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [incomingRequests, setIncomingRequests] = useState<PendingFriendRequest[]>([])
   const [outgoingRequests, setOutgoingRequests] = useState<PendingFriendRequest[]>([])
@@ -172,7 +173,7 @@ export default function MessagesPage() {
 
           <nav className="mt-8 space-y-2">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              const active = safePathname === item.href || safePathname.startsWith(`${item.href}/`)
               return (
                 <Link
                   key={item.href}

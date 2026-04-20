@@ -208,6 +208,7 @@ function Sidebar({
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const currentPath = pathname ?? ROUTES.DASHBOARD
 
   const fullName = useMemo(() => initialData.user.displayName || initialData.user.firstName || initialData.user.username, [initialData.user])
   const initials = useMemo(() => getInitials(fullName || 'Member'), [fullName])
@@ -234,7 +235,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
       <div className="group/sidebar fixed inset-y-0 left-0 z-30 flex w-56 overflow-hidden md:w-[84px] md:hover:w-64 md:transition-[width] md:duration-300">
         <Sidebar
-          currentPath={pathname}
+          currentPath={currentPath}
           fullName={fullName}
           initials={initials}
           onLogout={handleLogout}

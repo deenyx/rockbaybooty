@@ -20,9 +20,9 @@ function ErrorMsg({ msg }: { msg: string }) {
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get('returnTo') || ROUTES.DASHBOARD
-  const urlError = searchParams.get('error') || ''
-  const verified = searchParams.get('verified') === '1'
+  const returnTo = searchParams?.get('returnTo') || ROUTES.DASHBOARD
+  const urlError = searchParams?.get('error') || ''
+  const verified = searchParams?.get('verified') === '1'
 
   const [entryPin, setEntryPin] = useState('')
   const [identifier, setIdentifier] = useState('')

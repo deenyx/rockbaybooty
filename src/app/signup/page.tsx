@@ -35,7 +35,7 @@ function SignupContent() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle')
-  const [error, setError] = useState(getServerError(searchParams.get('error')))
+  const [error, setError] = useState(getServerError(searchParams?.get('error') ?? null))
   const [successMessage, setSuccessMessage] = useState('')
   const [pin, setPin] = useState('')
 

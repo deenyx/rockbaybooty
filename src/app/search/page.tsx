@@ -129,6 +129,7 @@ function NavIcon({ label }: { label: string }) {
 
 export default function SearchPage() {
   const pathname = usePathname()
+  const safePathname = pathname ?? ROUTES.SEARCH
 
   const [filters, setFilters] = useState<MemberSearchFilters>(INITIAL_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
@@ -312,7 +313,7 @@ export default function SearchPage() {
 
           <nav className="mt-7 space-y-1.5">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href
+              const active = safePathname === item.href
 
               return (
                 <Link

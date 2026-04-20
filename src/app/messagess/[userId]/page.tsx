@@ -60,8 +60,9 @@ function formatMessageBody(message: DirectMessage, isMine: boolean) {
 
 export default function ConversationPage() {
   const params = useParams()
-  const partnerId = typeof params.userId === 'string' ? params.userId : ''
+  const partnerId = typeof params?.userId === 'string' ? params.userId : ''
   const pathname = usePathname()
+  const safePathname = pathname ?? ROUTES.MESSAGESS
 
   const [data, setData] = useState<ConversationMessagesResponse | null>(null)
   const [messages, setMessages] = useState<DirectMessage[]>([])
@@ -236,7 +237,7 @@ export default function ConversationPage() {
 
           <nav className="mt-8 space-y-2">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+              const active = safePathname === item.href || safePathname.startsWith(`${item.href}/`)
               return (
                 <Link
                   key={item.href}

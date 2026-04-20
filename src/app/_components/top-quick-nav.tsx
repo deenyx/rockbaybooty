@@ -19,9 +19,10 @@ function getActiveLabel(pathname: string): string {
 
 export default function TopQuickNav({ className = '' }: TopQuickNavProps) {
   const pathname = usePathname()
+  const safePathname = pathname ?? '/'
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const activeLabel = getActiveLabel(pathname)
+  const activeLabel = getActiveLabel(safePathname)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -56,7 +57,7 @@ export default function TopQuickNav({ className = '' }: TopQuickNavProps) {
       {open && (
         <div className="absolute left-0 top-full mt-2 w-44 overflow-hidden rounded-2xl border border-white/15 bg-[#0f121a]/95 py-1 shadow-[0_18px_40px_rgba(0,0,0,0.55)] backdrop-blur-xl">
           {MEMBER_MENU_ITEMS.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const active = safePathname === item.href || safePathname.startsWith(`${item.href}/`)
             return (
               <Link
                 key={item.href}
