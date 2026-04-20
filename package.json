@@ -1,7 +1,9 @@
 {
   "scripts": {
     "dev": "next dev",
-    "vercel-build": "cd werk && npm install && npm run build"
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
