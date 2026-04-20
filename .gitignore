@@ -1,5 +1,11 @@
 node_modules
 .vercel
+.DS_Store
+
+# Local nested worktrees / old app copies (not part of root deploy)
+werk/
+werk-friend-clean/
+werk-video-clean/
 
 # Next.js build output (never commit!)
 .next/
