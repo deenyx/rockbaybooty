@@ -30,3 +30,17 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
 }
+
+.welcome-bg {
+  background-image: url('/fuxembg1.jpg');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-color: #020617;
+}
+
+@media (min-aspect-ratio: 16/10) {
+  .welcome-bg {
+    background-size: contain;
+  }
+}

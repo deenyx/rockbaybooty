@@ -32,17 +32,12 @@ export const metadata: Metadata = {
 export default function Welcome() {
   return (
     <div
-      className="relative isolate text-slate-100"
+      className="welcome-bg relative isolate text-slate-100"
       style={{
         position: 'relative',
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        backgroundImage: 'url(/fuxembg1.jpg)',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center center',
-        backgroundColor: '#020617',
       }}
     >
       <div
