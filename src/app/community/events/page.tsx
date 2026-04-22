@@ -1,19 +1,11 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
 import MemberAreaPlaceholder from '@/app/_components/member-area-placeholder'
-import { ROUTES } from '@/lib/constants'
 
 export const metadata = {
   title: 'Events | RockBayBooty Community',
   description: 'Find and join community events and meetups',
 }
 
-export default async function EventsPage() {
-  const session = await getSession()
-  if (!session?.user?.id) {
-    redirect('/login')
-  }
-
+export default function EventsPage() {
   return (
     <MemberAreaPlaceholder
       eyebrow="Community"
