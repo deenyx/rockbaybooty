@@ -3,13 +3,7 @@
 import { FormEvent, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { MESSAGES, ROUTES } from '@/lib/constants'
-
-type LoginResponse = {
-  error?: string
-  returnTo?: string
-  requiresCredentials?: boolean
-}
+import { ROUTES } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -35,7 +29,6 @@ export default function PinEntryBox() {
   const [open, setOpen] = useState(false)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading'>('idle')
   const inputRef = useRef<HTMLInputElement>(null)
 
   function toggleOpen() {
@@ -50,77 +43,47 @@ export default function PinEntryBox() {
     event.preventDefault()
 
     if (!pin) {
-      setError(MESSAGES.ENTRY_PIN_REQUIRED)
+      setError('Enter PIN')
       return
     }
 
-    setStatus('loading')
-    setError('')
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: pin }),
-      })
-
-      const data = (await response.json()) as LoginResponse
-
-      if (!response.ok) {
-        setError(data.error || MESSAGES.LOGIN_INVALID)
-        setStatus('idle')
-        return
-      }
-
-      if (pin === '0000') {
-        router.push(ROUTES.SIGNUP)
-        return
-      }
-
-      if (pin === '5555' || data.requiresCredentials) {
-        router.push(ROUTES.LOGIN)
-        return
-      }
-
-      router.push(data.returnTo || ROUTES.LOGIN)
-    } catch {
-      setError(MESSAGES.ERROR_GENERAL)
-      setStatus('idle')
+    if (pin === '0000') {
+      router.push(ROUTES.SIGNUP)
+      return
     }
+
+    if (pin === '5555') {
+      router.push(ROUTES.LOGIN)
+      return
+    }
+
+    if (pin === '9999') {
+      router.push(ROUTES.DEFAULT)
+      return
+    }
+
+    setError('Use 0000, 5555, or 9999')
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Keypad icon button — always visible */}
-      <button
-        type="button"
-        aria-label="Open PIN entry"
-        onClick={toggleOpen}
-        className="inline-flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-white/70 bg-black/70 text-white shadow-[0_0_40px_rgba(255,255,255,0.18),0_8px_32px_rgba(0,0,0,0.7)] backdrop-blur-sm transition hover:scale-105 hover:border-white hover:shadow-[0_0_55px_rgba(255,255,255,0.28)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-      >
-        <KeypadIcon />
-      </button>
-
-      {/* Always-visible hint */}
-      <p
-        className="text-[11px] tracking-[0.18em] text-white/70 select-none drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]"
-        style={{ fontFamily: CP }}
-      >
-        No pin = 0000
-      </p>
-
-      {/* Collapsible PIN form */}
+    <div className="relative flex flex-col items-center">
       {open && (
         <form
           onSubmit={handleSubmit}
-          className="w-72 space-y-3 rounded-2xl border border-white/15 bg-black/60 p-5 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur-md"
+          className="absolute top-10 left-1/2 -translate-x-1/2 w-36 rounded-xl border border-white/20 bg-black/70 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.55)] backdrop-blur-md"
         >
           <label
-            className="block text-center text-[10px] uppercase tracking-[0.26em] text-stone-200"
+            className="mb-2 block text-center text-[10px] uppercase tracking-[0.24em] text-stone-100"
             style={{ fontFamily: CP }}
           >
             PIN
           </label>
+          <p
+            className="mb-2 text-center text-[8px] tracking-[0.14em] text-red-400/80 select-none"
+            style={{ fontFamily: CP }}
+          >
+            NO PIN = 0000
+          </p>
 
           <input
             ref={inputRef}
@@ -133,27 +96,37 @@ export default function PinEntryBox() {
               setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
               if (error) setError('')
             }}
-            placeholder="••••"
-            className="w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-center text-xl tracking-[0.4em] text-stone-100 outline-none placeholder:text-stone-500 focus:border-sky-300/45 focus:ring-1 focus:ring-sky-200/25 transition"
+            placeholder="0000"
+            className="w-full rounded-md border border-white/20 bg-white/10 px-2 py-2 text-center text-base tracking-[0.35em] text-stone-100 outline-none placeholder:text-stone-500 focus:border-sky-300/45"
             style={{ fontFamily: CP }}
           />
 
           {error && (
-            <p className="rounded-lg border border-rose-400/35 bg-rose-950/45 px-3 py-2 text-center text-[11px] text-rose-200">
+            <p className="mt-2 text-center text-[10px] text-rose-300" style={{ fontFamily: CP }}>
               {error}
             </p>
           )}
-
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 text-xs uppercase tracking-[0.22em] text-stone-100 transition hover:bg-white/18 disabled:cursor-wait disabled:opacity-60"
-            style={{ fontFamily: CP }}
-          >
-            {status === 'loading' ? 'Checking…' : 'Enter'}
-          </button>
         </form>
       )}
+
+      <button
+        type="button"
+        aria-label="Open PIN entry"
+        onClick={toggleOpen}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/20 bg-black/30 text-white/50 backdrop-blur-sm transition hover:border-white/40 hover:text-white/80 active:scale-95 focus-visible:outline-none"
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+          <circle cx="5"  cy="5"  r="1.5" />
+          <circle cx="12" cy="5"  r="1.5" />
+          <circle cx="19" cy="5"  r="1.5" />
+          <circle cx="5"  cy="12" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="19" cy="12" r="1.5" />
+          <circle cx="5"  cy="19" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+          <circle cx="19" cy="19" r="1.5" />
+        </svg>
+      </button>
     </div>
   )
 }

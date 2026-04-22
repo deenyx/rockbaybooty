@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import PinEntryBox from './PinEntryBox'
 
 export const metadata: Metadata = {
   title: 'Private Entry',
@@ -37,7 +38,7 @@ export default function Welcome() {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        backgroundImage: 'url(/0.jpg)',
+        backgroundImage: 'url(/fuxembg1.jpg)',
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center center',
@@ -122,6 +123,21 @@ export default function Welcome() {
         Sign Up
       </Link>
 
+      <div
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 30,
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{ pointerEvents: 'auto' }}>
+          <PinEntryBox />
+        </div>
+      </div>
+
       {/* Site name centered */}
       <div
         style={{
@@ -146,19 +162,18 @@ export default function Welcome() {
             lineHeight: 1,
           }}
         >
-          FUXEM
         </h1>
         <p
           style={{
             fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
             fontSize: 'clamp(0.6rem, 1.5vw, 0.85rem)',
             letterSpacing: '0.35em',
-            color: 'rgba(255,255,255,0.45)',
+            color: 'rgba(255,255,255,0.70)',
             textTransform: 'uppercase',
             marginTop: '0.6rem',
           }}
         >
-          Private. Passionate. Yours.
+          Sexual Activity Club - Adults Only
         </p>
       </div>
     </div>

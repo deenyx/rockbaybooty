@@ -192,6 +192,7 @@ export const ROUTES = {
   HOME: '/',
   WELCOME: '/welcome',
   ONBOARDING: '/onboarding',
+  DEFAULT: '/default',
   DASHBOARD: '/dashboard',
   ME: '/me',
   ME_MESSAGES: '/me/messages',
