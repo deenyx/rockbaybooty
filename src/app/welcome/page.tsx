@@ -38,7 +38,7 @@ export default function Welcome() {
         height: '100vh',
         overflow: 'hidden',
         backgroundImage: 'url(/0.jpg)',
-        backgroundSize: 'contain',
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center center',
         backgroundColor: '#020617',
@@ -121,6 +121,46 @@ export default function Welcome() {
       >
         Sign Up
       </Link>
+
+      {/* Site name centered */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '12%',
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
+            fontSize: 'clamp(3rem, 12vw, 8rem)',
+            fontWeight: 700,
+            letterSpacing: '0.25em',
+            color: 'rgba(255,255,255,0.92)',
+            textShadow: '0 2px 40px rgba(0,0,0,0.7)',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
+          FUXEM
+        </h1>
+        <p
+          style={{
+            fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
+            fontSize: 'clamp(0.6rem, 1.5vw, 0.85rem)',
+            letterSpacing: '0.35em',
+            color: 'rgba(255,255,255,0.45)',
+            textTransform: 'uppercase',
+            marginTop: '0.6rem',
+          }}
+        >
+          Private. Passionate. Yours.
+        </p>
+      </div>
     </div>
   )
 }

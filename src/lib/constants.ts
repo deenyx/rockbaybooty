@@ -211,10 +211,16 @@ export const ROUTES = {
   MESSAGESS: '/messagess',
   VIDEOS: '/videos',
   MY_VIDEOS: '/videos/my',
+  // Community hub routes
+  COMMUNITY: '/community',
+  COMMUNITY_MEMBERS: '/community/members',
+  COMMUNITY_EVENTS: '/community/events',
+  COMMUNITY_CLASSIFIEDS: '/community/classifieds',
 }
 
 export const MEMBER_MENU_ITEMS = [
   { label: 'Dashboard', href: ROUTES.ME },
+  { label: 'Community', href: ROUTES.COMMUNITY },
   { label: 'Settings', href: ROUTES.ME_SETTINGS },
   { label: 'Search', href: ROUTES.SEARCH },
   { label: 'Videos', href: ROUTES.ME_VIDEOS },

@@ -58,6 +58,18 @@ function NavIcon({ label }: { label: string }) {
     )
   }
 
+  if (label === 'Community') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="8" cy="9" r="2.5" />
+        <circle cx="16" cy="9" r="2.5" />
+        <circle cx="12" cy="3.5" r="2.5" />
+        <path d="M3 19c0-2 1.5-3.5 5-3.5s5 1.5 5 3.5" />
+        <path d="M11 19c0-2 1.5-3.5 5-3.5s5 1.5 5 3.5" />
+      </svg>
+    )
+  }
+
   if (label === 'Search') {
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
