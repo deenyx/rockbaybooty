@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
 // Only onboarding, welcome, login, signup, and home are public
-const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal'];
+const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal', '/default'];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => {

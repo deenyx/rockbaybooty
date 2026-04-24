@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         const token = jwt.sign(payload, jwtSecret, { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS })
         const response = NextResponse.json(
           {
-            message: 'Verify your email to activate your PIN.',
+            message: 'Now, verify your email.',
             pin: NEW_MEMBER_PIN,
             user: {
               id: user.id,
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       {
-        message: 'Verify your email to activate your PIN.',
+        message: 'Now, verify your email.',
         pin: NEW_MEMBER_PIN,
       },
       { status: 200 }

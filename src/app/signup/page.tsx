@@ -177,13 +177,7 @@ function SignupContent() {
                 </div>
               )}
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Link
-                  href={ROUTES.LOGIN}
-                  className="inline-flex items-center justify-center rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-100 transition hover:bg-white/15"
-                >
-                  Go To Login
-                </Link>
+              <div className="grid gap-2">
                 <Link
                   href={ROUTES.WELCOME}
                   className="inline-flex items-center justify-center rounded-full border border-sky-300/25 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100 transition hover:bg-sky-300/15"
