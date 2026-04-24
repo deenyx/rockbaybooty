@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
 
@@ -40,6 +41,20 @@ export default function Welcome() {
         backgroundColor: '#020617',
       }}
     >
+      <Image
+        src="/welcome1.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        style={{
+          objectFit: 'cover',
+          objectPosition: 'center center',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
       <Link
         href="/login"
         style={{
