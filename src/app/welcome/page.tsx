@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
 
@@ -31,14 +32,29 @@ export const metadata: Metadata = {
 export default function Welcome() {
   return (
     <div
-      className="welcome-bg relative isolate text-slate-100"
+      className="relative isolate text-slate-100"
       style={{
         position: 'relative',
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
+        backgroundColor: '#020617',
       }}
     >
+      <Image
+        src="/fuxembg1.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        style={{
+          objectFit: 'contain',
+          objectPosition: 'center center',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
       <div
         className="pointer-events-none absolute inset-0 z-0"
         style={{
