@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
 
@@ -41,55 +40,6 @@ export default function Welcome() {
         backgroundColor: '#020617',
       }}
     >
-      <Image
-        src="/fuxembg1.jpg"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        style={{
-          objectFit: 'contain',
-          objectPosition: 'center center',
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      />
-
-      <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          background:
-            'linear-gradient(180deg, rgba(2, 6, 23, 0.03), rgba(2, 6, 23, 0.12)), linear-gradient(120deg, rgba(8, 47, 73, 0.02), rgba(17, 24, 39, 0.03) 42%, rgba(67, 20, 7, 0.02))',
-          opacity: 1,
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          background:
-            'radial-gradient(120% 90% at 50% 50%, rgba(2, 6, 23, 0) 64%, rgba(2, 6, 23, 0.08) 100%)',
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: 'none',
-          background:
-            'radial-gradient(44% 34% at 84% 64%, rgba(245, 245, 244, 0.14), rgba(245, 245, 244, 0) 72%)',
-        }}
-      />
-
       <Link
         href="/login"
         style={{
