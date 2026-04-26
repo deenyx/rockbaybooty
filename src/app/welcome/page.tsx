@@ -42,7 +42,7 @@ export default function Welcome() {
       }}
     >
       <Image
-        src="/welcome2.png"
+        src="/3.jpg"
         alt=""
         fill
         priority
