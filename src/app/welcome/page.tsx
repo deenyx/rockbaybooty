@@ -48,8 +48,7 @@ export default function Welcome() {
         priority
         sizes="100vw"
         style={{
-          objectFit: 'cover',
-          objectPosition: 'center center',
+          objectFit: 'contain',
           zIndex: 0,
           pointerEvents: 'none',
         }}
