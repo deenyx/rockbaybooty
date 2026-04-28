@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { sendAssignedPinEmail } from '@/lib/email'
+import { NEW_MEMBER_PIN } from '@/lib/constants'
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
@@ -46,6 +48,10 @@ export async function GET(request: NextRequest) {
         onboardingStep: 'completed',
       },
     })
+
+    if (user.email) {
+      sendAssignedPinEmail(user.email, user.firstName, NEW_MEMBER_PIN)
+    }
 
     return NextResponse.redirect(new URL('/login?verified=1', request.url))
   } catch (error) {

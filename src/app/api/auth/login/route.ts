@@ -229,6 +229,7 @@ async function getOrCreateDefaultUser(): Promise<LoginUser> {
 export async function POST(request: NextRequest) {
   try {
     const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
+    const normalizedCode = code.toUpperCase()
 
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
@@ -240,7 +241,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Shortcut: 0000 starts account creation.
-    if (code === '0000') {
+    if (normalizedCode === '0000') {
       const signupPath = ROUTES.SIGNUP
 
       if (requestKind === 'json') {
@@ -254,7 +255,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Shortcut: 9999 bypasses signup and logs into a backend default account.
-    if (code === '9999') {
+    if (normalizedCode === '9999') {
       const defaultUser = await getOrCreateDefaultUser()
 
       const defaultUserPayload: AuthTokenPayload = {
@@ -285,7 +286,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5555 unlocks credential login mode.
-    if (code === '5555' && !identifier && !secret) {
+    if (normalizedCode === '5555' && !identifier && !secret) {
       if (requestKind === 'json') {
         return NextResponse.json(
           {
@@ -302,14 +303,26 @@ export async function POST(request: NextRequest) {
 
     let user: LoginUser | null = null
 
-    if (code === '5555') {
-      if (!identifier || !secret) {
+    if (normalizedCode === '5555') {
+      if (!identifier) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
+      }
+
+      if (!secret) {
+        const missingSecretError = secretType === 'passcode'
+          ? MESSAGES.LOGIN_PASSCODE_REQUIRED
+          : MESSAGES.LOGIN_PASSWORD_REQUIRED
+        return buildErrorResponse(request, requestKind, missingSecretError, 400)
       }
 
       user = await prisma.user.findFirst({
         where: identifier.includes('@')
-          ? { email: identifier }
+          ? {
+              email: {
+                equals: identifier,
+                mode: 'insensitive',
+              },
+            }
           : { username: identifier },
         select: loginUserSelect,
       })
@@ -341,7 +354,7 @@ export async function POST(request: NextRequest) {
     if (!user && firstName) {
       const pinUser = await prisma.user.findFirst({
         where: {
-          loginPin: code,
+          loginPin: normalizedCode,
           firstName: {
             equals: firstName,
             mode: 'insensitive',
@@ -359,7 +372,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Fallback: match personalCode + first/display name (all onboarded users)
         const codeUser = await prisma.user.findUnique({
-          where: { personalCode: code.toUpperCase() },
+          where: { personalCode: normalizedCode },
           select: loginUserSelect,
         })
 
@@ -380,7 +393,7 @@ export async function POST(request: NextRequest) {
       }
 
       user = await prisma.user.findUnique({
-        where: { personalCode: code.toUpperCase() },
+        where: { personalCode: normalizedCode },
         select: loginUserSelect,
       })
 

@@ -119,3 +119,27 @@ export async function sendAssignedPinEmail(to: string, firstName: string, pin: s
     `,
   })
 }
+
+export function sendOnboardingWelcomeEmail(to: string, displayName: string, personalCode: string) {
+  if (!SMTP_USER || !SMTP_PASS) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[sendOnboardingWelcomeEmail] SMTP credentials not configured. Skipping onboarding welcome email.')
+    }
+    return
+  }
+
+  transporter.sendMail({
+    from: `${SITE_NAME} <${FROM}>`,
+    to,
+    subject: `Your account is ready — ${SITE_NAME}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0d0a0b;color:#f5f5f4;border-radius:12px;">
+        <h2 style="color:#f9a8d4;margin-bottom:8px;">Welcome, ${displayName}</h2>
+        <p style="color:#a8a29e;font-size:14px;">Your account is live and ready to use.</p>
+        <p style="color:#a8a29e;font-size:14px;">Keep your personal passcode somewhere safe:</p>
+        <p style="font-family:monospace;font-size:26px;letter-spacing:0.24em;color:#fda4af;margin:16px 0;">${personalCode}</p>
+        <p style="color:#78716c;font-size:12px;">You can use this passcode anywhere the site asks for your personal code.</p>
+      </div>
+    `,
+  }).catch((err: unknown) => console.error('[sendOnboardingWelcomeEmail]', err))
+}

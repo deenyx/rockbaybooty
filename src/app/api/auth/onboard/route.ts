@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '@/lib/prisma'
+import { sendOnboardingWelcomeEmail } from '@/lib/email'
 
 import {
   AUTH_COOKIE_NAME,
@@ -13,6 +14,8 @@ import {
   MIN_PASSWORD_LENGTH,
   USERNAME_REGEX,
 } from '@/lib/constants'
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Generate a unique personal passcode
 function generatePersonalCode(): string {
@@ -95,9 +98,7 @@ export async function POST(request: NextRequest) {
     const avatarUrl = body.avatarUrl?.trim() || null
     const profilePhoto = body.profilePhoto?.trim() || null
     const adultContentConfirmed = body.adultContentConfirmed === true
-    const {
-      email,
-    } = body
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
 
     if (!dateOfBirthInput) {
       return NextResponse.json(
@@ -131,6 +132,13 @@ export async function POST(request: NextRequest) {
     if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
         { error: MESSAGES.PASSWORD_MIN_LENGTH },
+        { status: 400 }
+      )
+    }
+
+    if (email && !EMAIL_REGEX.test(email)) {
+      return NextResponse.json(
+        { error: MESSAGES.INVALID_EMAIL },
         { status: 400 }
       )
     }
@@ -306,7 +314,10 @@ export async function POST(request: NextRequest) {
       { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
     )
 
-    // TODO: Send welcome email
+    if (user.email) {
+      sendOnboardingWelcomeEmail(user.email, user.displayName, user.personalCode)
+    }
+
     const response = NextResponse.json(
       {
         message: MESSAGES.ACCOUNT_CREATED,
