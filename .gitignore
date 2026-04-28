@@ -12,6 +12,9 @@ werk-video-clean/
 out/
 .next-dev/
 
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+
 # Turbopack cache
 .turbopack/
 
