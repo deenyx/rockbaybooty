@@ -143,3 +143,32 @@ export function sendOnboardingWelcomeEmail(to: string, displayName: string, pers
     `,
   }).catch((err: unknown) => console.error('[sendOnboardingWelcomeEmail]', err))
 }
+
+export async function sendCredentialResetEmail(to: string, firstName: string, token: string) {
+  const base = getBaseUrl()
+  const link = `${base}/reset?token=${token}`
+
+  if (!SMTP_USER || !SMTP_PASS) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[sendCredentialResetEmail] SMTP credentials not configured. Reset link:', link)
+      return
+    }
+
+    throw new Error('Email service is not configured')
+  }
+
+  await transporter.sendMail({
+    from: `${SITE_NAME} <${FROM}>`,
+    to,
+    subject: `Reset your login credentials — ${SITE_NAME}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0d0a0b;color:#f5f5f4;border-radius:12px;">
+        <h2 style="color:#f9a8d4;margin-bottom:8px;">Hi ${firstName}</h2>
+        <p style="color:#a8a29e;font-size:14px;">Use the link below to reset your password and passcode.</p>
+        <a href="${link}" style="display:inline-block;margin:24px 0;padding:12px 28px;background:linear-gradient(135deg,#be185d,#9f1239);color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">Reset credentials</a>
+        <p style="color:#57534e;font-size:12px;">This link expires in 60 minutes. If you did not request this, ignore this email.</p>
+        <p style="color:#57534e;font-size:12px;word-break:break-all;">${link}</p>
+      </div>
+    `,
+  })
+}

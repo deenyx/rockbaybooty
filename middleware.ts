@@ -3,7 +3,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
 // Only onboarding, welcome, login, signup, and home are public
-const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal', '/default'];
+const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/forgot', '/reset', '/signup', '/pin-reveal', '/default'];
+const DEV_BOGUS_POST_PATHS = new Set([
+  '/action',
+  '/submit',
+  '/_rsc',
+  '/api/rsc',
+  '/formaction',
+  '/server-actions',
+  '/api/server-actions',
+  '/api/server-action',
+])
+
+function isBogusDevProbe(request: NextRequest): boolean {
+  if (process.env.NODE_ENV !== 'development') {
+    return false
+  }
+
+  if (request.method !== 'POST') {
+    return false
+  }
+
+  const pathname = request.nextUrl.pathname
+  const nextAction = request.headers.get('next-action')
+
+  // Browser tools/extensions can send fake Next action probes during local dev.
+  if (nextAction === 'x') {
+    return true
+  }
+
+  if (DEV_BOGUS_POST_PATHS.has(pathname)) {
+    return true
+  }
+
+  return false
+}
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => {
@@ -55,6 +89,10 @@ function isLikelyValidToken(token: string): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const search = request.nextUrl.search
+
+  if (isBogusDevProbe(request)) {
+    return new NextResponse(null, { status: 204 })
+  }
 
   if (pathname.startsWith('/api/auth/')) {
     return NextResponse.next()

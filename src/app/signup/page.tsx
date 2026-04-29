@@ -104,6 +104,12 @@ function SignupContent() {
       const data = (await response.json()) as RegisterResponse
 
       if (!response.ok) {
+        if (data.error === MESSAGES.EMAIL_EXISTS) {
+          setError('This email already has an account. Use Log In below to continue.')
+          setStatus('idle')
+          return
+        }
+
         setError(data.error || MESSAGES.ERROR_GENERAL)
         setStatus('idle')
         return
@@ -277,6 +283,17 @@ function SignupContent() {
                 <p className="rounded-xl border border-rose-500/25 bg-rose-950/50 px-3 py-2 text-center text-[11px] text-rose-300">
                   {error}
                 </p>
+              )}
+
+              {error.includes('already has an account') && email.trim() && (
+                <Link
+                  href={`${ROUTES.LOGIN}?mode=credentials&identifier=${encodeURIComponent(
+                    email.trim().toLowerCase()
+                  )}`}
+                  className="inline-flex w-full items-center justify-center rounded-full border border-sky-300/30 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-100 transition hover:bg-sky-300/15"
+                >
+                  Continue To Log In
+                </Link>
               )}
 
               <button

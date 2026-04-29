@@ -35,6 +35,8 @@ model User {
   loginPin                   String?            // 4-digit login PIN, matched with name at login
   emailVerificationToken     String?   @unique
   emailVerificationExpiresAt DateTime?
+  passwordResetToken         String?   @unique
+  passwordResetExpiresAt     DateTime?
 
   // Profile
   profile        Profile?

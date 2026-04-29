@@ -58,8 +58,25 @@ export default function PinEntryBox() {
     }
 
     if (pin === '9999') {
-      router.push(ROUTES.DEFAULT)
-      return
+      // Perform real login as defaultuser (dev bypass)
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode: '9999' }),
+        })
+        if (res.ok) {
+          // Success: go to dashboard or default area
+          router.push(ROUTES.DASHBOARD)
+          return
+        } else {
+          setError('Dev bypass failed. Try again.')
+          return
+        }
+      } catch {
+        setError('Network error. Try again.')
+        return
+      }
     }
 
     setError('Use 0000, 5555, or 9999')

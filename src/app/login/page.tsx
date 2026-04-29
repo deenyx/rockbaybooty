@@ -23,12 +23,16 @@ function LoginContent() {
   const returnTo = searchParams?.get('returnTo') || ROUTES.DASHBOARD
   const urlError = searchParams?.get('error') || ''
   const verified = searchParams?.get('verified') === '1'
+  const directCredentialsMode = searchParams?.get('mode') === 'credentials'
+  const prefilledIdentifier = searchParams?.get('identifier') || ''
 
   const [entryPin, setEntryPin] = useState('')
-  const [identifier, setIdentifier] = useState('')
+  const [identifier, setIdentifier] = useState(prefilledIdentifier)
   const [secret, setSecret] = useState('')
   const [secretType, setSecretType] = useState<'password' | 'passcode'>('password')
-  const [stage, setStage] = useState<'pin' | 'credentials'>('pin')
+  const [stage, setStage] = useState<'pin' | 'credentials'>(
+    directCredentialsMode ? 'credentials' : 'pin'
+  )
   const [error, setError] = useState(urlError)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
 
@@ -204,6 +208,12 @@ function LoginContent() {
             onSubmit={handleCredentialSubmit}
             className="w-full max-w-xs space-y-5 rounded-2xl border border-white/10 bg-black/45 p-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)] backdrop-blur-md"
           >
+            {directCredentialsMode && (
+              <p className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-center text-[11px] text-amber-100">
+                Existing account detected. Log in with your email and password.
+              </p>
+            )}
+
             <p className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-center text-[11px] text-sky-100">
               Entry PIN accepted. Log in with your user ID or email.
             </p>
@@ -227,7 +237,8 @@ function LoginContent() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-center gap-2">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -256,6 +267,13 @@ function LoginContent() {
                 >
                   Passcode
                 </button>
+                </div>
+                <Link
+                  href={ROUTES.FORGOT}
+                  className="text-[10px] uppercase tracking-[0.14em] text-stone-500 transition-colors hover:text-stone-300"
+                >
+                  Forgot?
+                </Link>
               </div>
               <input
                 type={secretType === 'password' ? 'password' : 'text'}
