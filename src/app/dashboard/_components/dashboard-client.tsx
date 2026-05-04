@@ -399,7 +399,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             <StatCard label="Groups" value={stats?.groupsCount ?? 0} href={ROUTES.GROUPS} />
             <StatCard label="Messages" value={stats?.unreadMessages ?? 0} href={ROUTES.MESSAGESS} badge />
             <StatCard label="Requests" value={stats?.messageRequestsCount ?? 0} href={ROUTES.MESSAGESS} badge />
-            <StatCard label="Alerts" value={stats?.unreadNotifications ?? 0} href={ROUTES.DASHBOARD} badge />
+            <StatCard label="Alerts" value={stats?.unreadNotifications ?? 0} href={ROUTES.NOTIFICATIONS} badge />
           </div>
 
           {/* Quick actions */}

@@ -211,6 +211,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Notify recipient (fire-and-forget)
+    prisma.user.findUnique({ where: { id: currentUserId }, select: { username: true, displayName: true } })
+      .then((sender) => {
+        if (!sender) return
+        const name = sender.displayName || sender.username
+        const notifBody = messageKind === 'text' ? messageBody.slice(0, 100) : `sent you a ${messageKind}`
+        return prisma.notification.create({
+          data: {
+            userId: recipientId,
+            type: 'message',
+            title: `New message from ${name}`,
+            body: notifBody,
+            link: `/messagess/${currentUserId}`,
+          },
+        })
+      })
+      .catch(() => {/* non-fatal */})
+
     return NextResponse.json(
       {
         message: {

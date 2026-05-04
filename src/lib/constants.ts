@@ -300,6 +300,7 @@ export const ROUTES = {
   CLASSIFIEDS_NEW: '/classifieds/new',
   MESSAGESS: '/messagess',
   FRIENDS: '/friends',
+  NOTIFICATIONS: '/notifications',
   VIDEOS: '/videos',
   MY_VIDEOS: '/videos/my',
   // Community hub routes

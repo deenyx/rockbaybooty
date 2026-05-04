@@ -80,7 +80,7 @@ export async function POST(
 
     const group = await prisma.group.findUnique({
       where: { slug: params.slug },
-      select: { id: true, status: true },
+      select: { id: true, name: true, slug: true, status: true },
     })
 
     if (!group || group.status !== 'active') {
@@ -122,6 +122,24 @@ export async function POST(
         },
       },
     })
+
+    // Notify other group members (fire-and-forget)
+    prisma.groupMember.findMany({
+      where: { groupId: group.id, userId: { not: userId } },
+      select: { userId: true },
+    }).then((members) => {
+      if (!members.length) return
+      const name = post.author.displayName || post.author.username
+      return prisma.notification.createMany({
+        data: members.map((m) => ({
+          userId: m.userId,
+          type: 'group_post',
+          title: `New post in ${group.name}`,
+          body: `${name}: ${postBody.slice(0, 80)}`,
+          link: `/groups/${group.slug}`,
+        })),
+      })
+    }).catch(() => {/* non-fatal */})
 
     return NextResponse.json(
       {
