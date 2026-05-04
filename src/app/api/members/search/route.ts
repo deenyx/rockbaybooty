@@ -1,0 +1,369 @@
+import type { Prisma } from '@prisma/client'
+import jwt from 'jsonwebtoken'
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+
+import { AUTH_COOKIE_NAME, MAX_AGE, MESSAGES, MIN_AGE } from '@/lib/constants'
+import type { AuthTokenPayload, FriendshipStatus } from '@/lib/types'
+
+export const dynamic = 'force-dynamic'
+
+const DEFAULT_LIMIT = 24
+const MAX_LIMIT = 60
+const ONLINE_WINDOW_MINUTES = 15
+
+function getBearerToken(header: string | null): string | null {
+  if (!header) {
+    return null
+  }
+
+  const [scheme, token] = header.split(' ')
+
+  if (scheme?.toLowerCase() !== 'bearer' || !token) {
+    return null
+  }
+
+  return token
+}
+
+async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
+  const jwtSecret = process.env.JWT_SECRET
+
+  if (!jwtSecret) {
+    return null
+  }
+
+  const cookieToken = request.cookies.get(AUTH_COOKIE_NAME)?.value
+  const headerToken = getBearerToken(request.headers.get('authorization'))
+  const token = cookieToken || headerToken
+
+  if (!token) {
+    return null
+  }
+
+  try {
+    const payload = jwt.verify(token, jwtSecret) as AuthTokenPayload & { sub?: string }
+    if (typeof payload.userId === 'string') {
+      return payload.userId
+    }
+
+    return typeof payload.sub === 'string' ? payload.sub : null
+  } catch {
+    return null
+  }
+}
+
+function parseNumber(value: string | null): number | null {
+  if (!value) {
+    return null
+  }
+
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseBoolean(value: string | null): boolean {
+  return value === 'true'
+}
+
+function parseList(value: string | null): string[] {
+  if (!value) {
+    return []
+  }
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const currentUserId = await getAuthenticatedUserId(request)
+
+    if (!currentUserId) {
+      return NextResponse.json(
+        { error: MESSAGES.AUTH_REQUIRED },
+        { status: 401 }
+      )
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const q = searchParams.get('q')?.trim() || ''
+    const location = searchParams.get('location')?.trim() || ''
+    const gender = searchParams.get('gender')?.trim() || ''
+    const orientation = searchParams.get('orientation')?.trim() || ''
+    const lookingFor = parseList(searchParams.get('lookingFor'))
+    const onlineOnly = parseBoolean(searchParams.get('onlineOnly'))
+    const hasPhoto = parseBoolean(searchParams.get('hasPhoto'))
+    const lastActive = searchParams.get('lastActive') as 'today' | 'week' | 'any' | null
+    const parsedMinAge = parseNumber(searchParams.get('minAge'))
+    const parsedMaxAge = parseNumber(searchParams.get('maxAge'))
+    const parsedLimit = parseNumber(searchParams.get('limit'))
+
+    const minAge = clamp(parsedMinAge ?? MIN_AGE, MIN_AGE, MAX_AGE)
+    const maxAge = clamp(parsedMaxAge ?? MAX_AGE, MIN_AGE, MAX_AGE)
+    const ageFloor = Math.min(minAge, maxAge)
+    const ageCeiling = Math.max(minAge, maxAge)
+    const limit = clamp(parsedLimit ?? DEFAULT_LIMIT, 1, MAX_LIMIT)
+
+    const profileFilters: Prisma.ProfileWhereInput = {
+      isPublic: true,
+      age: {
+        gte: ageFloor,
+        lte: ageCeiling,
+      },
+      ...(hasPhoto ? { avatarUrl: { not: null } } : {}),
+      ...(gender
+        ? {
+            gender: {
+              equals: gender,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(orientation
+        ? {
+            sexualOrientation: {
+              equals: orientation,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(lookingFor.length > 0
+        ? {
+            lookingFor: {
+              hasSome: lookingFor,
+            },
+          }
+        : {}),
+      ...(location
+        ? {
+            OR: [
+              {
+                location: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                city: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                state: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                country: {
+                  contains: location,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    }
+
+    const onlineCutoff = new Date(Date.now() - ONLINE_WINDOW_MINUTES * 60 * 1000)
+
+    const lastActiveCutoff =
+      lastActive === 'today'
+        ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+        : lastActive === 'week'
+          ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          : null
+
+    const where: Prisma.UserWhereInput = {
+      id: {
+        not: currentUserId,
+      },
+      status: 'active',
+      ...(onlineOnly
+        ? {
+            updatedAt: {
+              gte: onlineCutoff,
+            },
+          }
+        : lastActiveCutoff
+          ? {
+              updatedAt: {
+                gte: lastActiveCutoff,
+              },
+            }
+          : {}),
+      profile: {
+        is: profileFilters,
+      },
+      ...(q
+        ? {
+            OR: [
+              {
+                username: {
+                  contains: q,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                displayName: {
+                  contains: q,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                profile: {
+                  is: {
+                    location: {
+                      contains: q,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                profile: {
+                  is: {
+                    city: {
+                      contains: q,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                profile: {
+                  is: {
+                    interests: {
+                      has: q,
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: [
+        {
+          updatedAt: 'desc',
+        },
+        {
+          createdAt: 'desc',
+        },
+      ],
+      take: limit,
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        updatedAt: true,
+        profile: {
+          select: {
+            age: true,
+            city: true,
+            state: true,
+            country: true,
+            location: true,
+            bio: true,
+            interests: true,
+            lookingFor: true,
+            avatarUrl: true,
+            showOnlineStatus: true,
+          },
+        },
+      },
+    })
+
+    const relationshipRecords = await prisma.friendship.findMany({
+      where: {
+        OR: [
+          {
+            requesterId: currentUserId,
+            recipientId: {
+              in: users.map((user) => user.id),
+            },
+          },
+          {
+            recipientId: currentUserId,
+            requesterId: {
+              in: users.map((user) => user.id),
+            },
+          },
+        ],
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      select: {
+        requesterId: true,
+        recipientId: true,
+        status: true,
+      },
+    })
+
+    const relationshipByUser = new Map<string, FriendshipStatus>()
+
+    for (const relationship of relationshipRecords) {
+      const partnerId = relationship.requesterId === currentUserId
+        ? relationship.recipientId
+        : relationship.requesterId
+
+      if (relationshipByUser.get(partnerId) === 'friends') {
+        continue
+      }
+
+      if (relationship.status === 'accepted') {
+        relationshipByUser.set(partnerId, 'friends')
+        continue
+      }
+
+      if (relationship.status === 'pending') {
+        relationshipByUser.set(
+          partnerId,
+          relationship.requesterId === currentUserId ? 'outgoing_pending' : 'incoming_pending'
+        )
+      }
+    }
+
+    const members = users.map((user) => {
+      const profile = user.profile
+      const fallbackLocation = [profile?.city, profile?.state, profile?.country]
+        .filter(Boolean)
+        .join(', ')
+
+      return {
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        age: profile?.age || null,
+        location: profile?.location || fallbackLocation,
+        bio: profile?.bio || '',
+        avatarUrl: profile?.avatarUrl || '',
+        interests: profile?.interests || [],
+        lookingFor: profile?.lookingFor || [],
+        isOnline: profile?.showOnlineStatus ? user.updatedAt >= onlineCutoff : false,
+        friendshipStatus: relationshipByUser.get(user.id) || 'none',
+      }
+    })
+
+    return NextResponse.json({ members })
+  } catch (error) {
+    console.error('Member search error:', error)
+
+    return NextResponse.json(
+      { error: MESSAGES.ERROR_GENERAL },
+      { status: 500 }
+    )
+  }
+}

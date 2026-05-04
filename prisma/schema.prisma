@@ -1,0 +1,324 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  usedBy    String?
+  status    String   @default("active") // active, used, revoked
+
+  @@index([code])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String?  @unique
+  username       String   @unique
+  displayName    String
+  personalCode   String   @unique // Referral / sharing code
+  passwordHash   String?           // Optional — new users use PIN-based auth
+  firstName      String?
+  lastName       String?
+
+  // PIN-based auth
+  loginPin                   String?            // 4-digit login PIN, matched with name at login
+  emailVerificationToken     String?   @unique
+  emailVerificationExpiresAt DateTime?
+
+  // Profile
+  profile        Profile?
+
+  // Messages
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  outgoingFriendships Friendship[] @relation("OutgoingFriendships")
+  incomingFriendships Friendship[] @relation("IncomingFriendships")
+  videos         Video[]
+  blocksGiven    Block[]       @relation("BlocksGiven")
+  blocksReceived Block[]       @relation("BlocksReceived")
+  reportsGiven   Report[]      @relation("ReportsGiven")
+  reportsReceived Report[]     @relation("ReportsReceived")
+  classifieds    Classified[]
+  groupMemberships GroupMember[]
+  groupPosts       GroupPost[]
+  sentMessageRequests     MessageRequest[] @relation("SentMessageRequests")
+  receivedMessageRequests MessageRequest[] @relation("ReceivedMessageRequests")
+  notifications   Notification[]
+
+  // Account Status
+  status         String   @default("active") // active, suspended, deleted
+  isPremium      Boolean  @default(false)
+  isAdmin        Boolean  @default(false)
+  emailVerified  Boolean  @default(false)
+  onboardingStep String   @default("passcode") // passcode, interview, completed
+
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([personalCode])
+  @@index([loginPin])
+}
+
+model Video {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  videoUrl     String   // URL to stored video file (we'll use base64 or external storage later)
+  thumbnailUrl String?
+  isPublic     Boolean  @default(false) // Only Premium users can set this to true
+  views        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  requesterId String
+  recipientId String
+  status      String   @default("pending") // pending, accepted, declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requester User @relation("OutgoingFriendships", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient User @relation("IncomingFriendships", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, recipientId])
+  @@index([requesterId, status])
+  @@index([recipientId, status])
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Interview Answers
+  age             Int?
+  dateOfBirth     DateTime?
+  gender          String?
+  genderOther     String?
+  pronouns        String?
+  sexualOrientation String?
+  orientationOther String?
+  intentions      String?   // what brings them to the platform
+  city            String?
+  state           String?
+  country         String?
+  location        String?
+  bio             String?
+  interests       String[] @default([]) // Array of interest tags
+  kinks           Json     @default("[]")
+  lookingFor      String[] @default([]) // dating, hookups, friends, networking, other
+  
+  // Media
+  avatarUrl       String?
+  photoUrls       String[] @default([]) // Multiple profile photos
+
+  // Social links
+  twitterUrl      String?
+  fetlifeUrl      String?
+  onlyfansUrl     String?
+  pornhubUrl      String?
+  tumblrUrl       String?
+  instagramUrl    String?
+  socialLinksVisibility String @default("members") // public | members | friends | private
+
+  // Preferences
+  isPublic        Boolean  @default(false) // Visible in member search
+  allowDirectMessages Boolean @default(true)
+  allowFriendRequests Boolean @default(true)
+  showOnlineStatus Boolean @default(true)
+  emailLoginAlerts Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OnboardingResponse {
+  id        String   @id @default(cuid())
+  userId    String
+  question  String
+  answer    String
+  order     Int      // Question number in sequence
+  createdAt DateTime @default(now())
+
+  @@unique([userId, order])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  category    String   @default("general") // general | crossdressing | kink | bdsm | social | other
+  coverUrl    String?
+  creatorId   String
+  isPublic    Boolean  @default(true)
+  status      String   @default("active") // active | closed | deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members GroupMember[]
+  posts   GroupPost[]
+
+  @@index([category, status])
+  @@index([creatorId])
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  role     String   @default("member") // member | moderator | owner
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model GroupPost {
+  id        String   @id @default(cuid())
+  groupId   String
+  authorId  String
+  body      String
+  status    String   @default("active") // active | deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, status])
+  @@index([authorId])
+}
+
+model ChatRoom {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // private, group, public
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Classified {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String   // encounters | casual | relationships | seeking
+  location    String?
+  photos      String[] @default([])
+  status      String   @default("active") // active | deleted
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category, status])
+  @@index([status, expiresAt])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  recipientId String
+  kind        String    @default("text")
+  body        String    @default("")
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([senderId, recipientId, createdAt])
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  blockerId   String
+  blockedId   String
+  createdAt   DateTime @default(now())
+
+  blocker User @relation("BlocksGiven", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reportedId  String
+  reason      String   // harassment, explicit_content, spam, impersonation, underage, other
+  details     String?
+  status      String   @default("pending") // pending, reviewed, dismissed, actioned
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter User @relation("ReportsGiven", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported User @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedId])
+  @@index([status])
+}
+
+model MessageRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  intro       String?  // optional intro shown with the request
+  status      String   @default("pending") // pending | accepted | declined
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sender    User @relation("SentMessageRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessageRequests", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, recipientId])
+  @@index([recipientId, status])
+  @@index([senderId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // friend_request | message | message_request | group_post
+  title     String
+  body      String?
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
