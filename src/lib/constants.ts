@@ -299,6 +299,7 @@ export const ROUTES = {
   CLASSIFIEDS: '/classifieds',
   CLASSIFIEDS_NEW: '/classifieds/new',
   MESSAGESS: '/messagess',
+  FRIENDS: '/friends',
   VIDEOS: '/videos',
   MY_VIDEOS: '/videos/my',
   // Community hub routes
@@ -335,6 +336,7 @@ export const MEMBER_MENU_ITEMS = [
   { label: 'Search', href: ROUTES.SEARCH },
   { label: 'Videos', href: ROUTES.VIDEOS },
   { label: 'Messages', href: ROUTES.MESSAGESS },
+  { label: 'Friends', href: ROUTES.FRIENDS },
   { label: 'Live Chat', href: ROUTES.CHAT },
   { label: 'Classifieds', href: ROUTES.CLASSIFIEDS },
   { label: 'Groups', href: ROUTES.GROUPS },

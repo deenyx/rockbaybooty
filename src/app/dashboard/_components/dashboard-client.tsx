@@ -128,6 +128,16 @@ function NavIcon({ label }: { label: string }) {
     )
   }
 
+  if (label === 'Friends') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 19c.9-2.8 2.9-4.2 6-4.2s5.1 1.4 6 4.2" />
+        <path d="M17 11l2 2 3-3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  }
+
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
       <circle cx="12" cy="8" r="3.2" />
