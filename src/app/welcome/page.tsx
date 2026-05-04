@@ -1,123 +1,161 @@
-"use client";
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import type { Metadata } from 'next'
+import Image from 'next/image'
+import Link from 'next/link'
+import PinEntryBox from './PinEntryBox'
 
-import { MESSAGES, ROUTES } from '@/lib/constants';
-
-type LoginResponse = {
-  error?: string;
-  returnTo?: string;
-  requiresCredentials?: boolean;
-};
+export const metadata: Metadata = {
+  title: 'Private Entry',
+  description:
+    'Exclusive adult social network — invite-only. RockBayBooty is a private, verified adults-only space for discreet dating, chemistry, and connection.',
+  keywords: [
+    'invite only adult social network',
+    'private adult dating',
+    'verified adults only',
+    'discreet hookup platform',
+    'luxury adult community',
+  ],
+  openGraph: {
+    title: 'Private. Passionate. Yours. | RockBayBooty',
+    description:
+      'Exclusive adult social network — invite-only. Verified adults, discreet profiles, and private connection.',
+    siteName: 'RockBayBooty',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Private. Passionate. Yours. | RockBayBooty',
+    description:
+      'Exclusive adult social network — invite-only. Verified adults, private access, discreet connection.',
+  },
+}
 
 export default function Welcome() {
-  const router = useRouter();
-  const [pin, setPin] = useState("");
-  const [showInput, setShowInput] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading'>('idle');
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (pin.length !== 4) {
-      setError(MESSAGES.ENTRY_PIN_REQUIRED);
-      return;
-    }
-
-    setStatus('loading');
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          passcode: pin,
-          returnTo: ROUTES.DASHBOARD,
-        }),
-      });
-
-      const data = (await response.json()) as LoginResponse;
-
-      if (!response.ok) {
-        setError(data.error || MESSAGES.LOGIN_INVALID);
-        setStatus('idle');
-        return;
-      }
-
-      if (data.requiresCredentials || pin === '5555') {
-        router.push(ROUTES.LOGIN);
-        return;
-      }
-
-      router.push(data.returnTo || ROUTES.DASHBOARD);
-    } catch {
-      setError(MESSAGES.ERROR_GENERAL);
-      setStatus('idle');
-    }
-  };
-
   return (
-    <div className="relative min-h-screen bg-black overflow-hidden">
-      {/* Background Image */}
-      <img 
-        src="/welcome2.jpg" 
-        alt="background" 
-        className="absolute inset-0 w-full h-full object-cover"
+    <div
+      className="relative isolate text-slate-100"
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: '#020617',
+      }}
+    >
+      <Image
+        src="/3.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        style={{
+          objectFit: 'contain',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
       />
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/70" />
+      <Link
+        href="/login"
+        style={{
+          position: 'absolute',
+          top: 24,
+          left: 24,
+          zIndex: 30,
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 6,
+          color: 'rgba(255,255,255,0.7)',
+          textDecoration: 'none',
+          fontSize: 12,
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          padding: '7px 14px',
+        }}
+      >
+        Log In
+      </Link>
+      <Link
+        href="/signup"
+        style={{
+          position: 'absolute',
+          top: 24,
+          right: 24,
+          zIndex: 30,
+          background: 'rgba(255,255,255,0.12)',
+          border: '1px solid rgba(255,255,255,0.25)',
+          borderRadius: 6,
+          color: 'rgba(255,255,255,0.9)',
+          textDecoration: 'none',
+          fontSize: 12,
+          fontWeight: 500,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          padding: '7px 14px',
+        }}
+      >
+        Sign Up
+      </Link>
 
-      {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-12 px-4">
-    {/* Keypad Icon */}
-    <div 
-      onClick={() => setShowInput(!showInput)}
-      className="cursor-pointer text-9xl hover:scale-110 active:scale-95 transition-all duration-300"
-    >
-      ⌨️
-    </div>
+      <div
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 30,
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{ pointerEvents: 'auto' }}>
+          <PinEntryBox />
+        </div>
+      </div>
 
-    {/* PIN Input Box */}
-        {showInput && (
-          <form onSubmit={handleSubmit} className="w-full max-w-xs">
-            <input
-              type="password"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
-                setError('');
-              }}
-              placeholder="PIN"
-              className="w-full bg-black/80 border border-white/30 text-white text-5xl text-center tracking-widest py-6 rounded-3xl outline-none"
-              disabled={status === 'loading'}
-              autoFocus
-            />
-
-            {error && (
-              <p className="mt-4 rounded-xl border border-rose-500/25 bg-rose-950/50 px-3 py-2 text-center text-xs text-rose-300">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="mt-4 w-full rounded-full border border-red-300/30 bg-red-500/10 px-4 py-2 text-sm tracking-[0.2em] text-red-100 transition hover:bg-red-500/20 disabled:cursor-wait disabled:opacity-70"
-            >
-              {status === 'loading' ? 'CHECKING...' : 'ENTER'}
-            </button>
-          </form>
-        )}
-
-        {/* Minimal Text Below */}
-        <p className="text-red-400 text-2xl font-serif tracking-widest">
-          No pin = 0000
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '12%',
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
+            fontSize: 'clamp(3rem, 12vw, 8rem)',
+            fontWeight: 700,
+            letterSpacing: '0.25em',
+            color: 'rgba(255,255,255,0.92)',
+            textShadow: '0 2px 40px rgba(0,0,0,0.7)',
+            margin: 0,
+            lineHeight: 1,
+          }}
+        >
+        </h1>
+        <p
+          style={{
+            fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
+            fontSize: 'clamp(0.6rem, 1.5vw, 0.85rem)',
+            letterSpacing: '0.35em',
+            color: 'rgba(255,255,255,0.70)',
+            textTransform: 'uppercase',
+            marginTop: '0.6rem',
+          }}
+        >
+          Sexual Activity Club - Adults Only
         </p>
       </div>
+
+      <audio
+        src="/jukebox/Fade Into You.mp3"
+        autoPlay
+        loop
+        style={{ display: 'none' }}
+      />
     </div>
-  );
+  )
 }

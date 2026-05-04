@@ -4,6 +4,7 @@ import { Bodoni_Moda, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 
 import { ROUTES } from '@/lib/constants'
+import ActivityPing from '@/app/_components/activity-ping'
 
 import './globals.css'
 
@@ -59,6 +60,7 @@ export default function RootLayout({
         className={`${sans.variable} ${display.variable} min-h-screen bg-[#060304] font-[family:var(--font-sans)] text-stone-100 antialiased`}
       >
         {children}
+        <ActivityPing />
         <Analytics />
 
         <noscript>

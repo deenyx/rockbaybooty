@@ -282,6 +282,7 @@ export async function GET(request: NextRequest) {
             showOnlineStatus: true,
           },
         },
+        lastActiveAt: true,
       },
     })
 
@@ -352,7 +353,7 @@ export async function GET(request: NextRequest) {
         avatarUrl: profile?.avatarUrl || '',
         interests: profile?.interests || [],
         lookingFor: profile?.lookingFor || [],
-        isOnline: profile?.showOnlineStatus ? user.updatedAt >= onlineCutoff : false,
+        isOnline: profile?.showOnlineStatus && user.lastActiveAt ? user.lastActiveAt >= onlineCutoff : false,
         friendshipStatus: relationshipByUser.get(user.id) || 'none',
       }
     })

@@ -99,7 +99,8 @@ export async function GET(request: NextRequest) {
         id: true,
         username: true,
         displayName: true,
-        profile: { select: { avatarUrl: true } },
+        lastActiveAt: true,
+        profile: { select: { avatarUrl: true, showOnlineStatus: true } },
       },
     })
 
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest) {
           partnerUsername: partner.username,
           partnerDisplayName: partner.displayName,
           partnerAvatarUrl: partner.profile?.avatarUrl ?? null,
+          partnerLastActiveAt: partner.profile?.showOnlineStatus && partner.lastActiveAt ? partner.lastActiveAt.toISOString() : null,
           lastMessage: {
             id: lm.id,
             senderId: lm.senderId,
