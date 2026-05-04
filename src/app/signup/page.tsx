@@ -40,7 +40,7 @@ function SignupContent() {
   const validateForm = (): string => {
     if (!name.trim() || !email.trim() || !dateOfBirth) return MESSAGES.FIELD_REQUIRED
 
-    const validEmail = /^ +@ +\. +$/.test(email.trim().toLowerCase())
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase())
     if (!validEmail) return MESSAGES.INVALID_EMAIL
 
     const dob = new Date(`${dateOfBirth}T00:00:00.000Z`)
