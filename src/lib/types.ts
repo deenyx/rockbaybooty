@@ -169,6 +169,7 @@ export interface MemberProfileResponse {
     bio: string
     interests: string[]
     avatarUrl: string
+    photoUrls: string[]
     twitterUrl: string
     fetlifeUrl: string
     onlyfansUrl: string
@@ -252,6 +253,7 @@ export interface MemberSearchResult {
   interests: string[]
   lookingFor: string[]
   isOnline: boolean
+  isVerified: boolean
   friendshipStatus: FriendshipStatus
 }
 
@@ -369,6 +371,7 @@ export interface Conversation {
   partnerUsername: string
   partnerDisplayName: string
   partnerAvatarUrl: string | null
+  partnerLastActiveAt: string | null
   lastMessage: DirectMessage
   unreadCount: number
 }
@@ -384,6 +387,7 @@ export interface ConversationMessagesResponse {
     username: string
     displayName: string
     avatarUrl: string | null
+    lastActiveAt: string | null
   }
 }
 

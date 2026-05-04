@@ -5,6 +5,7 @@ import { useParams, usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
+import OnlineDot from '@/app/_components/online-dot'
 import BlockReportMenu from '@/app/_components/block-report-menu'
 import { fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
@@ -285,7 +286,10 @@ export default function ConversationPage() {
                 )}
                 <div>
                   <p className="font-semibold text-white">{partner.displayName}</p>
-                  <p className="text-xs text-stone-400">@{partner.username}</p>
+                  <div className="flex items-center gap-1.5">
+                    <OnlineDot lastActiveAt={partner.lastActiveAt} size="sm" />
+                    <p className="text-xs text-stone-400">{partner.lastActiveAt ? 'Online now' : `@${partner.username}`}</p>
+                  </div>
                 </div>
                 <button
                   type="button"

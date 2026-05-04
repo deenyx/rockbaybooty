@@ -268,6 +268,7 @@ export async function GET(request: NextRequest) {
         username: true,
         displayName: true,
         updatedAt: true,
+        isVerified: true,
         profile: {
           select: {
             age: true,
@@ -354,6 +355,7 @@ export async function GET(request: NextRequest) {
         interests: profile?.interests || [],
         lookingFor: profile?.lookingFor || [],
         isOnline: profile?.showOnlineStatus && user.lastActiveAt ? user.lastActiveAt >= onlineCutoff : false,
+        isVerified: user.isVerified,
         friendshipStatus: relationshipByUser.get(user.id) || 'none',
       }
     })

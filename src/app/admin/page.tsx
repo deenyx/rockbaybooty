@@ -18,6 +18,7 @@ type ReportItem = {
     username: string
     displayName: string
     accountStatus: string
+    isVerified: boolean
     avatarUrl: string | null
   }
 }
@@ -87,11 +88,15 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function handleUserAction(userId: string, action: 'suspend' | 'unsuspend' | 'delete') {
+  async function handleUserAction(userId: string, action: 'suspend' | 'unsuspend' | 'delete' | 'verify' | 'unverify') {
     const confirmed = window.confirm(
       action === 'delete'
         ? 'Permanently delete this user? This cannot be undone.'
-        : `${action === 'suspend' ? 'Suspend' : 'Unsuspend'} this user?`
+        : action === 'verify'
+          ? 'Grant verified badge to this user?'
+          : action === 'unverify'
+            ? 'Remove verified badge from this user?'
+            : `${action === 'suspend' ? 'Suspend' : 'Unsuspend'} this user?`
     )
     if (!confirmed) return
     try {
@@ -107,7 +112,7 @@ export default function AdminDashboardPage() {
       setReports((prev) =>
         prev.map((r) =>
           r.reported.id === userId
-            ? { ...r, reported: { ...r.reported, accountStatus: data.user.status } }
+            ? { ...r, reported: { ...r.reported, accountStatus: data.user.status ?? r.reported.accountStatus, isVerified: data.user.isVerified ?? r.reported.isVerified } }
             : r
         )
       )
@@ -271,6 +276,14 @@ export default function AdminDashboardPage() {
                         Unsuspend
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      disabled={userActioningId === report.reported.id}
+                      onClick={() => void handleUserAction(report.reported.id, report.reported.isVerified ? 'unverify' : 'verify')}
+                      className="rounded-lg border border-sky-500/30 px-3 py-1 text-xs text-sky-300 transition hover:border-sky-400/40 hover:text-sky-200 disabled:cursor-wait disabled:opacity-50"
+                    >
+                      {report.reported.isVerified ? 'Remove ✓' : 'Verify ✓'}
+                    </button>
                     <button
                       type="button"
                       disabled={userActioningId === report.reported.id}

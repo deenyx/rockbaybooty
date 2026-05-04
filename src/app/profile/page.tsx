@@ -76,6 +76,9 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const [photoUploadError, setPhotoUploadError] = useState('')
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -87,6 +90,7 @@ export default function ProfilePage() {
         if (!mounted) return
 
         setUsername(response.user.username)
+        setPhotoUrls(response.profile.photoUrls ?? [])
         setForm({
           displayName: response.user.displayName || '',
           avatarUrl: response.profile.avatarUrl || '',
@@ -517,6 +521,128 @@ export default function ProfilePage() {
                     ))}
                   </select>
                 </div>
+              </div>
+            </section>
+
+            {/* Feedback & save */}
+            {/* Photo album */}
+            <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Photo album</p>
+              <p className="mt-1 text-xs text-stone-500">Up to 9 photos. Click to remove. Paste a URL or upload a file.</p>
+
+              {photoUrls.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {photoUrls.map((url) => (
+                    <div key={url} className="relative group aspect-square">
+                      <img src={url} alt="" className="h-full w-full rounded-xl border border-white/10 object-cover" />
+                      <button
+                        type="button"
+                        title="Remove photo"
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/photos', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ url }),
+                            })
+                            const data = await res.json().catch(() => ({}))
+                            if (res.ok) setPhotoUrls(data.photoUrls)
+                          } catch { /* ignore */ }
+                        }}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-[10px] text-white opacity-0 transition group-hover:opacity-100"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 space-y-3">
+                {/* File upload */}
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-3 text-xs text-stone-400 transition hover:border-white/35 hover:text-stone-200">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                    <path d="M12 5v14M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {isUploadingPhoto ? 'Uploading…' : 'Upload photo from device'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={isUploadingPhoto || photoUrls.length >= 9}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 800 * 1024) {
+                        setPhotoUploadError('Image too large. Max 800 KB.')
+                        return
+                      }
+                      setIsUploadingPhoto(true)
+                      setPhotoUploadError('')
+                      try {
+                        const reader = new FileReader()
+                        reader.onload = async (ev) => {
+                          const dataUrl = ev.target?.result as string
+                          const res = await fetch('/api/photos', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: dataUrl }),
+                          })
+                          const data = await res.json().catch(() => ({}))
+                          if (res.ok) {
+                            setPhotoUrls(data.photoUrls)
+                          } else {
+                            setPhotoUploadError(data.error ?? 'Upload failed')
+                          }
+                          setIsUploadingPhoto(false)
+                        }
+                        reader.readAsDataURL(file)
+                      } catch {
+                        setPhotoUploadError('Upload failed')
+                        setIsUploadingPhoto(false)
+                      }
+                    }}
+                  />
+                </label>
+
+                {/* URL input */}
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="Or paste an image URL…"
+                    disabled={isUploadingPhoto || photoUrls.length >= 9}
+                    className="flex-1 rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-white/30 disabled:opacity-50"
+                    onKeyDown={async (e) => {
+                      if (e.key !== 'Enter') return
+                      const url = (e.target as HTMLInputElement).value.trim()
+                      if (!url) return
+                      setIsUploadingPhoto(true)
+                      setPhotoUploadError('')
+                      try {
+                        const res = await fetch('/api/photos', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ url }),
+                        })
+                        const data = await res.json().catch(() => ({}))
+                        if (res.ok) {
+                          setPhotoUrls(data.photoUrls)
+                          ;(e.target as HTMLInputElement).value = ''
+                        } else {
+                          setPhotoUploadError(data.error ?? 'Failed to add')
+                        }
+                      } catch {
+                        setPhotoUploadError('Failed to add')
+                      } finally {
+                        setIsUploadingPhoto(false)
+                      }
+                    }}
+                  />
+                </div>
+
+                {photoUploadError && (
+                  <p className="text-xs text-rose-400">{photoUploadError}</p>
+                )}
               </div>
             </section>
 

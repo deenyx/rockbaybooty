@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
+import OnlineDot from '@/app/_components/online-dot'
 import { ROUTES } from '@/lib/constants'
 
 type SocialLinks = {
@@ -35,6 +36,7 @@ type PublicProfile = {
   interests: string[]
   lookingFor: string[]
   isOnline: boolean
+  isVerified: boolean
   isSelf: boolean
   friendshipStatus: 'none' | 'outgoing_pending' | 'incoming_pending' | 'friends'
   allowDirectMessages: boolean
@@ -241,9 +243,10 @@ export default function PublicProfilePage() {
                     <h1 className="font-[family:var(--font-display)] text-2xl text-stone-100 truncate">
                       {profile.displayName}
                     </h1>
-                    {profile.isOnline && (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" title="Online" />
+                    {profile.isVerified && (
+                      <span title="Verified member" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[11px] font-bold text-white">✓</span>
                     )}
+                    <OnlineDot lastActiveAt={profile.isOnline ? new Date().toISOString() : null} size="md" />
                   </div>
                   <p className="text-xs text-stone-500">@{profile.username}</p>
 

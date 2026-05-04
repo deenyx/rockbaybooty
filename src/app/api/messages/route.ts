@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
         id: true,
         username: true,
         displayName: true,
-        profile: { select: { avatarUrl: true } },
+        lastActiveAt: true,
+        profile: { select: { avatarUrl: true, showOnlineStatus: true } },
       },
     })
 
@@ -96,6 +97,7 @@ export async function GET(request: NextRequest) {
         username: partner.username,
         displayName: partner.displayName,
         avatarUrl: partner.profile?.avatarUrl ?? null,
+        lastActiveAt: partner.profile?.showOnlineStatus && partner.lastActiveAt ? partner.lastActiveAt.toISOString() : null,
       },
     })
   } catch (error) {

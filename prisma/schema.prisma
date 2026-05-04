@@ -60,6 +60,7 @@ model User {
   status         String   @default("active") // active, suspended, deleted
   isPremium      Boolean  @default(false)
   isAdmin        Boolean  @default(false)
+  isVerified     Boolean  @default(false)
   emailVerified  Boolean  @default(false)
   onboardingStep String   @default("passcode") // passcode, interview, completed
 

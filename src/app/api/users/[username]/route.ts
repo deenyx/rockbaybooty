@@ -73,8 +73,11 @@ export async function GET(
       (slVis === 'friends' && isFriend) ||
       isSelf
 
-    // Online status — no lastActiveAt field yet, always false for now
-    const isOnline = false
+    // Online status
+    const showOnline = profile?.showOnlineStatus !== false
+    const isOnline = showOnline && user.lastActiveAt
+      ? Date.now() - new Date(user.lastActiveAt).getTime() < 5 * 60 * 1000
+      : false
 
     return NextResponse.json({
       profile: {
@@ -96,6 +99,7 @@ export async function GET(
         interests: profile?.interests ?? [],
         lookingFor: profile?.lookingFor ?? [],
         isOnline,
+        isVerified: user.isVerified,
         isSelf,
         friendshipStatus,
         allowDirectMessages: profile?.allowDirectMessages ?? true,

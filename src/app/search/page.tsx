@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
 import BlockReportMenu from '@/app/_components/block-report-menu'
+import OnlineDot from '@/app/_components/online-dot'
 import { searchMembers, sendFriendRequest, sendGesture } from '@/lib/api'
 import {
   MEMBER_MENU_ITEMS,
@@ -644,12 +645,18 @@ export default function SearchPage() {
                         )}
 
                         <div>
-                          <p className="font-semibold text-white">{member.displayName}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-white">{member.displayName}</p>
+                            {member.isVerified && (
+                              <span title="Verified" className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[9px] font-bold text-white">✓</span>
+                            )}
+                          </div>
                           <p className="text-sm text-stone-300">@{member.username}</p>
                         </div>
                       </div>
 
                       <div className="flex shrink-0 items-center gap-2">
+                        <OnlineDot lastActiveAt={member.isOnline ? new Date().toISOString() : null} size="md" />
                         {member.isOnline ? (
                           <span className="rounded-full border border-emerald-200/40 bg-emerald-500/20 px-2 py-1 text-[10px] uppercase tracking-[0.15em] text-emerald-100">
                             Online

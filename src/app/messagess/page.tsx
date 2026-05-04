@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
+import OnlineDot from '@/app/_components/online-dot'
 import { decideFriendRequest, fetchConversations, fetchFriendRequests } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { Conversation, DirectMessage, PendingFriendRequest } from '@/lib/types'
@@ -468,17 +469,24 @@ export default function MessagesPage() {
                     title={`Preview conversation with ${conv.partnerDisplayName}`}
                     className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-3 backdrop-blur-lg transition hover:border-amber-100/30 hover:bg-black/30"
                   >
-                    {/* Avatar */}
-                    {conv.partnerAvatarUrl ? (
-                      <div
-                        className="h-12 w-12 shrink-0 rounded-2xl border border-white/20 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${conv.partnerAvatarUrl})` }}
+                    {/* Avatar with online dot */}
+                    <div className="relative shrink-0">
+                      {conv.partnerAvatarUrl ? (
+                        <div
+                          className="h-12 w-12 rounded-2xl border border-white/20 bg-cover bg-center"
+                          style={{ backgroundImage: `url(${conv.partnerAvatarUrl})` }}
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-amber-500/20 text-base font-semibold text-amber-100">
+                          {getInitials(conv.partnerDisplayName || conv.partnerUsername)}
+                        </div>
+                      )}
+                      <OnlineDot
+                        lastActiveAt={conv.partnerLastActiveAt}
+                        size="md"
+                        className="absolute -bottom-0.5 -right-0.5"
                       />
-                    ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-amber-500/20 text-base font-semibold text-amber-100">
-                        {getInitials(conv.partnerDisplayName || conv.partnerUsername)}
-                      </div>
-                    )}
+                    </div>
 
                     {/* Text */}
                     <div className="min-w-0 flex-1">
