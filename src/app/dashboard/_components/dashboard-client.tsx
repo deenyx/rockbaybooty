@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 
 import OnlineDot from '@/app/_components/online-dot'
+import MoonPhaseWidget from '@/app/_components/moon-phase-widget'
 import TopQuickNav from '@/app/_components/top-quick-nav'
 import { MEMBER_MENU_ITEMS, ROUTES } from '@/lib/constants'
 
@@ -422,6 +423,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               ))}
             </div>
           </section>
+
+          {/* Moon phase widget */}
+          <MoonPhaseWidget country={initialData.profile.country || null} />
 
           {/* Online now */}
           {feedLoading ? (
