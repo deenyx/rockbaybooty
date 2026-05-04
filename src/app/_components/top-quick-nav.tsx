@@ -134,6 +134,16 @@ export default function TopQuickNav({ className = '' }: TopQuickNavProps) {
   const ref = useRef<HTMLDivElement>(null)
   const activeLabel = getActiveLabel(pathname)
 
+  // Presence heartbeat — keeps lastActiveAt fresh every 2 minutes
+  useEffect(() => {
+    function ping() {
+      fetch('/api/ping', { method: 'POST' }).catch(() => {})
+    }
+    ping()
+    const id = setInterval(ping, 2 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     fetch('/api/admin/reports?status=pending&cursor=none', { method: 'GET' })
       .then((r) => { if (r.ok) setIsAdmin(true) })
