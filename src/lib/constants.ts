@@ -1,5 +1,8 @@
 // Application constants and configuration
 
+export const LOOKING_FOR_MAX_SELECTIONS = 3
+export const ROLE_MAX_SELECTIONS = 3
+
 export const LOOKING_FOR_OPTIONS = [
   'Dating',
   'Hookups',

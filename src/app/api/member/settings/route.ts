@@ -49,6 +49,7 @@ async function getAuthenticatedUserId(request: NextRequest): Promise<string | nu
 
 function getDefaultSettings() {
   return {
+    profileVisibility: 'members' as const,
     isPublic: false,
     allowDirectMessages: true,
     allowFriendRequests: true,
@@ -63,10 +64,10 @@ function validateSettingsPayload(body: unknown): UpdateMemberSettingsInput | nul
   }
 
   const input = body as Record<string, unknown>
-  const allowedKeys = ['isPublic', 'allowDirectMessages', 'allowFriendRequests', 'showOnlineStatus', 'emailLoginAlerts']
+  const booleanKeys = ['isPublic', 'allowDirectMessages', 'allowFriendRequests', 'showOnlineStatus', 'emailLoginAlerts']
   const output: UpdateMemberSettingsInput = {}
 
-  for (const key of allowedKeys) {
+  for (const key of booleanKeys) {
     const value = input[key]
 
     if (typeof value === 'undefined') {
@@ -77,7 +78,16 @@ function validateSettingsPayload(body: unknown): UpdateMemberSettingsInput | nul
       return null
     }
 
-    output[key as keyof UpdateMemberSettingsInput] = value
+    output[key as keyof UpdateMemberSettingsInput] = value as never
+  }
+
+  if (typeof input.profileVisibility !== 'undefined') {
+    if (!['public', 'members', 'private'].includes(input.profileVisibility as string)) {
+      return null
+    }
+    output.profileVisibility = input.profileVisibility as 'public' | 'members' | 'private'
+    // Keep isPublic in sync: public/members = discoverable, private = hidden
+    output.isPublic = input.profileVisibility !== 'private'
   }
 
   if (Object.keys(output).length === 0) {
@@ -98,6 +108,7 @@ export async function GET(request: NextRequest) {
     const profile = await prisma.profile.findUnique({
       where: { userId },
       select: {
+        profileVisibility: true,
         isPublic: true,
         allowDirectMessages: true,
         allowFriendRequests: true,
@@ -140,6 +151,7 @@ export async function PATCH(request: NextRequest) {
         ...updates,
       },
       select: {
+        profileVisibility: true,
         isPublic: true,
         allowDirectMessages: true,
         allowFriendRequests: true,

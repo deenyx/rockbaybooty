@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import { getAuthenticatedUserId } from '@/lib/auth'
+import { MESSAGES } from '@/lib/constants'
+
+async function requireAdmin(request: NextRequest) {
+  const userId = await getAuthenticatedUserId(request)
+  if (!userId) return null
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { isAdmin: true } })
+  return user?.isAdmin ? userId : null
+}
+
+const PAGE_SIZE = 30
+
+// GET /api/admin/members — paginated member list with optional search and status filter
+export async function GET(request: NextRequest) {
+  const adminId = await requireAdmin(request)
+  if (!adminId) return NextResponse.json({ error: MESSAGES.AUTH_REQUIRED }, { status: 403 })
+
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q')?.trim() ?? ''
+  const status = searchParams.get('status') ?? ''
+  const cursor = searchParams.get('cursor') ?? undefined
+
+  const where = {
+    ...(status ? { status } : {}),
+    ...(q
+      ? {
+          OR: [
+            { username: { contains: q, mode: 'insensitive' as const } },
+            { displayName: { contains: q, mode: 'insensitive' as const } },
+            { email: { contains: q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {}),
+  }
+
+  const users = await prisma.user.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: PAGE_SIZE + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      email: true,
+      status: true,
+      isVerified: true,
+      isAdmin: true,
+      createdAt: true,
+      lastActiveAt: true,
+      profile: { select: { avatarUrl: true } },
+      _count: { select: { reportsReceived: true } },
+    },
+  })
+
+  const hasMore = users.length > PAGE_SIZE
+  const items = hasMore ? users.slice(0, PAGE_SIZE) : users
+  const nextCursor = hasMore ? items[items.length - 1].id : null
+
+  return NextResponse.json({
+    members: items.map((u) => ({
+      id: u.id,
+      username: u.username,
+      displayName: u.displayName,
+      email: u.email,
+      status: u.status,
+      isVerified: u.isVerified,
+      isAdmin: u.isAdmin,
+      createdAt: u.createdAt.toISOString(),
+      lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
+      avatarUrl: u.profile?.avatarUrl ?? null,
+      reportCount: u._count.reportsReceived,
+    })),
+    nextCursor,
+  })
+}

@@ -19,11 +19,6 @@ type ToggleConfig = {
 
 const TOGGLES: ToggleConfig[] = [
   {
-    key: 'isPublic',
-    title: 'Profile visibility',
-    description: 'Allow your profile to appear in member discovery.',
-  },
-  {
     key: 'allowDirectMessages',
     title: 'Allow direct messages',
     description: 'Let members start direct messages with you.',
@@ -46,6 +41,7 @@ const TOGGLES: ToggleConfig[] = [
 ]
 
 const DEFAULT_SETTINGS: SettingsState = {
+  profileVisibility: 'members',
   isPublic: false,
   allowDirectMessages: true,
   allowFriendRequests: true,
@@ -224,6 +220,47 @@ export default function SettingsClient() {
             <p className="text-sm text-stone-300">Loading your settings...</p>
           ) : (
             <div className="space-y-3">
+              {/* Profile visibility — 3-way selector */}
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <p className="text-sm font-semibold text-stone-100">Profile visibility</p>
+                <p className="mt-1 text-xs text-stone-400">Control who can discover your profile in member search.</p>
+                <div className="mt-3 flex gap-2">
+                  {(['public', 'members', 'private'] as const).map((option) => {
+                    const labels: Record<string, string> = {
+                      public: 'Public',
+                      members: 'Members only',
+                      private: 'Private',
+                    }
+                    const descriptions: Record<string, string> = {
+                      public: 'Visible to everyone',
+                      members: 'Visible to logged-in members',
+                      private: 'Hidden from search',
+                    }
+                    const active = settings.profileVisibility === option
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => {
+                          setSettings((prev) => ({ ...prev, profileVisibility: option }))
+                          setError('')
+                          setMessage('')
+                        }}
+                        title={descriptions[option]}
+                        className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-semibold transition ${
+                          active
+                            ? 'border-amber-300/50 bg-amber-400/15 text-amber-100'
+                            : 'border-white/15 bg-black/20 text-stone-300 hover:border-white/30 hover:text-stone-100'
+                        }`}
+                      >
+                        {labels[option]}
+                        <span className="mt-0.5 block text-[10px] font-normal opacity-70">{descriptions[option]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
               {TOGGLES.map((toggle) => (
                 <div
                   key={toggle.key}
@@ -240,7 +277,7 @@ export default function SettingsClient() {
                       ? 'border-emerald-300/40 bg-emerald-500/35'
                       : 'border-white/20 bg-black/30'
                       }`}
-                    aria-pressed={settings[toggle.key]}
+                    aria-pressed={Boolean(settings[toggle.key])}
                     aria-label={toggle.title}
                   >
                     <span

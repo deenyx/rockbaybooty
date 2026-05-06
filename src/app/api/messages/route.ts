@@ -57,6 +57,60 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Check block in either direction
+    const isBlocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: currentUserId, blockedId: partnerId },
+          { blockerId: partnerId, blockedId: currentUserId },
+        ],
+      },
+    })
+
+    // Check friendship
+    const friendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterId: currentUserId, recipientId: partnerId, status: 'accepted' },
+          { requesterId: partnerId, recipientId: currentUserId, status: 'accepted' },
+        ],
+      },
+    })
+
+    // Check accepted message request (unlocks DMs for non-friends)
+    const acceptedRequest = friendship
+      ? null
+      : await prisma.messageRequest.findFirst({
+          where: {
+            OR: [
+              { senderId: currentUserId, recipientId: partnerId, status: 'accepted' },
+              { senderId: partnerId, recipientId: currentUserId, status: 'accepted' },
+            ],
+          },
+        })
+
+    // Check for a pending message request in either direction
+    const pendingRequestRaw = (!friendship && !acceptedRequest)
+      ? await prisma.messageRequest.findFirst({
+          where: {
+            OR: [
+              { senderId: currentUserId, recipientId: partnerId, status: 'pending' },
+              { senderId: partnerId, recipientId: currentUserId, status: 'pending' },
+            ],
+          },
+        })
+      : null
+
+    const canMessage = !isBlocked && (!!friendship || !!acceptedRequest)
+
+    const pendingRequest = pendingRequestRaw
+      ? {
+          id: pendingRequestRaw.id,
+          direction: pendingRequestRaw.senderId === currentUserId ? 'sent' : 'received',
+          intro: pendingRequestRaw.intro,
+        }
+      : null
+
     // Mark unread messages from partner as read
     await prisma.message.updateMany({
       where: {
@@ -87,6 +141,8 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
+      canMessage,
+      pendingRequest,
       messages: messages.map((m) => ({
         ...m,
         readAt: m.readAt?.toISOString() ?? null,

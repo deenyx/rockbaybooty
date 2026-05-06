@@ -11,6 +11,8 @@ import { searchMembers, sendFriendRequest, sendGesture } from '@/lib/api'
 import {
   MEMBER_MENU_ITEMS,
   GENDER_OPTIONS,
+  INTEREST_TAG_OPTIONS,
+  KINK_OPTIONS,
   LOOKING_FOR_OPTIONS,
   MAX_AGE,
   MIN_AGE,
@@ -31,6 +33,8 @@ const INITIAL_FILTERS: MemberSearchFilters = {
   gender: '',
   orientation: '',
   lookingFor: [],
+  interests: [],
+  kinks: [],
   onlineOnly: false,
   hasPhoto: false,
   lastActive: 'any',
@@ -179,6 +183,14 @@ export default function SearchPage() {
       count += 1
     }
 
+    if (filters.interests && filters.interests.length > 0) {
+      count += 1
+    }
+
+    if (filters.kinks && filters.kinks.length > 0) {
+      count += 1
+    }
+
     if (filters.hasPhoto) {
       count += 1
     }
@@ -272,6 +284,30 @@ export default function SearchPage() {
       return {
         ...current,
         lookingFor: existing.includes(value)
+          ? existing.filter((v) => v !== value)
+          : [...existing, value],
+      }
+    })
+  }
+
+  const toggleInterest = (value: string) => {
+    setFilters((current) => {
+      const existing = current.interests || []
+      return {
+        ...current,
+        interests: existing.includes(value)
+          ? existing.filter((v) => v !== value)
+          : [...existing, value],
+      }
+    })
+  }
+
+  const toggleKink = (value: string) => {
+    setFilters((current) => {
+      const existing = current.kinks || []
+      return {
+        ...current,
+        kinks: existing.includes(value)
           ? existing.filter((v) => v !== value)
           : [...existing, value],
       }
@@ -550,6 +586,52 @@ export default function SearchPage() {
                           className={`rounded-full px-3 py-1 text-[11px] transition ${
                             active
                               ? 'border border-white/40 bg-white/15 text-stone-100'
+                              : 'border border-white/15 bg-black/20 text-stone-300 hover:border-white/30 hover:text-stone-100'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Interests</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {INTEREST_TAG_OPTIONS.map((option) => {
+                      const active = (filters.interests || []).includes(option)
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleInterest(option)}
+                          className={`rounded-full px-3 py-1 text-[11px] transition ${
+                            active
+                              ? 'border border-fuchsia-300/50 bg-fuchsia-500/20 text-fuchsia-100'
+                              : 'border border-white/15 bg-black/20 text-stone-300 hover:border-white/30 hover:text-stone-100'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Kinks</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {KINK_OPTIONS.map((option) => {
+                      const active = (filters.kinks || []).includes(option)
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleKink(option)}
+                          className={`rounded-full px-3 py-1 text-[11px] transition ${
+                            active
+                              ? 'border border-rose-300/50 bg-rose-500/20 text-rose-100'
                               : 'border border-white/15 bg-black/20 text-stone-300 hover:border-white/30 hover:text-stone-100'
                           }`}
                         >

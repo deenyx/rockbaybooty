@@ -19,6 +19,7 @@ import type { Participant } from 'livekit-client'
 import { fetchChatRoomToken, fetchConversations } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
 import type { ChatRoomTokenResponse, Conversation, DirectMessage, LiveChatMessage } from '@/lib/types'
+import BlockReportMenu from '@/app/_components/block-report-menu'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Outer component — fetches token then mounts the LiveKit room
@@ -309,6 +310,14 @@ function RoomScreen() {
                   )}
                   {p.isMicrophoneEnabled && (
                     <span className="flex-none text-xs text-stone-600">mic</span>
+                  )}
+                  {!p.isLocal && (
+                    <span className="ml-auto flex-none">
+                      <BlockReportMenu
+                        targetId={p.identity}
+                        targetName={p.name || p.identity}
+                      />
+                    </span>
                   )}
                 </li>
               ))}

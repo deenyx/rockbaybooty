@@ -74,6 +74,9 @@ export default function ConversationPage() {
   const [activeGesture, setActiveGesture] = useState<'poke' | 'wink' | 'wave' | null>(null)
   const [showGestureMenu, setShowGestureMenu] = useState(false)
   const [sendError, setSendError] = useState('')
+  const [msgRequestIntro, setMsgRequestIntro] = useState('')
+  const [isSendingRequest, setIsSendingRequest] = useState(false)
+  const [requestSentFeedback, setRequestSentFeedback] = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const previousMessageCountRef = useRef(0)
@@ -203,6 +206,63 @@ export default function ConversationPage() {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       handleSend()
+    }
+  }
+
+  async function handleSendMessageRequest() {
+    if (isSendingRequest) return
+    setIsSendingRequest(true)
+    setRequestSentFeedback('')
+    try {
+      const res = await fetch('/api/message-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientId: partnerId, intro: msgRequestIntro || null }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || 'Failed to send request.')
+      }
+      setRequestSentFeedback('Message request sent! You\'ll be notified when they accept.')
+      setMsgRequestIntro('')
+      // Reload conversation to update canMessage / pendingRequest
+      const result = await fetchConversationMessages(partnerId)
+      setData(result)
+    } catch (error) {
+      setRequestSentFeedback(error instanceof Error ? error.message : 'Failed to send request.')
+    } finally {
+      setIsSendingRequest(false)
+    }
+  }
+
+  async function handleAcceptMessageRequest(requestId: string) {
+    try {
+      const res = await fetch(`/api/message-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept' }),
+      })
+      if (!res.ok) throw new Error('Failed to accept request')
+      const result = await fetchConversationMessages(partnerId)
+      setData(result)
+      setMessages(result.messages)
+    } catch {
+      // non-fatal
+    }
+  }
+
+  async function handleDeclineMessageRequest(requestId: string) {
+    try {
+      const res = await fetch(`/api/message-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'decline' }),
+      })
+      if (!res.ok) throw new Error('Failed to decline request')
+      const result = await fetchConversationMessages(partnerId)
+      setData(result)
+    } catch {
+      // non-fatal
     }
   }
 
@@ -368,72 +428,145 @@ export default function ConversationPage() {
 
           {/* Input */}
           <div className="border-t border-white/10 p-4 sm:p-5">
-            {sendError && (
-              <p className="mb-2 text-sm text-rose-400">{sendError}</p>
-            )}
-            <div className="flex items-end gap-3">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Write a message… (Enter to send)"
-                rows={1}
-                className="flex-1 resize-none rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
-                style={{ maxHeight: '9rem', overflowY: 'auto' }}
-              />
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isSending}
-                className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSending ? (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-100/30 border-t-amber-100" />
-                ) : (
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <path d="M22 2L11 13" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M22 2L15 22l-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+            {/* Consent: incoming message request */}
+            {!data?.canMessage && data?.pendingRequest?.direction === 'received' && (
+              <div className="rounded-xl border border-amber-200/30 bg-amber-300/10 p-4 text-sm">
+                <p className="font-semibold text-amber-100">
+                  {partner?.displayName || partner?.username} sent you a message request
+                </p>
+                {data.pendingRequest.intro && (
+                  <p className="mt-1 text-stone-300">&ldquo;{data.pendingRequest.intro}&rdquo;</p>
                 )}
-                <span className="sr-only">Send</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGestureMenu((current) => !current)}
-                disabled={Boolean(activeGesture)}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {activeGesture ? 'Sending...' : 'Poke...'}
-              </button>
-            </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAcceptMessageRequest(data.pendingRequest!.id)}
+                    className="rounded-lg border border-emerald-300/40 bg-emerald-400/20 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-100 transition hover:bg-emerald-400/30"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeclineMessageRequest(data.pendingRequest!.id)}
+                    className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-stone-300 transition hover:bg-white/10"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {showGestureMenu && (
-              <div className="mt-3 grid grid-cols-3 gap-2 sm:max-w-xs">
+            {/* Consent: sent request awaiting response */}
+            {!data?.canMessage && data?.pendingRequest?.direction === 'sent' && (
+              <div className="rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-stone-300">
+                <p className="font-semibold text-stone-200">Message request sent</p>
+                <p className="mt-1 text-stone-400">
+                  You&rsquo;ll be able to chat once {partner?.displayName || partner?.username} accepts.
+                </p>
+              </div>
+            )}
+
+            {/* Consent: no request yet — show send request form */}
+            {!data?.canMessage && !data?.pendingRequest && !isLoading && (
+              <div className="space-y-3">
+                <p className="text-sm text-stone-400">
+                  You&rsquo;re not connected with {partner?.displayName || partner?.username} yet. Send a message request to start chatting.
+                </p>
+                {requestSentFeedback && (
+                  <p className={`text-sm ${requestSentFeedback.startsWith('Message request sent') ? 'text-emerald-300' : 'text-rose-400'}`}>
+                    {requestSentFeedback}
+                  </p>
+                )}
+                <textarea
+                  value={msgRequestIntro}
+                  onChange={(e) => setMsgRequestIntro(e.target.value)}
+                  placeholder="Say something nice (optional, up to 300 characters)…"
+                  maxLength={300}
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
+                />
                 <button
                   type="button"
-                  onClick={() => handleGesture('poke')}
-                  disabled={Boolean(activeGesture)}
-                  className="rounded-lg border border-amber-200/35 bg-amber-300/15 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/25 disabled:opacity-50"
+                  onClick={handleSendMessageRequest}
+                  disabled={isSendingRequest}
+                  className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-4 py-2.5 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Poke
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGesture('wink')}
-                  disabled={Boolean(activeGesture)}
-                  className="rounded-lg border border-fuchsia-200/30 bg-fuchsia-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-fuchsia-100 transition hover:bg-fuchsia-300/20 disabled:opacity-50"
-                >
-                  Wink
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGesture('wave')}
-                  disabled={Boolean(activeGesture)}
-                  className="rounded-lg border border-sky-200/30 bg-sky-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-100 transition hover:bg-sky-300/20 disabled:opacity-50"
-                >
-                  Wave
+                  {isSendingRequest ? 'Sending…' : 'Send message request'}
                 </button>
               </div>
+            )}
+
+            {/* Normal message input */}
+            {data?.canMessage && (
+              <>
+                {sendError && (
+                  <p className="mb-2 text-sm text-rose-400">{sendError}</p>
+                )}
+                <div className="flex items-end gap-3">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Write a message… (Enter to send)"
+                    rows={1}
+                    className="flex-1 resize-none rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
+                    style={{ maxHeight: '9rem', overflowY: 'auto' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || isSending}
+                    className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSending ? (
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-100/30 border-t-amber-100" />
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path d="M22 2L11 13" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M22 2L15 22l-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                    <span className="sr-only">Send</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGestureMenu((current) => !current)}
+                    disabled={Boolean(activeGesture)}
+                    className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {activeGesture ? 'Sending...' : 'Poke...'}
+                  </button>
+                </div>
+
+                {showGestureMenu && (
+                  <div className="mt-3 grid grid-cols-3 gap-2 sm:max-w-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleGesture('poke')}
+                      disabled={Boolean(activeGesture)}
+                      className="rounded-lg border border-amber-200/35 bg-amber-300/15 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/25 disabled:opacity-50"
+                    >
+                      Poke
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleGesture('wink')}
+                      disabled={Boolean(activeGesture)}
+                      className="rounded-lg border border-fuchsia-200/30 bg-fuchsia-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-fuchsia-100 transition hover:bg-fuchsia-300/20 disabled:opacity-50"
+                    >
+                      Wink
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleGesture('wave')}
+                      disabled={Boolean(activeGesture)}
+                      className="rounded-lg border border-sky-200/30 bg-sky-300/10 px-2.5 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-100 transition hover:bg-sky-300/20 disabled:opacity-50"
+                    >
+                      Wave
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>

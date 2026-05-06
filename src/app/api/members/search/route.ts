@@ -98,6 +98,8 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender')?.trim() || ''
     const orientation = searchParams.get('orientation')?.trim() || ''
     const lookingFor = parseList(searchParams.get('lookingFor'))
+    const interests = parseList(searchParams.get('interests'))
+    const kinks = parseList(searchParams.get('kinks'))
     const onlineOnly = parseBoolean(searchParams.get('onlineOnly'))
     const hasPhoto = parseBoolean(searchParams.get('hasPhoto'))
     const lastActive = searchParams.get('lastActive') as 'today' | 'week' | 'any' | null
@@ -112,7 +114,7 @@ export async function GET(request: NextRequest) {
     const limit = clamp(parsedLimit ?? DEFAULT_LIMIT, 1, MAX_LIMIT)
 
     const profileFilters: Prisma.ProfileWhereInput = {
-      isPublic: true,
+      profileVisibility: { in: ['public', 'members'] },
       age: {
         gte: ageFloor,
         lte: ageCeiling,
@@ -138,6 +140,13 @@ export async function GET(request: NextRequest) {
         ? {
             lookingFor: {
               hasSome: lookingFor,
+            },
+          }
+        : {}),
+      ...(interests.length > 0
+        ? {
+            interests: {
+              hasSome: interests,
             },
           }
         : {}),
@@ -278,6 +287,7 @@ export async function GET(request: NextRequest) {
             location: true,
             bio: true,
             interests: true,
+            kinks: true,
             lookingFor: true,
             avatarUrl: true,
             showOnlineStatus: true,
@@ -287,19 +297,26 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    const filteredUsers = kinks.length > 0
+      ? users.filter((user) => {
+          const profileKinks = Array.isArray(user.profile?.kinks) ? user.profile.kinks as string[] : []
+          return kinks.some((k) => profileKinks.includes(k))
+        })
+      : users
+
     const relationshipRecords = await prisma.friendship.findMany({
       where: {
         OR: [
           {
             requesterId: currentUserId,
             recipientId: {
-              in: users.map((user) => user.id),
+              in: filteredUsers.map((user) => user.id),
             },
           },
           {
             recipientId: currentUserId,
             requesterId: {
-              in: users.map((user) => user.id),
+              in: filteredUsers.map((user) => user.id),
             },
           },
         ],
@@ -338,7 +355,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const members = users.map((user) => {
+    const members = filteredUsers.map((user) => {
       const profile = user.profile
       const fallbackLocation = [profile?.city, profile?.state, profile?.country]
         .filter(Boolean)
@@ -353,6 +370,7 @@ export async function GET(request: NextRequest) {
         bio: profile?.bio || '',
         avatarUrl: profile?.avatarUrl || '',
         interests: profile?.interests || [],
+        kinks: Array.isArray(profile?.kinks) ? profile.kinks as string[] : [],
         lookingFor: profile?.lookingFor || [],
         isOnline: profile?.showOnlineStatus && user.lastActiveAt ? user.lastActiveAt >= onlineCutoff : false,
         isVerified: user.isVerified,

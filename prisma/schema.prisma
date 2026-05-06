@@ -142,7 +142,8 @@ model Profile {
   socialLinksVisibility String @default("members") // public | members | friends | private
 
   // Preferences
-  isPublic        Boolean  @default(false) // Visible in member search
+  profileVisibility String  @default("members") // public | members | private
+  isPublic        Boolean  @default(false) // Visible in member search (legacy, derived from profileVisibility)
   allowDirectMessages Boolean @default(true)
   allowFriendRequests Boolean @default(true)
   showOnlineStatus Boolean @default(true)

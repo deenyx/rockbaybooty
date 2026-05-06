@@ -195,6 +195,14 @@ export async function searchMembers(
     params.set('lookingFor', filters.lookingFor.join(','))
   }
 
+  if (filters.interests && filters.interests.length > 0) {
+    params.set('interests', filters.interests.join(','))
+  }
+
+  if (filters.kinks && filters.kinks.length > 0) {
+    params.set('kinks', filters.kinks.join(','))
+  }
+
   if (filters.onlineOnly) {
     params.set('onlineOnly', 'true')
   }

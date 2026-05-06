@@ -152,80 +152,6 @@ async function generateUniquePersonalCode(baseCode: string) {
   return fallback
 }
 
-async function getOrCreateDefaultUser(): Promise<LoginUser> {
-  const TEST_EMAIL = 'test@fuxem.xyz'
-  const TEST_PASSWORD = 'testuserpass'
-  const bcrypt = require('bcryptjs')
-  const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10)
-
-  let existing = await prisma.user.findUnique({
-    where: { username: 'defaultuser' },
-    select: loginUserSelect,
-  })
-
-  if (existing) {
-    // Patch any missing/incorrect fields
-    let needsUpdate = false
-    const updateData: any = {}
-    if (existing.status !== 'active') {
-      updateData.status = 'active'
-      needsUpdate = true
-    }
-    if (!existing.emailVerified) {
-      updateData.emailVerified = true
-      needsUpdate = true
-    }
-    if (!existing.firstName || existing.firstName !== 'Default') {
-      updateData.firstName = 'Default'
-      needsUpdate = true
-    }
-    if (!existing.email || existing.email !== TEST_EMAIL) {
-      updateData.email = TEST_EMAIL
-      needsUpdate = true
-    }
-    if (!existing.passwordHash || existing.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
-      updateData.passwordHash = passwordHash
-      needsUpdate = true
-    }
-    if (needsUpdate) {
-      existing = await prisma.user.update({
-        where: { id: existing.id },
-        data: updateData,
-        select: loginUserSelect,
-      })
-    }
-    return existing
-  }
-
-  const personalCode = await generateUniquePersonalCode('DEFAULTUSER')
-
-  const created = await prisma.user.create({
-    data: {
-      username: 'defaultuser',
-      displayName: 'Default User',
-      firstName: 'Default',
-      personalCode,
-      passwordHash,
-      email: TEST_EMAIL,
-      emailVerified: true,
-      status: 'active',
-      onboardingStep: 'completed',
-      profile: {
-        create: {
-          location: 'Member preview',
-          bio: 'Default account for preview and quick member access.',
-          lookingFor: ['Curious'],
-          interests: ['Open-minded'],
-          isPublic: true,
-        },
-      },
-    },
-    select: loginUserSelect,
-  })
-
-  return created
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
@@ -251,37 +177,6 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.redirect(new URL(signupPath, request.url))
-    }
-
-    // Shortcut: 9999 bypasses signup and logs into a backend default account.
-    if (code === '9999') {
-      const defaultUser = await getOrCreateDefaultUser()
-
-      const defaultUserPayload: AuthTokenPayload = {
-        userId: defaultUser.id,
-        personalCode: defaultUser.personalCode,
-      }
-
-      const token = jwt.sign(defaultUserPayload, jwtSecret, {
-        expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS,
-      })
-
-      const response = buildSuccessResponse(
-        requestKind,
-        returnTo,
-        {
-          message: MESSAGES.LOGIN_SUCCESS,
-          user: {
-            id: defaultUser.id,
-            username: defaultUser.username,
-            displayName: defaultUser.displayName,
-            personalCode: defaultUser.personalCode,
-          },
-        },
-        request
-      )
-
-      return withAuthCookie(response, token)
     }
 
     // 5555 unlocks credential login mode.

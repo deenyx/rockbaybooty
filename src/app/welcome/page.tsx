@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
+import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Private Entry',
   description:
-    'Exclusive adult social network — invite-only. RockBayBooty is a private, verified adults-only space for discreet dating, chemistry, and connection.',
+    'Exclusive adult social network — invite-only. Fuxem is a private, verified adults-only space for discreet dating, chemistry, and connection.',
   keywords: [
     'invite only adult social network',
     'private adult dating',
@@ -15,21 +18,27 @@ export const metadata: Metadata = {
     'luxury adult community',
   ],
   openGraph: {
-    title: 'Private. Passionate. Yours. | RockBayBooty',
+    title: 'Private. Passionate. Yours. | Fuxem',
     description:
       'Exclusive adult social network — invite-only. Verified adults, discreet profiles, and private connection.',
-    siteName: 'RockBayBooty',
+    siteName: 'Fuxem',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Private. Passionate. Yours. | RockBayBooty',
+    title: 'Private. Passionate. Yours. | Fuxem',
     description:
       'Exclusive adult social network — invite-only. Verified adults, private access, discreet connection.',
   },
 }
 
-export default function Welcome() {
+export default async function Welcome() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value
+  if (token) {
+    redirect(ROUTES.DASHBOARD)
+  }
+
   return (
     <div
       className="relative isolate text-slate-100"
@@ -42,7 +51,23 @@ export default function Welcome() {
       }}
     >
       <Image
-        src="/3.jpg"
+        src="/welcome1.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        style={{
+          objectFit: 'cover',
+          filter: 'blur(12px)',
+          transform: 'scale(1.06)',
+          opacity: 0.42,
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+
+      <Image
+        src="/welcome1.png"
         alt=""
         fill
         priority
@@ -115,7 +140,7 @@ export default function Welcome() {
       <div
         style={{
           position: 'absolute',
-          bottom: '12%',
+          bottom: '8%',
           left: 0,
           right: 0,
           zIndex: 30,
@@ -123,19 +148,6 @@ export default function Welcome() {
           pointerEvents: 'none',
         }}
       >
-        <h1
-          style={{
-            fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
-            fontSize: 'clamp(3rem, 12vw, 8rem)',
-            fontWeight: 700,
-            letterSpacing: '0.25em',
-            color: 'rgba(255,255,255,0.92)',
-            textShadow: '0 2px 40px rgba(0,0,0,0.7)',
-            margin: 0,
-            lineHeight: 1,
-          }}
-        >
-        </h1>
         <p
           style={{
             fontFamily: "Copperplate, 'Copperplate Gothic Light', fantasy",
@@ -143,19 +155,11 @@ export default function Welcome() {
             letterSpacing: '0.35em',
             color: 'rgba(255,255,255,0.70)',
             textTransform: 'uppercase',
-            marginTop: '0.6rem',
           }}
         >
-          Sexual Activity Club - Adults Only
+          Sexual Activity Club — Adults Only
         </p>
       </div>
-
-      <audio
-        src="/jukebox/Fade Into You.mp3"
-        autoPlay
-        loop
-        style={{ display: 'none' }}
-      />
     </div>
   )
 }

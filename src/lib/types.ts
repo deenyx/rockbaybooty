@@ -205,6 +205,7 @@ export interface UpdateMemberProfileInput {
 }
 
 export interface MemberSettings {
+  profileVisibility: 'public' | 'members' | 'private'
   isPublic: boolean
   allowDirectMessages: boolean
   allowFriendRequests: boolean
@@ -217,6 +218,7 @@ export interface MemberSettingsResponse {
 }
 
 export interface UpdateMemberSettingsInput {
+  profileVisibility?: 'public' | 'members' | 'private'
   isPublic?: boolean
   allowDirectMessages?: boolean
   allowFriendRequests?: boolean
@@ -236,6 +238,8 @@ export interface MemberSearchFilters {
   gender?: string
   orientation?: string
   lookingFor?: string[]
+  interests?: string[]
+  kinks?: string[]
   onlineOnly?: boolean
   hasPhoto?: boolean
   lastActive?: 'today' | 'week' | 'any'
@@ -251,6 +255,7 @@ export interface MemberSearchResult {
   bio: string
   avatarUrl: string
   interests: string[]
+  kinks: string[]
   lookingFor: string[]
   isOnline: boolean
   isVerified: boolean
@@ -381,6 +386,12 @@ export interface SendMessageResponse {
 }
 
 export interface ConversationMessagesResponse {
+  canMessage: boolean
+  pendingRequest: {
+    id: string
+    direction: 'sent' | 'received'
+    intro: string | null
+  } | null
   messages: DirectMessage[]
   partner: {
     id: string
