@@ -121,6 +121,46 @@ export default function PublicProfilePage() {
     }
   }
 
+  async function handleAcceptRequest() {
+    if (!profile?.friendshipId) return
+    try {
+      setIsFriendLoading(true)
+      const res = await fetch('/api/friends/requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendshipId: profile.friendshipId, action: 'accept' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to accept')
+      setProfile((p) => p ? { ...p, friendshipStatus: 'friends' } : p)
+      setFriendAction('Now friends!')
+    } catch (err) {
+      setFriendAction(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setIsFriendLoading(false)
+    }
+  }
+
+  async function handleDeclineRequest() {
+    if (!profile?.friendshipId) return
+    try {
+      setIsFriendLoading(true)
+      const res = await fetch('/api/friends/requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ friendshipId: profile.friendshipId, action: 'decline' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to decline')
+      setProfile((p) => p ? { ...p, friendshipStatus: 'none', friendshipId: null } : p)
+      setFriendAction('')
+    } catch (err) {
+      setFriendAction(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setIsFriendLoading(false)
+    }
+  }
+
   async function handleCancelRequest() {
     if (!profile?.friendshipId) return
     try {
@@ -336,9 +376,24 @@ export default function PublicProfilePage() {
                     )}
 
                     {profile.friendshipStatus === 'incoming_pending' && (
-                      <span className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-400">
-                        Wants to be friends
-                      </span>
+                      <>
+                        <button
+                          type="button"
+                          disabled={isFriendLoading}
+                          onClick={() => void handleAcceptRequest()}
+                          className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-wait disabled:opacity-50"
+                        >
+                          {isFriendLoading ? '…' : 'Accept'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isFriendLoading}
+                          onClick={() => void handleDeclineRequest()}
+                          className="rounded-xl border border-white/15 px-4 py-2 text-sm text-stone-400 transition hover:border-rose-500/30 hover:text-rose-400 disabled:cursor-wait disabled:opacity-50"
+                        >
+                          Decline
+                        </button>
+                      </>
                     )}
 
                     {friendAction && (

@@ -73,11 +73,22 @@ export async function GET(
       (slVis === 'friends' && isFriend) ||
       isSelf
 
-    // Online status
+    // Online status (15-minute window)
     const showOnline = profile?.showOnlineStatus !== false
     const isOnline = showOnline && user.lastActiveAt
-      ? Date.now() - new Date(user.lastActiveAt).getTime() < 5 * 60 * 1000
+      ? Date.now() - new Date(user.lastActiveAt).getTime() < 15 * 60 * 1000
       : false
+
+    // Compute age from dateOfBirth, fall back to stored age
+    let age: number | null = profile?.age ?? null
+    if (profile?.dateOfBirth) {
+      const dob = new Date(profile.dateOfBirth)
+      const now = new Date()
+      let computed = now.getFullYear() - dob.getFullYear()
+      const m = now.getMonth() - dob.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) computed--
+      age = computed
+    }
 
     return NextResponse.json({
       profile: {
@@ -87,7 +98,7 @@ export async function GET(
         avatarUrl: profile?.avatarUrl ?? null,
         photoUrls: profile?.photoUrls ?? [],
         bio: profile?.bio ?? null,
-        age: profile?.age ?? null,
+        age,
         gender: profile?.gender ?? null,
         genderOther: profile?.genderOther ?? null,
         pronouns: profile?.pronouns ?? null,

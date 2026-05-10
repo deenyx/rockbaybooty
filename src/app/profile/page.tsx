@@ -245,17 +245,52 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs text-stone-400" htmlFor="avatarUrl">
-                    Avatar URL
+                  <label className="mb-1.5 block text-xs text-stone-400">
+                    Avatar
                   </label>
-                  <input
-                    id="avatarUrl"
-                    type="url"
-                    value={form.avatarUrl}
-                    onChange={(e) => handleChange('avatarUrl', e.target.value)}
-                    placeholder="https://…"
-                    className={inputCls}
-                  />
+                  <div className="flex gap-2 items-start">
+                    {form.avatarUrl && (
+                      <img
+                        src={form.avatarUrl}
+                        alt=""
+                        className="h-14 w-14 shrink-0 rounded-xl border border-white/15 object-cover"
+                      />
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/[0.02] p-2.5 text-xs text-stone-400 transition hover:border-white/35 hover:text-stone-200">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                          <path d="M12 5v14M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Upload from device
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (!file) return
+                            if (file.size > 800 * 1024) {
+                              setError('Avatar too large. Max 800 KB.')
+                              return
+                            }
+                            const reader = new FileReader()
+                            reader.onload = (ev) => {
+                              handleChange('avatarUrl', ev.target?.result as string)
+                            }
+                            reader.readAsDataURL(file)
+                          }}
+                        />
+                      </label>
+                      <input
+                        id="avatarUrl"
+                        type="url"
+                        value={form.avatarUrl.startsWith('data:') ? '' : form.avatarUrl}
+                        onChange={(e) => handleChange('avatarUrl', e.target.value)}
+                        placeholder="Or paste image URL…"
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>

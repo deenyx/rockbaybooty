@@ -1,4 +1,4 @@
-import { AccessToken } from 'livekit-server-sdk'
+import { AccessToken, RoomServiceClient } from 'livekit-server-sdk'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
@@ -93,6 +93,22 @@ export async function GET(request: NextRequest) {
     const identity = userId
     const displayName = user.displayName || user.username
     const avatarUrl = user.profile?.avatarUrl || ''
+
+    // Enforce room capacity limit to stay within LiveKit free tier
+    const ROOM_CAPACITY = 40
+    try {
+      const roomService = new RoomServiceClient(wsUrl, apiKey, apiSecret)
+      const participants = await roomService.listParticipants(CHAT_ROOM_NAME)
+      const alreadyInRoom = participants.some(p => p.identity === identity)
+      if (!alreadyInRoom && participants.length >= ROOM_CAPACITY) {
+        return NextResponse.json(
+          { error: 'The lounge is full right now. Try again soon!' },
+          { status: 503 }
+        )
+      }
+    } catch {
+      // If we can't check (room doesn't exist yet etc.), allow entry
+    }
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity,

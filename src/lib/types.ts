@@ -406,6 +406,56 @@ export interface ConversationsResponse {
   conversations: Conversation[]
 }
 
+export interface GrokReplyResponse {
+  reply: string
+  model: string
+}
+
+export interface DiscoverMember {
+  id: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  city: string | null
+  country: string | null
+  lastActiveAt: string | null
+  createdAt: string | null
+}
+
+export interface DiscoverResponse {
+  onlineMembers: DiscoverMember[]
+  newMembers: DiscoverMember[]
+  trendingInterests: Array<{
+    label: string
+    count: number
+  }>
+}
+
+export interface MembershipStatusResponse {
+  isPremium: boolean
+  isVerified: boolean
+  memberSince: string
+  totalVideos: number
+  publicVideos: number
+  totalViews: number
+}
+
+export interface SafetySummaryResponse {
+  blocked: Array<{
+    blockedId: string
+    createdAt: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }>
+  reportCounts: {
+    pending: number
+    reviewed: number
+    dismissed: number
+    actioned: number
+  }
+}
+
 // Block & Report
 
 export interface BlockActionResponse {

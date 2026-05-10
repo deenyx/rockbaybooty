@@ -9,6 +9,7 @@ import type {
   CreateGroupInput,
   CreateGroupPostInput,
   CreateVideoInput,
+  DiscoverResponse,
   ConversationMessagesResponse,
   ConversationsResponse,
   FriendRequestsResponse,
@@ -18,9 +19,12 @@ import type {
   GroupDetailResponse,
   GroupListResponse,
   GroupPostsResponse,
+  GrokReplyResponse,
   LoginResponse,
+  MembershipStatusResponse,
   MemberSearchFilters,
   MemberSearchResponse,
+  SafetySummaryResponse,
   MemberProfileResponse,
   MemberSettingsResponse,
   PasscodeValidationResponse,
@@ -159,6 +163,31 @@ export async function deleteMyAccount(): Promise<AccountActionResponse> {
 
 export async function fetchChatRoomToken(): Promise<ChatRoomTokenResponse> {
   return apiCall('/api/chat/token')
+}
+
+export async function askGrok(prompt: string, context?: string): Promise<GrokReplyResponse> {
+  return apiCall('/api/ai/grok', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, context }),
+  })
+}
+
+export async function fetchDiscover(): Promise<DiscoverResponse> {
+  return apiCall('/api/discover', {
+    method: 'GET',
+  })
+}
+
+export async function fetchMembershipStatus(): Promise<MembershipStatusResponse> {
+  return apiCall('/api/member/membership', {
+    method: 'GET',
+  })
+}
+
+export async function fetchSafetySummary(): Promise<SafetySummaryResponse> {
+  return apiCall('/api/member/safety', {
+    method: 'GET',
+  })
 }
 
 export async function searchMembers(

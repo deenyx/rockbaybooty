@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import TopQuickNav from '@/app/_components/top-quick-nav'
 import OnlineDot from '@/app/_components/online-dot'
 import BlockReportMenu from '@/app/_components/block-report-menu'
-import { fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
+import { askGrok, fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { ConversationMessagesResponse, DirectMessage } from '@/lib/types'
 
@@ -77,6 +77,10 @@ export default function ConversationPage() {
   const [msgRequestIntro, setMsgRequestIntro] = useState('')
   const [isSendingRequest, setIsSendingRequest] = useState(false)
   const [requestSentFeedback, setRequestSentFeedback] = useState('')
+  const [grokPrompt, setGrokPrompt] = useState('')
+  const [grokReply, setGrokReply] = useState('')
+  const [grokError, setGrokError] = useState('')
+  const [isAskingGrok, setIsAskingGrok] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const previousMessageCountRef = useRef(0)
@@ -232,6 +236,34 @@ export default function ConversationPage() {
       setRequestSentFeedback(error instanceof Error ? error.message : 'Failed to send request.')
     } finally {
       setIsSendingRequest(false)
+    }
+  }
+
+  async function handleAskGrok() {
+    const trimmedPrompt = grokPrompt.trim()
+
+    if (!trimmedPrompt || isAskingGrok) {
+      return
+    }
+
+    setGrokError('')
+    setIsAskingGrok(true)
+
+    try {
+      const context = messages
+        .slice(-8)
+        .map((message) => {
+          const speaker = message.senderId === partnerId ? (partner?.displayName || partner?.username || 'Them') : 'Me'
+          return `${speaker}: ${formatMessageBody(message, message.senderId !== partnerId)}`
+        })
+        .join('\n')
+
+      const result = await askGrok(trimmedPrompt, context)
+      setGrokReply(result.reply)
+    } catch (error) {
+      setGrokError(error instanceof Error ? error.message : 'Unable to reach Grok right now.')
+    } finally {
+      setIsAskingGrok(false)
     }
   }
 
@@ -566,6 +598,56 @@ export default function ConversationPage() {
                     </button>
                   </div>
                 )}
+
+                <div className="mt-4 rounded-2xl border border-cyan-200/20 bg-cyan-300/5 p-3 sm:p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-100/80">Ask Grok</p>
+                  <p className="mt-1 text-xs text-stone-400">
+                    Generate a confident draft reply. Edit before sending.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      value={grokPrompt}
+                      onChange={(event) => setGrokPrompt(event.target.value)}
+                      placeholder="Example: Write a playful but respectful reply to their last message"
+                      maxLength={1000}
+                      className="h-11 flex-1 rounded-xl border border-cyan-100/20 bg-black/30 px-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-cyan-100/55"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAskGrok}
+                      disabled={!grokPrompt.trim() || isAskingGrok}
+                      className="h-11 rounded-xl border border-cyan-200/35 bg-cyan-300/15 px-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isAskingGrok ? 'Thinking...' : 'Generate'}
+                    </button>
+                  </div>
+
+                  {grokError && (
+                    <p className="mt-2 text-xs text-rose-300">{grokError}</p>
+                  )}
+
+                  {grokReply && (
+                    <div className="mt-3 rounded-xl border border-white/10 bg-black/25 p-3">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-100">{grokReply}</p>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInputValue(grokReply)}
+                          className="rounded-lg border border-emerald-200/35 bg-emerald-300/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-emerald-100 transition hover:bg-emerald-300/25"
+                        >
+                          Use as draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGrokReply('')}
+                          className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.11em] text-stone-300 transition hover:bg-white/10"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
