@@ -357,6 +357,7 @@ export const ROUTES = {
   GROUPS_NEW: '/groups/new',
   CLASSIFIEDS: '/classifieds',
   CLASSIFIEDS_NEW: '/classifieds/new',
+  CLASSIFIEDS_SECTION: '/classifieds/section',
   MESSAGESS: '/messagess',
   FRIENDS: '/friends',
   NOTIFICATIONS: '/notifications',

@@ -109,13 +109,9 @@ export default function ClassifiedsClient() {
             All Sections
           </button>
           {CLASSIFIED_CATEGORY_SECTIONS.map((section) => (
-            <button
+            <Link
               key={section.value}
-              type="button"
-              onClick={() => {
-                setActiveSection(section.value)
-                setActiveTab('all')
-              }}
+              href={`${ROUTES.CLASSIFIEDS_SECTION}/${section.value}`}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                 activeSection === section.value
                   ? 'border-white/25 bg-white/15 text-white'
@@ -123,7 +119,7 @@ export default function ClassifiedsClient() {
               }`}
             >
               {section.label}
-            </button>
+            </Link>
           ))}
         </div>
 
