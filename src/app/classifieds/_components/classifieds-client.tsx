@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
-import { CLASSIFIED_CATEGORIES, ROUTES } from '@/lib/constants'
+import { CLASSIFIED_CATEGORIES, CLASSIFIED_CATEGORY_SECTIONS, ROUTES } from '@/lib/constants'
 import type { ClassifiedListing } from '@/lib/types'
 import ClassifiedCard from './classified-card'
 
@@ -16,7 +16,14 @@ export default function ClassifiedsClient() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
+  const [activeSection, setActiveSection] = useState<'all' | string>('all')
   const [activeTab, setActiveTab] = useState<Tab>('all')
+
+  const availableTabs = activeSection === 'all'
+    ? CLASSIFIED_CATEGORIES
+    : CLASSIFIED_CATEGORIES.filter((category) =>
+        (CLASSIFIED_CATEGORY_SECTIONS.find((section) => section.value === activeSection)?.categories as readonly string[] | undefined)?.includes(category.value)
+      )
 
   const fetchListings = useCallback(
     async (category: Tab, cursor?: string) => {
@@ -87,7 +94,41 @@ export default function ClassifiedsClient() {
 
         {/* Category tabs */}
         <div className="mx-auto mt-4 flex max-w-5xl gap-1.5 overflow-x-auto pb-1">
-          {[{ value: 'all', label: 'All' }, ...CLASSIFIED_CATEGORIES].map((tab) => (
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSection('all')
+              setActiveTab('all')
+            }}
+            className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+              activeSection === 'all'
+                ? 'border-white/25 bg-white/15 text-white'
+                : 'border-white/8 bg-white/5 text-stone-400 hover:border-white/15 hover:text-stone-200'
+            }`}
+          >
+            All Sections
+          </button>
+          {CLASSIFIED_CATEGORY_SECTIONS.map((section) => (
+            <button
+              key={section.value}
+              type="button"
+              onClick={() => {
+                setActiveSection(section.value)
+                setActiveTab('all')
+              }}
+              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                activeSection === section.value
+                  ? 'border-white/25 bg-white/15 text-white'
+                  : 'border-white/8 bg-white/5 text-stone-400 hover:border-white/15 hover:text-stone-200'
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-3 flex max-w-5xl gap-1.5 overflow-x-auto pb-1">
+          {[{ value: 'all', label: 'All' }, ...availableTabs].map((tab) => (
             <button
               key={tab.value}
               type="button"

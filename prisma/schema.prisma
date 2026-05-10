@@ -230,7 +230,7 @@ model Classified {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
   description String
-  category    String   // encounters | casual | relationships | seeking
+  category    String   // for-sale | wanted | free | housing-rentals | housing-roommates | housing-sublets | jobs | gigs | services | community-events | classes | buying | selling | rentals | personals | adult-escorts | adult-massage | adult-entertainment | encounters | casual | relationships | seeking
   location    String?
   photos      String[] @default([])
   status      String   @default("active") // active | deleted

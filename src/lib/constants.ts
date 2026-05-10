@@ -257,6 +257,24 @@ export const CHAT_ROOM_NAME = 'members-lounge'
 export const MESSAGING_POLL_INTERVAL_MS = 2500
 
 export const CLASSIFIED_CATEGORIES = [
+  { value: 'for-sale', label: 'For Sale' },
+  { value: 'wanted', label: 'Wanted' },
+  { value: 'free', label: 'Free' },
+  { value: 'housing-rentals', label: 'Housing - Rentals' },
+  { value: 'housing-roommates', label: 'Housing - Roommates' },
+  { value: 'housing-sublets', label: 'Housing - Sublets' },
+  { value: 'jobs', label: 'Jobs' },
+  { value: 'gigs', label: 'Gigs' },
+  { value: 'services', label: 'Services' },
+  { value: 'community-events', label: 'Community Events' },
+  { value: 'classes', label: 'Classes' },
+  { value: 'buying', label: 'Buying' },
+  { value: 'selling', label: 'Selling' },
+  { value: 'rentals', label: 'Rentals' },
+  { value: 'personals', label: 'Personals' },
+  { value: 'adult-escorts', label: 'Adult - Escorts' },
+  { value: 'adult-massage', label: 'Adult - Massage' },
+  { value: 'adult-entertainment', label: 'Adult - Entertainment' },
   { value: 'encounters', label: 'Encounters' },
   { value: 'casual', label: 'Casual' },
   { value: 'relationships', label: 'Relationships' },
@@ -281,6 +299,42 @@ export const GROUP_POSTS_PAGE_SIZE = 20
 
 export type ClassifiedCategory = typeof CLASSIFIED_CATEGORIES[number]['value']
 export const CLASSIFIED_CATEGORY_VALUES = CLASSIFIED_CATEGORIES.map((c) => c.value) as [string, ...string[]]
+export const CLASSIFIED_CATEGORY_LABELS = Object.fromEntries(
+  CLASSIFIED_CATEGORIES.map((category) => [category.value, category.label])
+) as Record<ClassifiedCategory, string>
+export const CLASSIFIED_CATEGORY_SECTIONS = [
+  {
+    value: 'marketplace',
+    label: 'Marketplace',
+    categories: ['for-sale', 'wanted', 'free', 'buying', 'selling'],
+  },
+  {
+    value: 'housing',
+    label: 'Housing',
+    categories: ['housing-rentals', 'housing-roommates', 'housing-sublets', 'rentals'],
+  },
+  {
+    value: 'work-services',
+    label: 'Work & Services',
+    categories: ['jobs', 'gigs', 'services', 'classes'],
+  },
+  {
+    value: 'community',
+    label: 'Community',
+    categories: ['community-events', 'personals'],
+  },
+  {
+    value: 'adult',
+    label: 'Adult',
+    categories: ['adult-escorts', 'adult-massage', 'adult-entertainment', 'encounters', 'casual', 'relationships', 'seeking'],
+  },
+] as const
+export type ClassifiedCategorySection = typeof CLASSIFIED_CATEGORY_SECTIONS[number]['value']
+export const CLASSIFIED_CATEGORY_SECTION_BY_VALUE = Object.fromEntries(
+  CLASSIFIED_CATEGORY_SECTIONS.flatMap((section) =>
+    section.categories.map((category) => [category, section.value])
+  )
+) as Record<ClassifiedCategory, ClassifiedCategorySection>
 export const CLASSIFIEDS_EXPIRY_DAYS = 30
 export const CLASSIFIEDS_MAX_PHOTOS = 4
 

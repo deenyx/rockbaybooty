@@ -3,7 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 
-import { CLASSIFIED_CATEGORIES, CLASSIFIEDS_MAX_PHOTOS, ROUTES } from '@/lib/constants'
+import {
+  CLASSIFIED_CATEGORIES,
+  CLASSIFIED_CATEGORY_SECTION_BY_VALUE,
+  CLASSIFIED_CATEGORY_SECTIONS,
+  CLASSIFIEDS_MAX_PHOTOS,
+  ROUTES,
+} from '@/lib/constants'
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
@@ -22,6 +28,7 @@ export default function NewClassifiedForm() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [categorySection, setCategorySection] = useState<string>(CLASSIFIED_CATEGORY_SECTIONS[0].value)
   const [category, setCategory] = useState('')
   const [location, setLocation] = useState('')
   const [photos, setPhotos] = useState<string[]>([])
@@ -85,6 +92,7 @@ export default function NewClassifiedForm() {
 
   const inputCls = 'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-sky-400/50 focus:ring-1 focus:ring-sky-400/20 transition'
   const labelCls = 'mb-1.5 block text-xs font-semibold uppercase tracking-widest text-stone-400'
+  const sectionCategories = CLASSIFIED_CATEGORY_SECTIONS.find((section) => section.value === categorySection)?.categories || []
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -105,6 +113,29 @@ export default function NewClassifiedForm() {
 
       {/* Category */}
       <div>
+        <label className={labelCls}>Category section</label>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {CLASSIFIED_CATEGORY_SECTIONS.map((section) => (
+            <button
+              key={section.value}
+              type="button"
+              onClick={() => {
+                setCategorySection(section.value)
+                if (category && CLASSIFIED_CATEGORY_SECTION_BY_VALUE[category as keyof typeof CLASSIFIED_CATEGORY_SECTION_BY_VALUE] !== section.value) {
+                  setCategory('')
+                }
+              }}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                categorySection === section.value
+                  ? 'border-white/25 bg-white/15 text-white'
+                  : 'border-white/10 bg-white/5 text-stone-400 hover:border-white/20 hover:text-stone-200'
+              }`}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
         <label className={labelCls} htmlFor="cl-cat">Category</label>
         <select
           id="cl-cat"
@@ -113,10 +144,13 @@ export default function NewClassifiedForm() {
           className={`${inputCls} appearance-none`}
         >
           <option value="" disabled>Select a category…</option>
-          {CLASSIFIED_CATEGORIES.map((c) => (
+          {CLASSIFIED_CATEGORIES.filter((c) => (sectionCategories as readonly string[]).includes(c.value)).map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
           ))}
         </select>
+        <p className="mt-1 text-[11px] text-stone-500">
+          Pick a section first, then choose the exact listing type.
+        </p>
       </div>
 
       {/* Location */}
