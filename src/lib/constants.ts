@@ -11,6 +11,14 @@ export const LOOKING_FOR_OPTIONS = [
   'Chat only',
   'Long-term connection',
   'Open to anything',
+  'A Slut',
+  'A Slut Trainer',
+  'FWBs',
+  'Content Creators',
+  'A FuckHole',
+  'Discreet Play',
+  'Kinky Bitch(s)',
+  'A CumSock',
 ]
 
 export const ROLE_OPTIONS = [
@@ -73,6 +81,8 @@ export const INTENTION_OPTIONS = [
   'Dating and romance',
   'Friendship and community',
   'Just browsing',
+  "I'm a way-ward wondering fuckhole",
+  'I am horny AF',
 ]
 
 export const ORIENTATION_OPTIONS = [
@@ -147,12 +157,12 @@ export const MESSAGES = {
   INVITE_CODE_INVALID: 'Invalid or used access code',
   GROUP_CLOSED: 'Registrations are currently closed',
   GROUP_FULL: 'Member limit reached. Registrations are temporarily paused.',
-  LOGIN_INVALID: 'Invalid passcode',
-  LOGIN_CREDENTIALS_REQUIRED: 'Enter your user ID or email and a secret',
+  LOGIN_INVALID: 'Invalid login credentials',
+  LOGIN_CREDENTIALS_REQUIRED: 'Enter your user ID/email and password',
   LOGIN_PASSWORD_REQUIRED: 'Enter your password',
-  LOGIN_PASSCODE_REQUIRED: 'Enter your personal passcode',
-  LOGIN_PASSWORD_NOT_SET: 'This account does not have a password yet. Use passcode login.',
-  EMAIL_VERIFICATION_REQUIRED: 'Verify your email before using this PIN.',
+  LOGIN_PASSCODE_REQUIRED: 'Enter your password',
+  LOGIN_PASSWORD_NOT_SET: 'This account does not have a password yet.',
+  EMAIL_VERIFICATION_REQUIRED: 'Verify your email before logging in.',
   AUTH_REQUIRED: 'Authentication required',
   LOGIN_SUCCESS: 'Logged in successfully',
   LOGOUT_SUCCESS: 'Logged out successfully',
@@ -362,6 +372,8 @@ export const ROUTES = {
   FRIENDS: '/friends',
   NOTIFICATIONS: '/notifications',
   MEMBERSHIP: '/membership',
+  UPGRADE: '/upgrade',
+  UPGRADE_SUCCESS: '/upgrade/success',
   SAFETY: '/safety',
   SUPPORT: '/support',
   VIDEOS: '/videos',

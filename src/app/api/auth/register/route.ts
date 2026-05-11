@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 import {
   MIN_AGE,
+  MIN_PASSWORD_LENGTH,
   MESSAGES,
-  NEW_MEMBER_PIN,
 } from '@/lib/constants'
 import { sendVerificationEmail } from '@/lib/email'
 
@@ -53,7 +54,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const email = body.email?.trim().toLowerCase()
-    const name = body.name?.trim() || body.firstName?.trim()
+    const rawName = typeof body.name === 'string' ? body.name : body.firstName
+    const name = typeof rawName === 'string' ? rawName.trim().replace(/\s+/g, ' ') : ''
+    const password = typeof body.password === 'string' ? body.password.trim() : ''
     const dateOfBirth = parseDob(body.dateOfBirth)
 
     if (!email || !EMAIL_REGEX.test(email)) {
@@ -68,12 +71,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: MESSAGES.INVALID_DATE_OF_BIRTH }, { status: 400 })
     }
 
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json({ error: MESSAGES.PASSWORD_MIN_LENGTH }, { status: 400 })
+    }
+
     const existingName = await prisma.user.findFirst({
       where: {
-        firstName: {
-          equals: name,
-          mode: 'insensitive',
-        },
+        OR: [
+          {
+            firstName: {
+              equals: name,
+              mode: 'insensitive',
+            },
+          },
+          {
+            displayName: {
+              equals: name,
+              mode: 'insensitive',
+            },
+          },
+        ],
       },
       select: { id: true },
     })
@@ -108,6 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
+    const passwordHash = await bcrypt.hash(password, 10)
 
     const createdUser = await prisma.user.create({
       data: {
@@ -116,10 +134,10 @@ export async function POST(request: NextRequest) {
         displayName: name,
         username,
         personalCode,
-        loginPin: NEW_MEMBER_PIN,
+        passwordHash,
         emailVerificationToken: token,
         emailVerificationExpiresAt: expiresAt,
-        onboardingStep: 'passcode',
+        onboardingStep: 'interview',
         profile: {
           create: {
             age,
@@ -164,8 +182,7 @@ export async function POST(request: NextRequest) {
         const token = jwt.sign(payload, jwtSecret, { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS })
         const response = NextResponse.json(
           {
-            message: 'Verify your email to activate your PIN.',
-            pin: NEW_MEMBER_PIN,
+            message: 'Verify your email, then log in with your username/email and password.',
             user: {
               id: user.id,
               username: user.username,
@@ -189,8 +206,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       {
-        message: 'Verify your email to activate your PIN.',
-        pin: NEW_MEMBER_PIN,
+        message: 'Verify your email, then log in with your username/email and password.',
       },
       { status: 200 }
     )

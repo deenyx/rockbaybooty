@@ -27,7 +27,6 @@ function LoginContent() {
   const [entryPin, setEntryPin] = useState('')
   const [identifier, setIdentifier] = useState('')
   const [secret, setSecret] = useState('')
-  const [secretType, setSecretType] = useState<'password' | 'passcode'>('password')
   const [stage, setStage] = useState<'pin' | 'credentials'>('pin')
   const [error, setError] = useState(urlError)
   const [status, setStatus] = useState<'idle' | 'loading'>('idle')
@@ -92,7 +91,6 @@ function LoginContent() {
           passcode: '5555',
           identifier: identifier.trim().toLowerCase(),
           secret: secret.trim(),
-          secretType,
           returnTo,
         }),
       })
@@ -150,7 +148,7 @@ function LoginContent() {
           >
             {verified && (
               <p className="rounded-xl border border-emerald-300/35 bg-emerald-400/12 px-3 py-2 text-center text-[11px] text-emerald-100">
-                Email verified. Use your entry PIN to continue.
+                Email verified. Enter your access code to continue.
               </p>
             )}
 
@@ -159,7 +157,7 @@ function LoginContent() {
                 className="block text-center text-[8px] uppercase tracking-[0.28em] text-yellow-400 mb-2"
                 style={{ fontFamily: CP }}
               >
-                Entry PIN
+                Access Code
               </span>
               <input
                 type="password"
@@ -177,7 +175,7 @@ function LoginContent() {
                 style={{ fontFamily: CP }}
               />
               <p className="mt-2 text-center text-[10px] tracking-wide text-stone-400" style={{ fontFamily: CP }}>
-                No code = 0000
+                New account = 0000, Login = 5555
             
               </p>
             </div>
@@ -205,7 +203,7 @@ function LoginContent() {
             className="w-full max-w-xs space-y-5 rounded-2xl border border-white/10 bg-black/45 p-6 shadow-[0_20px_55px_rgba(0,0,0,0.55)] backdrop-blur-md"
           >
             <p className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-center text-[11px] text-sky-100">
-              Entry PIN accepted. Log in with your user ID or email.
+              Access code accepted. Log in with your user ID/email and password.
             </p>
 
             <div>
@@ -228,44 +226,19 @@ function LoginContent() {
 
             <div>
               <div className="mb-2 flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSecretType('password')
-                    setError('')
-                  }}
-                  className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em] transition ${
-                    secretType === 'password'
-                      ? 'border border-white/30 bg-white/10 text-stone-100'
-                      : 'border border-white/10 text-stone-400 hover:text-stone-200'
-                  }`}
-                >
+                <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-stone-100">
                   Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSecretType('passcode')
-                    setError('')
-                  }}
-                  className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.18em] transition ${
-                    secretType === 'passcode'
-                      ? 'border border-white/30 bg-white/10 text-stone-100'
-                      : 'border border-white/10 text-stone-400 hover:text-stone-200'
-                  }`}
-                >
-                  Passcode
-                </button>
+                </span>
               </div>
               <input
-                type={secretType === 'password' ? 'password' : 'text'}
-                autoComplete={secretType === 'password' ? 'current-password' : 'off'}
+                type="password"
+                autoComplete="current-password"
                 value={secret}
                 onChange={(e) => {
-                  setSecret(secretType === 'passcode' ? e.target.value.toUpperCase() : e.target.value)
+                  setSecret(e.target.value)
                   setError('')
                 }}
-                placeholder={secretType === 'password' ? 'your password' : 'your passcode'}
+                placeholder="your password"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm tracking-[0.08em] text-stone-100 outline-none placeholder:text-stone-500 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
                 style={{ fontFamily: CP }}
               />
@@ -293,7 +266,7 @@ function LoginContent() {
                 }}
                 className="hover:text-stone-400 transition-colors"
               >
-                ← change pin
+                ← change code
               </button>
             </p>
           </form>

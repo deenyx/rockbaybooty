@@ -12,6 +12,68 @@ import {
 import { sendLoginAlertEmail } from '@/lib/email'
 import type { AuthTokenPayload } from '@/lib/types'
 
+// Extract client IP from request (handles proxies like Vercel, Cloudflare)
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded) {
+    return forwarded.split(',')[0].trim()
+  }
+  
+  const cfConnectingIp = request.headers.get('cf-connecting-ip')
+  if (cfConnectingIp) {
+    return cfConnectingIp
+  }
+  
+  return request.headers.get('x-real-ip') || 'unknown'
+}
+
+// Detect user location from IP using free IP geolocation API
+async function detectLocationFromIp(ip: string): Promise<{
+  city?: string
+  state?: string
+  country?: string
+  location?: string
+} | null> {
+  if (!ip || ip === 'unknown' || ip === '127.0.0.1' || ip === '::1') {
+    return null
+  }
+
+  try {
+    // Using ip-api.com free tier (45 requests/minute)
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,status`, {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+
+    if (data.status !== 'success') {
+      return null
+    }
+
+    const city = data.city || undefined
+    const state = data.regionName || undefined
+    const country = data.country || undefined
+
+    // Build composite location string
+    const location = [city, state, country].filter(Boolean).join(', ')
+
+    return {
+      city,
+      state,
+      country,
+      location: location || undefined,
+    }
+  } catch (error) {
+    console.log('Location detection failed:', error)
+    return null
+  }
+}
+
 function getSafeReturnTo(returnTo: string | null): string {
   if (!returnTo) {
     return ROUTES.DASHBOARD
@@ -26,10 +88,8 @@ function getSafeReturnTo(returnTo: string | null): string {
 
 type ParsedLoginInput = {
   code: string
-  firstName: string
   identifier: string
   secret: string
-  secretType: 'password' | 'passcode'
   returnTo: string
   requestKind: 'json' | 'form'
 }
@@ -39,9 +99,7 @@ type LoginUser = {
   username: string
   displayName: string
   personalCode: string
-  firstName: string | null
   email: string | null
-  loginPin: string | null
   passwordHash: string | null
   status: string
   emailVerified: boolean
@@ -55,10 +113,8 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     const body = await request.json()
     return {
       code: (body.passcode || body.pin || '').trim(),
-      firstName: (body.name || body.firstName || '').trim().toLowerCase(),
       identifier: (body.identifier || body.email || body.username || '').trim().toLowerCase(),
       secret: (body.secret || body.password || '').trim(),
-      secretType: body.secretType === 'passcode' ? 'passcode' : 'password',
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -67,10 +123,8 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
   const formData = await request.formData()
   return {
     code: String(formData.get('passcode') || '').trim(),
-    firstName: String(formData.get('name') || formData.get('firstName') || '').trim().toLowerCase(),
     identifier: String(formData.get('identifier') || formData.get('email') || formData.get('username') || '').trim().toLowerCase(),
     secret: String(formData.get('secret') || formData.get('password') || '').trim(),
-    secretType: String(formData.get('secretType') || 'password') === 'passcode' ? 'passcode' : 'password',
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.DASHBOARD)),
     requestKind,
   }
@@ -81,9 +135,7 @@ const loginUserSelect = {
   username: true,
   displayName: true,
   personalCode: true,
-  firstName: true,
   email: true,
-  loginPin: true,
   passwordHash: true,
   status: true,
   emailVerified: true,
@@ -129,43 +181,16 @@ function buildSuccessResponse(kind: ParsedLoginInput['requestKind'], returnTo: s
   return NextResponse.redirect(new URL(returnTo, request.url))
 }
 
-async function generateUniquePersonalCode(baseCode: string) {
-  const normalizedBase = baseCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)
-  let attempt = 0
-
-  while (attempt < 10) {
-    const suffix = attempt === 0 ? '' : String(attempt)
-    const personalCode = `${normalizedBase}${suffix}`.slice(0, 12)
-    const existing = await prisma.user.findUnique({
-      where: { personalCode },
-      select: { id: true },
-    })
-
-    if (!existing) {
-      return personalCode
-    }
-
-    attempt += 1
-  }
-
-  const fallback = `DEFAULT${Date.now().toString().slice(-6)}`
-  return fallback
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
+    const { code, identifier, secret, returnTo, requestKind } = await parseLoginInput(request)
 
     const jwtSecret = process.env.JWT_SECRET
     if (!jwtSecret) {
       return buildErrorResponse(request, requestKind, MESSAGES.ERROR_GENERAL, 500)
     }
 
-    if (!code && !(identifier && secret)) {
-      return buildErrorResponse(request, requestKind, MESSAGES.ENTRY_PIN_REQUIRED, 400)
-    }
-
-    // Shortcut: 0000 starts account creation.
+    // Shortcut: 0000 starts account creation
     if (code === '0000') {
       const signupPath = ROUTES.ONBOARDING
 
@@ -179,7 +204,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL(signupPath, request.url))
     }
 
-    // 5555 unlocks credential login mode.
+    // 5555 unlocks credential login mode
     if (code === '5555' && !identifier && !secret) {
       if (requestKind === 'json') {
         return NextResponse.json(
@@ -195,14 +220,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL(ROUTES.LOGIN, request.url))
     }
 
-    let user: LoginUser | null = null
-
+    // 5555 with credentials: username/email + password login
     if (code === '5555') {
       if (!identifier || !secret) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
       }
 
-      user = await prisma.user.findFirst({
+      const user = await prisma.user.findFirst({
         where: identifier.includes('@')
           ? { email: identifier }
           : { username: identifier },
@@ -213,112 +237,88 @@ export async function POST(request: NextRequest) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
       }
 
-      if (secretType === 'passcode') {
-        const normalizedSecret = secret.toUpperCase()
-        const passcodeMatches = user.personalCode === normalizedSecret || user.loginPin === secret
-
-        if (!passcodeMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
-      } else {
-        if (!user.passwordHash || user.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_NOT_SET, 401)
-        }
-
-        const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
-
-        if (!passwordMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
-      }
-    }
-
-    if (!user && firstName) {
-      const pinUser = await prisma.user.findFirst({
-        where: {
-          loginPin: code,
-          firstName: {
-            equals: firstName,
-            mode: 'insensitive',
-          },
-        },
-        select: loginUserSelect,
-      })
-
-      if (pinUser && pinUser.status === 'active') {
-        // Legacy PIN path — require email verification
-        if (!pinUser.emailVerified) {
-          return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
-        }
-        user = pinUser
-      } else {
-        // Fallback: match personalCode + first/display name (all onboarded users)
-        const codeUser = await prisma.user.findUnique({
-          where: { personalCode: code.toUpperCase() },
-          select: loginUserSelect,
-        })
-
-        const nameMatches =
-          codeUser &&
-          (codeUser.firstName?.toLowerCase() === firstName.toLowerCase() ||
-            codeUser.displayName?.toLowerCase() === firstName.toLowerCase())
-
-        if (!codeUser || codeUser.status !== 'active' || !nameMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
-
-        user = codeUser
-      }
-    } else if (!user) {
-      if (!code) {
-        return buildErrorResponse(request, requestKind, MESSAGES.PASSCODE_REQUIRED, 400)
+      // Check email verified
+      if (!user.emailVerified) {
+        return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
       }
 
-      user = await prisma.user.findUnique({
-        where: { personalCode: code.toUpperCase() },
-        select: loginUserSelect,
-      })
+      // Verify password
+      if (!user.passwordHash || user.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
+        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_NOT_SET, 401)
+      }
 
-      if (!user || user.status !== 'active') {
+      const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
+
+      if (!passwordMatches) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
       }
-    }
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        personalCode: user.personalCode,
-      },
-      jwtSecret,
-      { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
-    )
-
-    const profileSettings = await prisma.profile.findUnique({
-      where: { userId: user.id },
-      select: { emailLoginAlerts: true },
-    })
-
-    // Send login alert in background — do not await
-    if (user.email && profileSettings?.emailLoginAlerts !== false) {
-      sendLoginAlertEmail(user.email, user.firstName ?? user.displayName)
-    }
-
-    const response = buildSuccessResponse(
-      requestKind,
-      returnTo,
-      {
-        message: MESSAGES.LOGIN_SUCCESS,
-        user: {
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
+      const token = jwt.sign(
+        {
+          userId: user.id,
           personalCode: user.personalCode,
         },
-      },
-      request
-    )
+        jwtSecret,
+        { expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS }
+      )
 
-    return withAuthCookie(response, token)
+      // Detect and store user location on login (background task, don't await)
+      const clientIp = getClientIp(request)
+      detectLocationFromIp(clientIp).then(async (detectedLocation) => {
+        if (detectedLocation) {
+          try {
+            await prisma.profile.upsert({
+              where: { userId: user.id },
+              create: {
+                userId: user.id,
+                city: detectedLocation.city || undefined,
+                state: detectedLocation.state || undefined,
+                country: detectedLocation.country || undefined,
+                location: detectedLocation.location || undefined,
+              },
+              update: {
+                city: detectedLocation.city || undefined,
+                state: detectedLocation.state || undefined,
+                country: detectedLocation.country || undefined,
+                location: detectedLocation.location || undefined,
+              },
+            })
+          } catch (error) {
+            console.log('Failed to update user location:', error)
+          }
+        }
+      })
+
+      const profileSettings = await prisma.profile.findUnique({
+        where: { userId: user.id },
+        select: { emailLoginAlerts: true },
+      })
+
+      // Send login alert in background
+      if (user.email && profileSettings?.emailLoginAlerts !== false) {
+        sendLoginAlertEmail(user.email, user.displayName)
+      }
+
+      const response = buildSuccessResponse(
+        requestKind,
+        returnTo,
+        {
+          message: MESSAGES.LOGIN_SUCCESS,
+          user: {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            personalCode: user.personalCode,
+          },
+        },
+        request
+      )
+
+      return withAuthCookie(response, token)
+    }
+
+    // All other codes are invalid now
+    return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
   } catch (error) {
     console.error('Login error:', error)
     return buildErrorResponse(request, 'json', MESSAGES.ERROR_GENERAL, 500)
