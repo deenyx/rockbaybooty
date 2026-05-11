@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
+import BackgroundAudio from './BackgroundAudio'
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 
 export const metadata: Metadata = {
@@ -50,8 +51,9 @@ export default async function Welcome() {
         backgroundColor: '#020617',
       }}
     >
+      <BackgroundAudio />
       <Image
-        src="/welcome1.png"
+        src="/thisone.jpg"
         alt=""
         fill
         priority
@@ -67,7 +69,7 @@ export default async function Welcome() {
       />
 
       <Image
-        src="/welcome1.png"
+        src="/thisone.jpg"
         alt=""
         fill
         priority

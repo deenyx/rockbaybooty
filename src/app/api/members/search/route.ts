@@ -11,6 +11,11 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 60
 const ONLINE_WINDOW_MINUTES = 15
+const SORT_OPTIONS = new Set(['recent', 'location_asc', 'location_desc', 'nearby'])
+
+function normalizeLocationPart(value: string | null | undefined): string {
+  return (value || '').trim().toLowerCase()
+}
 
 function getBearerToken(header: string | null): string | null {
   if (!header) {
@@ -95,6 +100,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const q = searchParams.get('q')?.trim() || ''
     const location = searchParams.get('location')?.trim() || ''
+    const rawSortBy = searchParams.get('sortBy')?.trim() || 'recent'
+    const sortBy = SORT_OPTIONS.has(rawSortBy) ? rawSortBy : 'recent'
     const gender = searchParams.get('gender')?.trim() || ''
     const orientation = searchParams.get('orientation')?.trim() || ''
     const lookingFor = parseList(searchParams.get('lookingFor'))
@@ -261,6 +268,19 @@ export async function GET(request: NextRequest) {
         : {}),
     }
 
+    const currentUserProfile = await prisma.profile.findUnique({
+      where: { userId: currentUserId },
+      select: {
+        city: true,
+        state: true,
+        country: true,
+      },
+    })
+
+    const currentCity = normalizeLocationPart(currentUserProfile?.city)
+    const currentState = normalizeLocationPart(currentUserProfile?.state)
+    const currentCountry = normalizeLocationPart(currentUserProfile?.country)
+
     const users = await prisma.user.findMany({
       where,
       orderBy: [
@@ -361,6 +381,10 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
         .join(', ')
 
+      const city = normalizeLocationPart(profile?.city)
+      const state = normalizeLocationPart(profile?.state)
+      const country = normalizeLocationPart(profile?.country)
+
       return {
         id: user.id,
         username: user.username,
@@ -375,10 +399,47 @@ export async function GET(request: NextRequest) {
         isOnline: profile?.showOnlineStatus && user.lastActiveAt ? user.lastActiveAt >= onlineCutoff : false,
         isVerified: user.isVerified,
         friendshipStatus: relationshipByUser.get(user.id) || 'none',
+        __city: city,
+        __state: state,
+        __country: country,
       }
     })
 
-    return NextResponse.json({ members })
+    if (sortBy === 'nearby') {
+      const proximityScore = (member: { __city: string; __state: string; __country: string }) => {
+        if (currentCity && member.__city && member.__city === currentCity) return 3
+        if (currentState && member.__state && member.__state === currentState) return 2
+        if (currentCountry && member.__country && member.__country === currentCountry) return 1
+        return 0
+      }
+
+      members.sort((a, b) => {
+        const scoreDiff = proximityScore(b) - proximityScore(a)
+        if (scoreDiff !== 0) return scoreDiff
+
+        if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1
+
+        const aLoc = (a.location || '').trim().toLowerCase()
+        const bLoc = (b.location || '').trim().toLowerCase()
+        return aLoc.localeCompare(bLoc)
+      })
+    } else if (sortBy === 'location_asc' || sortBy === 'location_desc') {
+      const direction = sortBy === 'location_asc' ? 1 : -1
+      members.sort((a, b) => {
+        const aLoc = (a.location || '').trim().toLowerCase()
+        const bLoc = (b.location || '').trim().toLowerCase()
+
+        if (!aLoc && !bLoc) return 0
+        if (!aLoc) return 1
+        if (!bLoc) return -1
+
+        return aLoc.localeCompare(bLoc) * direction
+      })
+    }
+
+    const responseMembers = members.map(({ __city, __state, __country, ...member }) => member)
+
+    return NextResponse.json({ members: responseMembers })
   } catch (error) {
     console.error('Member search error:', error)
 

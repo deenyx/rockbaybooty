@@ -166,6 +166,9 @@ export default function DiscoverPage() {
           <Link href={ROUTES.SEARCH} className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]">
             Open full search
           </Link>
+          <Link href={ROUTES.GROUPS} className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]">
+            Browse groups
+          </Link>
           <Link href={ROUTES.DASHBOARD} className="rounded-xl border border-white/20 px-4 py-2 text-sm text-stone-200 transition hover:border-white/35 hover:bg-white/[0.04]">
             Back to dashboard
           </Link>
