@@ -4,18 +4,14 @@ import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
-import { fetchMemberProfile, updateMemberProfile } from '@/lib/api'
+import { fetchMemberProfile, fetchProfileOptions, updateMemberProfile } from '@/lib/api'
 import {
-  GENDER_OPTIONS,
-  INTENTION_OPTIONS,
-  INTEREST_TAG_OPTIONS,
-  LOOKING_FOR_OPTIONS,
-  ORIENTATION_OPTIONS,
-  PRONOUN_OPTIONS,
+  MAX_PROFILE_PHOTO_BYTES,
   ROUTES,
   SOCIAL_PLATFORMS,
   SOCIAL_LINK_VISIBILITY_OPTIONS,
 } from '@/lib/constants'
+import { PROFILE_OPTION_DEFAULTS } from '@/lib/profile-options'
 
 type ProfileForm = {
   displayName: string
@@ -71,6 +67,16 @@ function toggleArrayItem(arr: string[], item: string): string[] {
 
 export default function ProfilePage() {
   const [form, setForm] = useState<ProfileForm>(EMPTY_FORM)
+  const [optionSets, setOptionSets] = useState(() => ({
+    lookingFor: [...PROFILE_OPTION_DEFAULTS.lookingFor],
+    intentions: [...PROFILE_OPTION_DEFAULTS.intentions],
+    gender: [...PROFILE_OPTION_DEFAULTS.gender],
+    pronouns: [...PROFILE_OPTION_DEFAULTS.pronouns],
+    orientation: [...PROFILE_OPTION_DEFAULTS.orientation],
+    interests: [...PROFILE_OPTION_DEFAULTS.interests],
+    kinks: [...PROFILE_OPTION_DEFAULTS.kinks],
+    roles: [...PROFILE_OPTION_DEFAULTS.roles],
+  }))
   const [username, setUsername] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -85,9 +91,22 @@ export default function ProfilePage() {
 
     async function load() {
       try {
-        const response = await fetchMemberProfile()
+        const [profileResult, optionsResult] = await Promise.allSettled([
+          fetchMemberProfile(),
+          fetchProfileOptions(),
+        ])
+
+        if (profileResult.status !== 'fulfilled') {
+          throw profileResult.reason
+        }
+
+        const response = profileResult.value
 
         if (!mounted) return
+
+        if (optionsResult.status === 'fulfilled') {
+          setOptionSets(optionsResult.value.options)
+        }
 
         setUsername(response.user.username)
         setPhotoUrls(response.profile.photoUrls ?? [])
@@ -269,8 +288,8 @@ export default function ProfilePage() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0]
                             if (!file) return
-                            if (file.size > 800 * 1024) {
-                              setError('Avatar too large. Max 800 KB.')
+                            if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+                              setError('Avatar too large. Max 5 MB.')
                               return
                             }
                             const reader = new FileReader()
@@ -358,7 +377,7 @@ export default function ProfilePage() {
                     className={selectCls}
                   >
                     <option value="" disabled className="bg-[#0f121a]">Select…</option>
-                    {GENDER_OPTIONS.map((opt) => (
+                    {optionSets.gender.map((opt) => (
                       <option key={opt} value={opt} className="bg-[#0f121a]">{opt}</option>
                     ))}
                   </select>
@@ -389,7 +408,7 @@ export default function ProfilePage() {
                     className={selectCls}
                   >
                     <option value="" className="bg-[#0f121a]">Select pronouns…</option>
-                    {PRONOUN_OPTIONS.map((opt) => (
+                    {optionSets.pronouns.map((opt) => (
                       <option key={opt} value={opt} className="bg-[#0f121a]">{opt}</option>
                     ))}
                   </select>
@@ -406,7 +425,7 @@ export default function ProfilePage() {
                     className={selectCls}
                   >
                     <option value="" disabled className="bg-[#0f121a]">Select…</option>
-                    {ORIENTATION_OPTIONS.map((opt) => (
+                    {optionSets.orientation.map((opt) => (
                       <option key={opt} value={opt} className="bg-[#0f121a]">{opt}</option>
                     ))}
                   </select>
@@ -437,7 +456,7 @@ export default function ProfilePage() {
                     className={selectCls}
                   >
                     <option value="" className="bg-[#0f121a]">Select an intention…</option>
-                    {INTENTION_OPTIONS.map((opt) => (
+                    {optionSets.intentions.map((opt) => (
                       <option key={opt} value={opt} className="bg-[#0f121a]">{opt}</option>
                     ))}
                   </select>
@@ -451,7 +470,7 @@ export default function ProfilePage() {
                 Looking for <span className="text-rose-400">*</span>
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {LOOKING_FOR_OPTIONS.map((opt) => {
+                {optionSets.lookingFor.map((opt) => {
                   const active = form.lookingFor.includes(opt)
                   return (
                     <button
@@ -480,7 +499,7 @@ export default function ProfilePage() {
             <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
               <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Interests</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {INTEREST_TAG_OPTIONS.map((opt) => {
+                {optionSets.interests.map((opt) => {
                   const active = form.interests.includes(opt)
                   return (
                     <button
@@ -608,8 +627,8 @@ export default function ProfilePage() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
-                      if (file.size > 800 * 1024) {
-                        setPhotoUploadError('Image too large. Max 800 KB.')
+                      if (file.size > MAX_PROFILE_PHOTO_BYTES) {
+                        setPhotoUploadError('Image too large. Max 5 MB.')
                         return
                       }
                       setIsUploadingPhoto(true)

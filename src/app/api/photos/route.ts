@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getAuthenticatedUserId } from '@/lib/auth'
-import { MESSAGES } from '@/lib/constants'
+import { MAX_PROFILE_PHOTO_BYTES, MESSAGES } from '@/lib/constants'
 
 const MAX_PHOTOS = 9
-const MAX_BYTES = 800 * 1024 // 800 KB per photo (base64 stored as data URL)
+const MAX_BYTES = MAX_PROFILE_PHOTO_BYTES
 
 // POST /api/photos — add a photo URL (or base64 data URL) to the album
 export async function POST(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Size guard for data URLs
     if (isDataUrl && Buffer.byteLength(url, 'utf8') > MAX_BYTES) {
-      return NextResponse.json({ error: 'Image too large. Max 600 KB.' }, { status: 400 })
+      return NextResponse.json({ error: 'Image too large. Max 5 MB.' }, { status: 400 })
     }
 
     const profile = await prisma.profile.findUnique({

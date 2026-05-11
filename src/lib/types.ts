@@ -180,6 +180,19 @@ export interface MemberProfileResponse {
   }
 }
 
+export interface ProfileOptionsResponse {
+  options: {
+    lookingFor: string[]
+    intentions: string[]
+    gender: string[]
+    pronouns: string[]
+    orientation: string[]
+    interests: string[]
+    kinks: string[]
+    roles: string[]
+  }
+}
+
 export interface UpdateMemberProfileInput {
   displayName: string
   city: string
@@ -217,6 +230,37 @@ export interface MemberSettingsResponse {
   settings: MemberSettings
 }
 
+export interface MembershipStatusResponse {
+  isPremium: boolean
+  isVerified: boolean
+  verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  memberSince: string
+  totalVideos: number
+  publicVideos: number
+  totalViews: number
+}
+
+export interface UpgradeCheckoutResponse {
+  url?: string
+  message?: string
+}
+
+export interface UpgradeCompleteResponse {
+  message: string
+  isPremium: boolean
+}
+
+export interface IdentityVerificationResponse {
+  verification: {
+    id: string
+    status: 'pending' | 'approved' | 'rejected'
+    imageUrl: string
+    createdAt: string
+    reviewedAt: string | null
+    reviewNotes: string | null
+  }
+}
+
 export interface UpdateMemberSettingsInput {
   profileVisibility?: 'public' | 'members' | 'private'
   isPublic?: boolean
@@ -233,6 +277,7 @@ export interface AccountActionResponse {
 export interface MemberSearchFilters {
   q?: string
   location?: string
+  sortBy?: 'recent' | 'location_asc' | 'location_desc' | 'nearby'
   minAge?: number
   maxAge?: number
   gender?: string

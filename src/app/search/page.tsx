@@ -7,20 +7,15 @@ import { useEffect, useMemo, useState } from 'react'
 import TopQuickNav from '@/app/_components/top-quick-nav'
 import BlockReportMenu from '@/app/_components/block-report-menu'
 import OnlineDot from '@/app/_components/online-dot'
-import { searchMembers, sendFriendRequest, sendGesture } from '@/lib/api'
+import { fetchProfileOptions, searchMembers, sendFriendRequest, sendGesture } from '@/lib/api'
 import {
   MEMBER_MENU_ITEMS,
-  GENDER_OPTIONS,
-  INTEREST_TAG_OPTIONS,
-  KINK_OPTIONS,
-  LOOKING_FOR_OPTIONS,
   MAX_AGE,
   MIN_AGE,
-  ORIENTATION_OPTIONS,
-  ROLE_OPTIONS,
   ROUTES,
   SEARCH_LOCATION_OPTIONS,
 } from '@/lib/constants'
+import { PROFILE_OPTION_DEFAULTS } from '@/lib/profile-options'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
 const NAV_ITEMS = [...MEMBER_MENU_ITEMS]
@@ -28,6 +23,7 @@ const NAV_ITEMS = [...MEMBER_MENU_ITEMS]
 const INITIAL_FILTERS: MemberSearchFilters = {
   q: '',
   location: '',
+  sortBy: 'recent',
   minAge: MIN_AGE,
   maxAge: MAX_AGE,
   gender: '',
@@ -139,6 +135,16 @@ export default function SearchPage() {
   const [filters, setFilters] = useState<MemberSearchFilters>(INITIAL_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
   const [results, setResults] = useState<MemberSearchResult[]>([])
+  const [optionSets, setOptionSets] = useState(() => ({
+    lookingFor: [...PROFILE_OPTION_DEFAULTS.lookingFor],
+    intentions: [...PROFILE_OPTION_DEFAULTS.intentions],
+    gender: [...PROFILE_OPTION_DEFAULTS.gender],
+    pronouns: [...PROFILE_OPTION_DEFAULTS.pronouns],
+    orientation: [...PROFILE_OPTION_DEFAULTS.orientation],
+    interests: [...PROFILE_OPTION_DEFAULTS.interests],
+    kinks: [...PROFILE_OPTION_DEFAULTS.kinks],
+    roles: [...PROFILE_OPTION_DEFAULTS.roles],
+  }))
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [activeFriendId, setActiveFriendId] = useState<string | null>(null)
@@ -152,6 +158,26 @@ export default function SearchPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let mounted = true
+
+    async function loadOptions() {
+      try {
+        const response = await fetchProfileOptions()
+        if (!mounted) return
+        setOptionSets(response.options)
+      } catch {
+        // Keep defaults when options API is unavailable.
+      }
+    }
+
+    void loadOptions()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   const activeFilterCount = useMemo(() => {
     let count = 0
 
@@ -160,6 +186,10 @@ export default function SearchPage() {
     }
 
     if (filters.location) {
+      count += 1
+    }
+
+    if (filters.sortBy && filters.sortBy !== 'recent') {
       count += 1
     }
 
@@ -316,7 +346,7 @@ export default function SearchPage() {
 
   const setRoleFilter = (role: string) => {
     setFilters((current) => {
-      const withoutRole = (current.lookingFor || []).filter((v) => !ROLE_OPTIONS.includes(v))
+      const withoutRole = (current.lookingFor || []).filter((v) => !optionSets.roles.includes(v))
       return {
         ...current,
         lookingFor: role ? [...withoutRole, role] : withoutRole,
@@ -473,6 +503,26 @@ export default function SearchPage() {
                 </div>
 
                 <div>
+                  <label className="text-xs uppercase tracking-[0.16em] text-stone-300" htmlFor="sort-filter">
+                    Sort
+                  </label>
+                  <select
+                    id="sort-filter"
+                    value={filters.sortBy || 'recent'}
+                    onChange={(event) => {
+                      const value = event.target.value as 'recent' | 'location_asc' | 'location_desc' | 'nearby'
+                      setFilters((current) => ({ ...current, sortBy: value }))
+                    }}
+                    className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white/35"
+                  >
+                    <option value="recent">Recently active</option>
+                    <option value="nearby">Who&apos;s nearby</option>
+                    <option value="location_asc">Location A-Z</option>
+                    <option value="location_desc">Location Z-A</option>
+                  </select>
+                </div>
+
+                <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Age range</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <label className="space-y-1">
@@ -521,7 +571,7 @@ export default function SearchPage() {
                     className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white/35"
                   >
                     <option value="">Any gender</option>
-                    {GENDER_OPTIONS.map((option) => (
+                    {optionSets.gender.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -546,7 +596,7 @@ export default function SearchPage() {
                     className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white/35"
                   >
                     <option value="">Any orientation</option>
-                    {ORIENTATION_OPTIONS.map((option) => (
+                    {optionSets.orientation.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -560,12 +610,12 @@ export default function SearchPage() {
                   </label>
                   <select
                     id="role-filter"
-                    value={(filters.lookingFor || []).find((v) => ROLE_OPTIONS.includes(v)) || ''}
+                    value={(filters.lookingFor || []).find((v) => optionSets.roles.includes(v)) || ''}
                     onChange={(event) => setRoleFilter(event.target.value)}
                     className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white/35"
                   >
                     <option value="">Any role</option>
-                    {ROLE_OPTIONS.map((option) => (
+                    {optionSets.roles.map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -576,7 +626,7 @@ export default function SearchPage() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Seeking</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {LOOKING_FOR_OPTIONS.map((option) => {
+                    {optionSets.lookingFor.map((option) => {
                       const active = (filters.lookingFor || []).includes(option)
                       return (
                         <button
@@ -599,7 +649,7 @@ export default function SearchPage() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Interests</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {INTEREST_TAG_OPTIONS.map((option) => {
+                    {optionSets.interests.map((option) => {
                       const active = (filters.interests || []).includes(option)
                       return (
                         <button
@@ -622,7 +672,7 @@ export default function SearchPage() {
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-stone-300">Kinks</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {KINK_OPTIONS.map((option) => {
+                    {optionSets.kinks.map((option) => {
                       const active = (filters.kinks || []).includes(option)
                       return (
                         <button

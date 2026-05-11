@@ -5,22 +5,16 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
-import { checkUsernameAvailability, onboard } from '@/lib/api'
+import { checkUsernameAvailability, fetchProfileOptions, onboard } from '@/lib/api'
 import {
-  GENDER_OPTIONS,
-  INTENTION_OPTIONS,
-  INTEREST_TAG_OPTIONS,
-  KINK_OPTIONS,
-  LOOKING_FOR_OPTIONS,
   MAX_PROFILE_PHOTO_BYTES,
   MESSAGES,
   MIN_AGE,
   MIN_PASSWORD_LENGTH,
-  ORIENTATION_OPTIONS,
-  PRONOUN_OPTIONS,
   ROUTES,
   USERNAME_REGEX,
 } from '@/lib/constants'
+import { PROFILE_OPTION_DEFAULTS } from '@/lib/profile-options'
 
 type StepConfig = {
   key: string
@@ -189,6 +183,16 @@ function OnboardingContent() {
   const [generatedPasscode, setGeneratedPasscode] = useState('')
   const [redirectCountdown, setRedirectCountdown] = useState(0)
   const [customInterestInput, setCustomInterestInput] = useState('')
+  const [optionSets, setOptionSets] = useState(() => ({
+    lookingFor: [...PROFILE_OPTION_DEFAULTS.lookingFor],
+    intentions: [...PROFILE_OPTION_DEFAULTS.intentions],
+    gender: [...PROFILE_OPTION_DEFAULTS.gender],
+    pronouns: [...PROFILE_OPTION_DEFAULTS.pronouns],
+    orientation: [...PROFILE_OPTION_DEFAULTS.orientation],
+    interests: [...PROFILE_OPTION_DEFAULTS.interests],
+    kinks: [...PROFILE_OPTION_DEFAULTS.kinks],
+    roles: [...PROFILE_OPTION_DEFAULTS.roles],
+  }))
   const [usernameState, setUsernameState] = useState<
     'idle' | 'checking' | 'available' | 'taken' | 'invalid'
   >('idle')
@@ -211,6 +215,26 @@ function OnboardingContent() {
     }, 1000)
     return () => clearInterval(interval)
   }, [generatedPasscode, router])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadOptions() {
+      try {
+        const response = await fetchProfileOptions()
+        if (!mounted) return
+        setOptionSets(response.options)
+      } catch {
+        // Keep default option sets if API is unavailable.
+      }
+    }
+
+    void loadOptions()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const canGoBack = currentStep > 0 && !isLoading && !generatedPasscode
   const nextButtonLabel = currentStep === STEPS.length - 1 ? 'Create My Profile' : 'Continue'
@@ -616,7 +640,7 @@ function OnboardingContent() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
             >
               <option value="">Select your gender</option>
-              {GENDER_OPTIONS.map((option) => (
+              {optionSets.gender.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -646,7 +670,7 @@ function OnboardingContent() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
             >
               <option value="">Select pronouns</option>
-              {PRONOUN_OPTIONS.map((option) => (
+              {optionSets.pronouns.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -662,7 +686,7 @@ function OnboardingContent() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
             >
               <option value="">Select your orientation</option>
-              {ORIENTATION_OPTIONS.map((option) => (
+              {optionSets.orientation.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -692,7 +716,7 @@ function OnboardingContent() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-[#8c1f43] focus:ring-2 focus:ring-[#d4b16a]/35"
             >
               <option value="">Select an intention</option>
-              {INTENTION_OPTIONS.map((option) => (
+              {optionSets.intentions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -708,7 +732,7 @@ function OnboardingContent() {
         <div className="space-y-4">
           <p className="text-sm text-slate-600">Pick everything that applies — you can update this later.</p>
           <div className="flex flex-wrap gap-2">
-            {LOOKING_FOR_OPTIONS.map((option) => {
+            {optionSets.lookingFor.map((option) => {
               const isSelected = formData.lookingFor.includes(option)
               return (
                 <button
@@ -747,7 +771,7 @@ function OnboardingContent() {
           <div>
             <label className="block text-sm font-semibold text-slate-700">Interest tags (optional)</label>
             <div className="mt-2 flex flex-wrap gap-2">
-              {INTEREST_TAG_OPTIONS.map((tag) => {
+              {optionSets.interests.map((tag) => {
                 const isSelected = formData.interests.includes(tag)
                 return (
                   <button
@@ -824,7 +848,7 @@ function OnboardingContent() {
             <label className="block text-sm font-semibold text-slate-700">Kinks</label>
             <p className="mt-1 text-xs text-slate-500">Pick one or more interests from this list.</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {KINK_OPTIONS.map((kink) => {
+              {optionSets.kinks.map((kink) => {
                 const isSelected = formData.kinks.includes(kink)
                 return (
                   <button

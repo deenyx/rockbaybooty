@@ -24,6 +24,7 @@ import type {
   MembershipStatusResponse,
   MemberSearchFilters,
   MemberSearchResponse,
+  ProfileOptionsResponse,
   SafetySummaryResponse,
   MemberProfileResponse,
   MemberSettingsResponse,
@@ -123,6 +124,12 @@ export async function fetchMemberProfile(): Promise<MemberProfileResponse> {
   })
 }
 
+export async function fetchProfileOptions(): Promise<ProfileOptionsResponse> {
+  return apiCall('/api/profile-options', {
+    method: 'GET',
+  })
+}
+
 export async function updateMemberProfile(
   data: UpdateMemberProfileInput
 ): Promise<MemberProfileResponse> {
@@ -202,6 +209,10 @@ export async function searchMembers(
 
   if (filters.location) {
     params.set('location', filters.location)
+  }
+
+  if (filters.sortBy) {
+    params.set('sortBy', filters.sortBy)
   }
 
   if (typeof filters.minAge === 'number') {
