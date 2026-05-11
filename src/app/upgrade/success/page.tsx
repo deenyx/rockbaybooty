@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
 import { ROUTES } from '@/lib/constants'
 
-export default function UpgradeSuccessPage() {
+function UpgradeSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id') || ''
   const [message, setMessage] = useState('Verifying your payment...')
@@ -82,5 +82,13 @@ export default function UpgradeSuccessPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function UpgradeSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#090b10]" />}>
+      <UpgradeSuccessContent />
+    </Suspense>
   )
 }
