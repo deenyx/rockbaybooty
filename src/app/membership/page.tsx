@@ -7,19 +7,6 @@ import TopQuickNav from '@/app/_components/top-quick-nav'
 import { fetchMembershipStatus } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
 
-const TIERS = [
-  {
-    name: 'Member',
-    price: '$0',
-    points: ['Profile + search', 'Direct messages', 'Community access'],
-  },
-  {
-    name: 'Premium',
-    price: '$19',
-    points: ['Public video posting', 'Priority discovery placement', 'Early feature access'],
-  },
-]
-
 export default function MembershipPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -70,7 +57,7 @@ export default function MembershipPage() {
           <p className="text-xs uppercase tracking-[0.24em] text-stone-300/80">Membership</p>
           <h1 className="mt-3 font-[family:var(--font-display)] text-4xl text-stone-100 sm:text-5xl">Plans & Perks</h1>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
-            A dedicated space for plan details, billing status, and premium feature comparison.
+            A quick account summary with a link to upgrade if you want premium access.
           </p>
 
           {isLoading ? (
@@ -95,20 +82,6 @@ export default function MembershipPage() {
           ) : null}
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          {TIERS.map((tier) => (
-            <article key={tier.name} className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{tier.name}</p>
-              <p className="mt-2 text-3xl font-semibold text-stone-100">{tier.price}<span className="text-sm text-stone-400"> / mo</span></p>
-              <ul className="mt-4 space-y-2 text-sm text-stone-300">
-                {tier.points.map((point) => (
-                  <li key={point}>• {point}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </section>
-
         {status && (
           <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl">
             <p className="text-xs uppercase tracking-[0.16em] text-stone-400">Your Video Stats</p>
@@ -130,8 +103,8 @@ export default function MembershipPage() {
         )}
 
         <div className="flex flex-wrap gap-3">
-          <Link href={ROUTES.VIDEOS} className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]">
-            View premium video flow
+          <Link href={ROUTES.UPGRADE} className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]">
+            Upgrade your account
           </Link>
           <Link href={ROUTES.SETTINGS} className="rounded-xl border border-white/20 px-4 py-2 text-sm text-stone-200 transition hover:border-white/35 hover:bg-white/[0.04]">
             Account settings

@@ -72,6 +72,8 @@ export default async function DashboardPage() {
             firstName: 'Member',
             displayName: 'Default Member',
             personalCode: payload.personalCode || '9999',
+            isPremium: false,
+            isVerified: false,
           },
           profile: {
             age: null,
@@ -101,6 +103,8 @@ export default async function DashboardPage() {
       firstName: true,
       displayName: true,
       personalCode: true,
+      isPremium: true,
+      isVerified: true,
       profile: {
         select: {
           age: true,
@@ -139,6 +143,8 @@ export default async function DashboardPage() {
           firstName: user.firstName || user.displayName || user.username,
           displayName: user.displayName,
           personalCode: user.personalCode,
+          isPremium: user.isPremium,
+          isVerified: user.isVerified,
         },
         profile: {
           age,

@@ -16,6 +16,8 @@ type DashboardViewData = {
     firstName: string
     displayName: string
     personalCode: string
+    isPremium: boolean
+    isVerified: boolean
   }
   profile: {
     age: number | null
@@ -383,13 +385,37 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <h1 className="font-[var(--font-display)] text-3xl leading-tight text-stone-100">
                 {initialData.user.displayName || initialData.user.firstName}
               </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${
+                  initialData.user.isPremium
+                    ? 'border-amber-300/45 bg-amber-400/15 text-amber-100'
+                    : 'border-white/15 bg-white/[0.03] text-stone-300'
+                }`}>
+                  {initialData.user.isPremium ? 'Premium member' : 'Standard member'}
+                </span>
+                <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${
+                  initialData.user.isVerified
+                    ? 'border-emerald-300/45 bg-emerald-400/15 text-emerald-100'
+                    : 'border-white/15 bg-white/[0.03] text-stone-300'
+                }`}>
+                  {initialData.user.isVerified ? 'Verified ID' : 'Not verified'}
+                </span>
+              </div>
             </div>
-            <Link
-              href={`/u/${initialData.user.username}`}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-widest text-stone-400 backdrop-blur-xl transition hover:border-white/20 hover:text-stone-200"
-            >
-              My profile
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={ROUTES.UPGRADE}
+                className="rounded-2xl border border-amber-300/30 bg-amber-400/10 px-4 py-2 text-xs uppercase tracking-widest text-amber-100 backdrop-blur-xl transition hover:border-amber-200/60 hover:bg-amber-300/15"
+              >
+                {initialData.user.isPremium ? 'Manage plan' : 'Upgrade your account'}
+              </Link>
+              <Link
+                href={`/u/${initialData.user.username}`}
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-2 text-xs uppercase tracking-widest text-stone-400 backdrop-blur-xl transition hover:border-white/20 hover:text-stone-200"
+              >
+                My profile
+              </Link>
+            </div>
           </div>
 
           {/* Stats row */}
