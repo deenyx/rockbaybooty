@@ -2,23 +2,24 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Search, SliderHorizontal, X } from 'lucide-react'
+import { motion, type Variants } from 'framer-motion'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { searchMembers, sendFriendRequest } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
 type SearchPageClientProps = {
   initialResults?: MemberSearchResult[]
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -29,7 +30,7 @@ const containerVariants = {
   },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -148,7 +149,7 @@ export default function SearchPageClient({ initialResults = [] }: SearchPageClie
                 onClick={() => setShowFilters(!showFilters)}
                 className="border-border-subtle/50 hover:border-primary/30"
               >
-                <SliderHorizontal className="h-5 w-5" />
+                <SlidersHorizontal className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -340,9 +341,15 @@ export default function SearchPageClient({ initialResults = [] }: SearchPageClie
                                   ? 'Sending...'
                                   : 'Add Friend'}
                           </Button>
-                          <Button asChild size="sm" variant="outline" className="text-xs border-border-subtle/50">
-                            <Link href={`${ROUTES.MESSAGESS}/${member.id}`}>Message</Link>
-                          </Button>
+                          <Link
+                            href={`${ROUTES.MESSAGESS}/${member.id}`}
+                            className={cn(
+                              buttonVariants({ size: 'sm', variant: 'outline' }),
+                              'text-xs border-border-subtle/50'
+                            )}
+                          >
+                            Message
+                          </Link>
                         </div>
                       </CardContent>
                     </Card>

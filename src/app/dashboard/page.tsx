@@ -146,7 +146,7 @@ export default async function DashboardPage() {
         username: user.username,
         firstName: user.firstName || user.displayName || user.username,
         displayName: user.displayName,
-        avatarUrl: user.profile?.avatarUrl,
+        avatarUrl: user.profile?.avatarUrl ?? undefined,
       }}
     >
       <DashboardClient
