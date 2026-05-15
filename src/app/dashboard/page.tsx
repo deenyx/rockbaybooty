@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
 import prisma from '@/lib/prisma'
 import type { AuthTokenPayload } from '@/lib/types'
+import MemberLayout from '@/app/_layouts/member-layout'
 
 import DashboardClient from './_components/dashboard-client'
 
@@ -65,32 +66,40 @@ export default async function DashboardPage() {
 
   if (payload.mode === 'default-member' || userId === DEFAULT_MEMBER_ID) {
     return (
-      <DashboardClient
-        initialData={{
-          user: {
-            id: DEFAULT_MEMBER_ID,
-            username: 'default_member',
-            firstName: 'Member',
-            displayName: 'Default Member',
-            personalCode: payload.personalCode || '9999',
-          },
-          profile: {
-            age: null,
-            location: 'Preview mode',
-            bio: 'Default member position. Feed and live API pulls are disabled in this mode.',
-            lookingFor: ['Curious'],
-            interests: ['Open-minded'],
-            avatarUrl: '',
-            city: '',
-            state: '',
-            country: '',
-            gender: '',
-            genderOther: '',
-            sexualOrientation: '',
-            orientationOther: '',
-          },
+      <MemberLayout
+        initialUser={{
+          username: 'default_member',
+          firstName: 'Member',
+          displayName: 'Default Member',
         }}
-      />
+      >
+        <DashboardClient
+          initialData={{
+            user: {
+              id: DEFAULT_MEMBER_ID,
+              username: 'default_member',
+              firstName: 'Member',
+              displayName: 'Default Member',
+              personalCode: payload.personalCode || '9999',
+            },
+            profile: {
+              age: null,
+              location: 'Preview mode',
+              bio: 'Default member position. Feed and live API pulls are disabled in this mode.',
+              lookingFor: ['Curious'],
+              interests: ['Open-minded'],
+              avatarUrl: '',
+              city: '',
+              state: '',
+              country: '',
+              gender: '',
+              genderOther: '',
+              sexualOrientation: '',
+              orientationOther: '',
+            },
+          }}
+        />
+      </MemberLayout>
     )
   }
 
@@ -132,31 +141,40 @@ export default async function DashboardPage() {
   const location = user.profile?.location || [user.profile?.city, user.profile?.state, user.profile?.country].filter(Boolean).join(', ')
 
   return (
-    <DashboardClient
-      initialData={{
-        user: {
-          id: user.id,
-          username: user.username,
-          firstName: user.firstName || user.displayName || user.username,
-          displayName: user.displayName,
-          personalCode: user.personalCode,
-        },
-        profile: {
-          age,
-          location,
-          bio: user.profile?.bio || '',
-          lookingFor: user.profile?.lookingFor || [],
-          interests: user.profile?.interests || [],
-          avatarUrl: user.profile?.avatarUrl || '',
-          city: user.profile?.city || '',
-          state: user.profile?.state || '',
-          country: user.profile?.country || '',
-          gender: user.profile?.gender || '',
-          genderOther: user.profile?.genderOther || '',
-          sexualOrientation: user.profile?.sexualOrientation || '',
-          orientationOther: user.profile?.orientationOther || '',
-        },
+    <MemberLayout
+      initialUser={{
+        username: user.username,
+        firstName: user.firstName || user.displayName || user.username,
+        displayName: user.displayName,
+        avatarUrl: user.profile?.avatarUrl,
       }}
-    />
+    >
+      <DashboardClient
+        initialData={{
+          user: {
+            id: user.id,
+            username: user.username,
+            firstName: user.firstName || user.displayName || user.username,
+            displayName: user.displayName,
+            personalCode: user.personalCode,
+          },
+          profile: {
+            age,
+            location,
+            bio: user.profile?.bio || '',
+            lookingFor: user.profile?.lookingFor || [],
+            interests: user.profile?.interests || [],
+            avatarUrl: user.profile?.avatarUrl || '',
+            city: user.profile?.city || '',
+            state: user.profile?.state || '',
+            country: user.profile?.country || '',
+            gender: user.profile?.gender || '',
+            genderOther: user.profile?.genderOther || '',
+            sexualOrientation: user.profile?.sexualOrientation || '',
+            orientationOther: user.profile?.orientationOther || '',
+          },
+        }}
+      />
+    </MemberLayout>
   )
 }

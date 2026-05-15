@@ -1,0 +1,12 @@
+/*
+  Sexy Font Import for Profile Page
+  - Using 'Playfair Display' from Google Fonts for a modern, elegant look.
+  - This file is imported only on the profile page for a unique style.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+.profile-sexy-font {
+  font-family: 'Playfair Display', var(--font-copperplate), serif;
+  letter-spacing: 0.01em;
+}

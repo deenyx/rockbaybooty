@@ -30,13 +30,29 @@ export default function PinEntryBox() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  function openPanel() {
+    setOpen(true)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
+  function closePanel() {
+    setOpen(false)
+    setError('')
+  }
 
   function toggleOpen() {
     setOpen((prev) => {
-      if (!prev) setTimeout(() => inputRef.current?.focus(), 50)
-      return !prev
+      const next = !prev
+      if (next) {
+        setTimeout(() => inputRef.current?.focus(), 50)
+      }
+      if (!next) {
+        setError('')
+      }
+      return next
     })
-    setError('')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -57,37 +73,27 @@ export default function PinEntryBox() {
       return
     }
 
-    if (pin === '9999') {
-      // Perform real login as defaultuser (dev bypass)
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ passcode: '9999' }),
-        })
-        if (res.ok) {
-          // Success: go to dashboard or default area
-          router.push(ROUTES.DASHBOARD)
-          return
-        } else {
-          setError('Dev bypass failed. Try again.')
-          return
-        }
-      } catch {
-        setError('Network error. Try again.')
-        return
-      }
-    }
-
-    setError('Use 0000, 5555, or 9999')
+    setError('Use 0000 or 5555')
   }
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div
+      ref={containerRef}
+      className="relative flex flex-col items-center"
+      onMouseEnter={openPanel}
+      onMouseLeave={closePanel}
+      onFocusCapture={openPanel}
+      onBlurCapture={(event) => {
+        const nextTarget = event.relatedTarget as Node | null
+        if (!containerRef.current?.contains(nextTarget)) {
+          closePanel()
+        }
+      }}
+    >
       {open && (
         <form
           onSubmit={handleSubmit}
-          className="absolute top-10 left-1/2 -translate-x-1/2 w-36 rounded-xl border border-white/20 bg-black/70 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.55)] backdrop-blur-md"
+          className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-36 rounded-xl border border-white/20 bg-black/75 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.55)] backdrop-blur-md"
         >
           <label
             className="mb-2 block text-center text-[10px] uppercase tracking-[0.24em] text-stone-100"
@@ -123,6 +129,14 @@ export default function PinEntryBox() {
               {error}
             </p>
           )}
+
+          <button
+            type="submit"
+            className="mt-3 w-full rounded-md border border-white/20 bg-white/10 py-1.5 text-[10px] uppercase tracking-[0.24em] text-stone-100 hover:bg-white/20 active:scale-95 transition"
+            style={{ fontFamily: CP }}
+          >
+            Enter
+          </button>
         </form>
       )}
 
@@ -132,17 +146,7 @@ export default function PinEntryBox() {
         onClick={toggleOpen}
         className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/20 bg-black/30 text-white/50 backdrop-blur-sm transition hover:border-white/40 hover:text-white/80 active:scale-95 focus-visible:outline-none"
       >
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
-          <circle cx="5"  cy="5"  r="1.5" />
-          <circle cx="12" cy="5"  r="1.5" />
-          <circle cx="19" cy="5"  r="1.5" />
-          <circle cx="5"  cy="12" r="1.5" />
-          <circle cx="12" cy="12" r="1.5" />
-          <circle cx="19" cy="12" r="1.5" />
-          <circle cx="5"  cy="19" r="1.5" />
-          <circle cx="12" cy="19" r="1.5" />
-          <circle cx="19" cy="19" r="1.5" />
-        </svg>
+        <KeypadIcon />
       </button>
     </div>
   )

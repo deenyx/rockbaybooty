@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const email = body.email?.trim().toLowerCase()
-    const name = body.name?.trim() || body.firstName?.trim()
+    const rawName = typeof body.name === 'string' ? body.name : body.firstName
+    const name = typeof rawName === 'string' ? rawName.trim().replace(/\s+/g, ' ') : ''
     const password = typeof body.password === 'string' ? body.password.trim() : ''
     const dateOfBirth = parseDob(body.dateOfBirth)
 
@@ -77,10 +78,20 @@ export async function POST(request: NextRequest) {
 
     const existingName = await prisma.user.findFirst({
       where: {
-        firstName: {
-          equals: name,
-          mode: 'insensitive',
-        },
+        OR: [
+          {
+            firstName: {
+              equals: name,
+              mode: 'insensitive',
+            },
+          },
+          {
+            displayName: {
+              equals: name,
+              mode: 'insensitive',
+            },
+          },
+        ],
       },
       select: { id: true },
     })

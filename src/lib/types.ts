@@ -133,9 +133,11 @@ export interface MemberProfileResponse {
     sexualOrientation: string
     orientationOther: string
     lookingFor: string[]
+    role: string[]
     bio: string
     interests: string[]
     avatarUrl: string
+    photoUrls?: string[]
   }
 }
 
@@ -149,6 +151,7 @@ export interface UpdateMemberProfileInput {
   sexualOrientation: string
   orientationOther?: string
   lookingFor: string[]
+  role?: string[]
   bio?: string
   interests?: string[]
   avatarUrl?: string
@@ -186,6 +189,7 @@ export interface MemberSearchFilters {
   gender?: string
   orientation?: string
   lookingFor?: string[]
+  role?: string
   onlineOnly?: boolean
   hasPhoto?: boolean
   lastActive?: 'today' | 'week' | 'any'

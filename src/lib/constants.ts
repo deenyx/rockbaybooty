@@ -1,5 +1,8 @@
 // Application constants and configuration
 
+export const LOOKING_FOR_MAX_SELECTIONS = 3
+export const ROLE_MAX_SELECTIONS = 3
+
 export const LOOKING_FOR_OPTIONS = [
   'Dating',
   'Hookups',
@@ -8,39 +11,100 @@ export const LOOKING_FOR_OPTIONS = [
   'Chat only',
   'Long-term connection',
   'Open to anything',
+  'Sluts',
+  'A Slut Trainer',
+  'A Cock Drainer',
+]
+
+export const PRONOUNS_OPTIONS = [
+  'she/her',
+  'he/him',
+  'they/them',
+  'she/they',
+  'he/they',
+  'it/its',
+  'any pronouns',
+  'ask me',
+]
+
+export const INTENTIONS_OPTIONS = [
+  'Exploring crossdressing in a safe space',
+  'Meeting other crossdressers',
+  'Finding an admirer',
+  'Connecting with trans / non-binary community',
+  'Kink and fetish exploration',
+  'Casual hookups',
+  'Dating and romance',
+  'Friendship and community',
+  'Just browsing',
+  'I WANT TO FUCK!',
+  "I love my girlfriend but she doesn't suck cock",
 ]
 
 export const ROLE_OPTIONS = [
+  // Dynamics
   'Dominant',
   'Submissive',
   'Switch',
+  'Master / Mistress',
+  'slave',
   'Top',
   'Bottom',
+  // Caregiver / Age Play
+  'Daddy Dom',
+  'Mommy Domme',
+
+
+  'Caregiver',
+  'Age Player',
+  // Pet Play
+  'Owner',
+  'Pet',
+  'Handler',
+  'Puppy',
+  'Kitten',
+  // Sensation & Impact
   'Sadist',
   'Masochist',
   'Rigger',
   'Rope Bunny',
-  'Daddy',
-  'Mommy',
-  'Little',
+  'Impact Player',
+  'Sensation Player',
+  // Primal
+  'Primal',
+  'Primal Hunter',
+  'Primal Prey',
+  // Persona
   'Brat',
   'Brat Tamer',
-  'Owner',
-  'Pet',
-  'Voyeur',
+  'Degrader',
+  'Degradee',
   'Exhibitionist',
-  'Primal',
+  'Slut',
+  'Voyeur',
+  // Other
+  'Service-Oriented',
+  'Protector',
+  'Mentor',
+  'Kinkster',
+  'Hedonist',
   'Vanilla',
   'Curious',
+  'Experimenter',
+  'Bitch',
 ]
 
 export const GENDER_OPTIONS = [
+  'Crossdresser',
   'Male',
   'Female',
-  'Non-binary',
-  'Trans man',
   'Trans woman',
+  'Trans man',
+  'Non-binary',
   'Genderfluid',
+  'Genderqueer',
+  'Femboy',
+  'Agender',
   'Other',
   'Prefer not to say',
 ]
@@ -52,7 +116,10 @@ export const ORIENTATION_OPTIONS = [
   'Bisexual',
   'Pansexual',
   'Queer',
+  'Homoflexible',
+  'Heteroflexible',
   'Asexual',
+  'Demisexual',
   'Other',
   'Prefer not to say',
 ]

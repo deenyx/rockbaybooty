@@ -1,19 +1,34 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 
 import TopQuickNav from '@/app/_components/top-quick-nav'
+import nextDynamic from 'next/dynamic'
+
+// Dynamically import ProfilePreview, ProfileGallery, and PhotoUpload to avoid SSR issues
+const ProfilePreview = nextDynamic(() => import('./ProfilePreview'), { ssr: false })
+const ProfileGallery = nextDynamic(() => import('./ProfileGallery'), { ssr: false })
+const PhotoCropUpload = nextDynamic(() => import('./PhotoCropUpload'), { ssr: false })
+
+import { uploadProfilePhotos } from '@/lib/photo-upload'
+import { useCallback } from 'react'
 import { fetchMemberProfile, updateMemberProfile } from '@/lib/api'
 import {
   GENDER_OPTIONS,
   INTEREST_TAG_OPTIONS,
+  LOOKING_FOR_MAX_SELECTIONS,
   LOOKING_FOR_OPTIONS,
   ORIENTATION_OPTIONS,
+  ROLE_MAX_SELECTIONS,
+  ROLE_OPTIONS,
   ROUTES,
 } from '@/lib/constants'
 
 type ProfileForm = {
+  name: string
   displayName: string
   avatarUrl: string
   city: string
@@ -24,11 +39,13 @@ type ProfileForm = {
   sexualOrientation: string
   orientationOther: string
   lookingFor: string[]
+  role: string[]
   interests: string[]
   bio: string
 }
 
 const EMPTY_FORM: ProfileForm = {
+  name: '',
   displayName: '',
   avatarUrl: '',
   city: '',
@@ -39,9 +56,11 @@ const EMPTY_FORM: ProfileForm = {
   sexualOrientation: '',
   orientationOther: '',
   lookingFor: [],
+  role: [],
   interests: [],
   bio: '',
 }
+
 
 function toggleArrayItem(arr: string[], item: string): string[] {
   return arr.includes(item) ? arr.filter((v) => v !== item) : [...arr, item]
@@ -54,6 +73,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -66,6 +86,7 @@ export default function ProfilePage() {
 
         setUsername(response.user.username)
         setForm({
+          name: response.user.displayName || '',
           displayName: response.user.displayName || '',
           avatarUrl: response.profile.avatarUrl || '',
           city: response.profile.city || '',
@@ -76,9 +97,11 @@ export default function ProfilePage() {
           sexualOrientation: response.profile.sexualOrientation || '',
           orientationOther: response.profile.orientationOther || '',
           lookingFor: response.profile.lookingFor || [],
+          role: response.profile.role || [],
           interests: response.profile.interests || [],
           bio: response.profile.bio || '',
         })
+        setPhotoUrls((response.profile.photoUrls as string[] | undefined) || [])
       } catch (err) {
         if (!mounted) return
         setError(err instanceof Error ? err.message : 'Unable to load profile.')
@@ -93,6 +116,27 @@ export default function ProfilePage() {
       mounted = false
     }
   }, [])
+
+  const handlePhotoUpload = useCallback(async (files: FileList) => {
+    setError('')
+    setMessage('')
+    if (!files || files.length === 0) return
+    if (!username) {
+      setError('You must be logged in to upload photos.')
+      return
+    }
+    setMessage('Uploading...')
+    try {
+      const urls = await uploadProfilePhotos(username, files)
+      setPhotoUrls((prev) => [...urls, ...prev])
+      setMessage('Photo(s) uploaded!')
+      // Optionally, update profile on server with new photoUrls
+      // await updateMemberProfile({ ...form, photoUrls: [...urls, ...photoUrls] })
+    } catch (err: any) {
+      setError(err?.message || 'Photo upload failed.')
+      setMessage('')
+    }
+  }, [username, form, photoUrls])
 
   function handleChange(key: keyof ProfileForm, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -111,7 +155,7 @@ export default function ProfilePage() {
 
     try {
       await updateMemberProfile({
-        displayName: form.displayName,
+        displayName: form.name,
         avatarUrl: form.avatarUrl || undefined,
         city: form.city,
         state: form.state || undefined,
@@ -121,6 +165,7 @@ export default function ProfilePage() {
         sexualOrientation: form.sexualOrientation,
         orientationOther: form.orientationOther || undefined,
         lookingFor: form.lookingFor,
+        role: form.role,
         interests: form.interests,
         bio: form.bio || undefined,
       })
@@ -139,7 +184,7 @@ export default function ProfilePage() {
     'w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition focus:border-white/35 focus:bg-black/50'
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8 profile-sexy-font">
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
         style={{ backgroundImage: "url('/welcome2.jpg')" }}
@@ -148,53 +193,31 @@ export default function ProfilePage() {
 
       <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
 
-      <div className="relative z-10 mx-auto max-w-3xl space-y-6">
 
-        {/* Header */}
-        <section className="rounded-3xl border border-white/10 bg-black/35 p-6 backdrop-blur-xl sm:p-8">
-          <p className="text-xs uppercase tracking-[0.24em] text-stone-300/80">Profile</p>
-          <h1 className="mt-3 font-[family:var(--font-display)] text-4xl text-stone-100 sm:text-5xl">
-            {username ? `@${username}` : 'Your profile'}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-stone-300">
-            Update how other members see you in search and on your profile card.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href={ROUTES.DASHBOARD}
-              className="rounded-xl border border-white/20 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-stone-100 transition hover:border-white/35 hover:bg-white/[0.1]"
-            >
-              Back to dashboard
-            </Link>
-            <Link
-              href={ROUTES.SETTINGS}
-              className="rounded-xl border border-white/20 px-4 py-2 text-sm text-stone-200 transition hover:border-white/35 hover:bg-white/[0.04] hover:text-white"
-            >
-              Settings
-            </Link>
-          </div>
-        </section>
+      <div className="relative z-10 mx-auto max-w-5xl space-y-6">
+
 
         {isLoading ? (
           <div className="rounded-3xl border border-white/10 bg-black/30 p-8 backdrop-blur-xl">
             <p className="text-sm text-stone-400">Loading your profile&hellip;</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start">
+            <form onSubmit={handleSubmit} className="flex-1 space-y-5">
 
             {/* Identity */}
             <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
               <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Identity</p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-1.5 block text-xs text-stone-400" htmlFor="displayName">
-                    Display name <span className="text-rose-400">*</span>
+                  <label className="mb-1.5 block text-xs text-stone-400" htmlFor="name">
+                    Name <span className="text-rose-400">*</span>
                   </label>
                   <input
-                    id="displayName"
+                    id="name"
                     type="text"
-                    value={form.displayName}
-                    onChange={(e) => handleChange('displayName', e.target.value)}
+                    value={form.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
                     placeholder="How you appear to other members"
                     required
                     className={inputCls}
@@ -336,16 +359,21 @@ export default function ProfilePage() {
 
             {/* Looking for */}
             <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">
-                Looking for <span className="text-rose-400">*</span>
-              </p>
+              <div className="flex items-baseline justify-between">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">
+                  Looking for <span className="text-rose-400">*</span>
+                </p>
+                <span className="text-[10px] text-stone-500">{form.lookingFor.length}/{LOOKING_FOR_MAX_SELECTIONS}</span>
+              </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {LOOKING_FOR_OPTIONS.map((opt) => {
                   const active = form.lookingFor.includes(opt)
+                  const atCap = form.lookingFor.length >= LOOKING_FOR_MAX_SELECTIONS
                   return (
                     <button
                       key={opt}
                       type="button"
+                      disabled={!active && atCap}
                       onClick={() =>
                         setForm((prev) => ({
                           ...prev,
@@ -355,6 +383,44 @@ export default function ProfilePage() {
                       className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
                         active
                           ? 'border-amber-400/40 bg-amber-400/[0.12] text-amber-300'
+                          : atCap
+                          ? 'cursor-not-allowed border-white/10 bg-white/[0.01] text-stone-600'
+                          : 'border-white/15 bg-white/[0.03] text-stone-300 hover:border-white/25 hover:text-stone-100'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            {/* Role */}
+            <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
+              <div className="flex items-baseline justify-between">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Role</p>
+                <span className="text-[10px] text-stone-500">{form.role.length}/{ROLE_MAX_SELECTIONS}</span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {ROLE_OPTIONS.map((opt) => {
+                  const active = form.role.includes(opt)
+                  const atCap = form.role.length >= ROLE_MAX_SELECTIONS
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      disabled={!active && atCap}
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          role: toggleArrayItem(prev.role, opt),
+                        }))
+                      }
+                      className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
+                        active
+                          ? 'border-rose-400/40 bg-rose-400/[0.12] text-rose-300'
+                          : atCap
+                          ? 'cursor-not-allowed border-white/10 bg-white/[0.01] text-stone-600'
                           : 'border-white/15 bg-white/[0.03] text-stone-300 hover:border-white/25 hover:text-stone-100'
                       }`}
                     >
@@ -391,6 +457,35 @@ export default function ProfilePage() {
                     </button>
                   )
                 })}
+                {/* Custom interest input */}
+                <form
+                  onSubmit={e => {
+                    e.preventDefault()
+                    const input = e.currentTarget.elements.namedItem('customInterest') as HTMLInputElement
+                    const value = input.value.trim()
+                    if (value && !form.interests.includes(value)) {
+                      setForm(prev => ({ ...prev, interests: [...prev.interests, value] }))
+                    }
+                    input.value = ''
+                  }}
+                  className="flex items-center gap-2"
+                  style={{ minWidth: 0 }}
+                >
+                  <input
+                    name="customInterest"
+                    type="text"
+                    placeholder="Add custom..."
+                    className="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-stone-100 placeholder-stone-400 focus:border-white/30 focus:bg-white/[0.09] outline-none"
+                    maxLength={32}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full border border-amber-400/40 bg-amber-300/20 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30"
+                  >
+                    Add
+                  </button>
+                </form>
               </div>
             </section>
 
@@ -432,7 +527,29 @@ export default function ProfilePage() {
               </button>
             </div>
 
-          </form>
+            </form>
+            {/* Live Profile Preview */}
+            <div className="w-full md:w-96 shrink-0 flex flex-col gap-6">
+              <ProfilePreview
+                displayName={form.displayName}
+                avatarUrl={form.avatarUrl}
+                city={form.city}
+                state={form.state}
+                country={form.country}
+                gender={form.gender}
+                sexualOrientation={form.sexualOrientation}
+                interests={form.interests}
+                bio={form.bio}
+              />
+              <div>
+                <h2 className="mb-2 mt-4 text-sm font-semibold text-stone-200">Photo Gallery</h2>
+                <PhotoCropUpload onUpload={handlePhotoUpload} />
+                <div className="mt-4">
+                  <ProfileGallery photoUrls={photoUrls} />
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

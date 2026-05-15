@@ -1,4 +1,5 @@
 import CommunityHubClient from '@/app/community/_components/community-hub-client'
+import MemberLayout from '@/app/_layouts/member-layout'
 
 export const metadata = {
   title: 'Community | RockBayBooty',
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function CommunityPage() {
-  return <CommunityHubClient />
+  return (
+    <MemberLayout>
+      <CommunityHubClient />
+    </MemberLayout>
+  )
 }

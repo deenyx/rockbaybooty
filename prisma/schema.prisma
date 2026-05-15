@@ -1,3 +1,10 @@
+enum UserRole {
+  SUPREME_ADMIN   // 1: Supreme Admin, total control
+  ADMIN          // 2: Admin, normal admin
+  MODEL_VERIFIED // 3: Model Verified, ID submitted
+  MEMBER         // 4: Standard, email-verified
+  BURNER         // 5: Burner/default/public
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -23,6 +30,7 @@ model InviteCode {
 
 model User {
   id             String   @id @default(cuid())
+  role           UserRole @default(MEMBER)
   email          String?  @unique
   username       String   @unique
   displayName    String
@@ -75,7 +83,24 @@ model Video {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  tags         VideoTag[]
+
   @@index([userId])
+}
+model Tag {
+  id    String   @id @default(cuid())
+  name  String   @unique
+  videos VideoTag[]
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+  video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+  @@index([tagId])
 }
 
 model Friendship {

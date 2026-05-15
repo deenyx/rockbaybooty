@@ -2,6 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 6 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --muted: 0 0% 42%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 238 77% 59%;
+    --accent-foreground: 240 10% 3%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 238 77% 59%;
+    --radius: 0.5rem;
+    --bg-base: #060304;
+    --bg-surface: #0d0a0b;
+    --bg-raised: #14100f;
+    --text-primary: #f5f5f4;
+    --text-muted: #a8a29e;
+    --border-subtle: rgba(255,255,255,0.08);
+    --font-copperplate: Copperplate, 'Copperplate Gothic Light', fantasy;
+  }
+
+  .dark {
+    --background: 6 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    --muted: 0 0% 42%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 238 77% 59%;
+    --accent-foreground: 240 10% 3%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 238 77% 59%;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -11,16 +57,6 @@
 html {
   scroll-behavior: smooth;
   color-scheme: dark;
-}
-
-:root {
-  --bg-base: #060304;
-  --bg-surface: #0d0a0b;
-  --bg-raised: #14100f;
-  --text-primary: #f5f5f4;
-  --text-muted: #a8a29e;
-  --border-subtle: rgba(255,255,255,0.08);
-  --font-copperplate: Copperplate, 'Copperplate Gothic Light', fantasy;
 }
 
 body {
