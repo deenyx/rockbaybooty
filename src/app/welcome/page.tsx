@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import PinEntryBox from './PinEntryBox'
-import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
+import WelcomeJukebox from './WelcomeJukebox'
 
 export const metadata: Metadata = {
   title: 'Private Entry',
@@ -33,12 +31,6 @@ export const metadata: Metadata = {
 }
 
 export default async function Welcome() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value
-  if (token) {
-    redirect(ROUTES.DASHBOARD)
-  }
-
   return (
     <div
       className="relative isolate text-slate-100"
@@ -51,7 +43,7 @@ export default async function Welcome() {
       }}
     >
       <Image
-        src="/welcome1.png"
+        src="/fuxembd1.jpg"
         alt=""
         fill
         priority
@@ -67,7 +59,7 @@ export default async function Welcome() {
       />
 
       <Image
-        src="/welcome1.png"
+        src="/fuxembd1.jpg"
         alt=""
         fill
         priority
@@ -136,6 +128,8 @@ export default async function Welcome() {
           <PinEntryBox />
         </div>
       </div>
+
+      <WelcomeJukebox />
 
       {/* Site name centered */}
       <div
