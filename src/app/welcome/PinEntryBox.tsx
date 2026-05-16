@@ -29,6 +29,7 @@ export default function PinEntryBox() {
   const [open, setOpen] = useState(false)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading'>('idle')
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -59,7 +60,7 @@ export default function PinEntryBox() {
     event.preventDefault()
 
     if (!pin) {
-      setError('Enter PIN')
+      setError('Enter code')
       return
     }
 
@@ -73,7 +74,35 @@ export default function PinEntryBox() {
       return
     }
 
-    setError('Use 0000 or 5555')
+    if (pin === '9999') {
+      setStatus('loading')
+      setError('')
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode: '9999', returnTo: ROUTES.DASHBOARD }),
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+          setError(data.error || 'Invalid code')
+          setStatus('idle')
+          return
+        }
+
+        router.push(data.returnTo || ROUTES.DASHBOARD)
+        return
+      } catch {
+        setError('Unable to continue. Please try again.')
+        setStatus('idle')
+        return
+      }
+    }
+
+    setError('Invalid code')
   }
 
   return (
@@ -105,7 +134,7 @@ export default function PinEntryBox() {
             className="mb-2 text-center text-[8px] tracking-[0.14em] text-red-400/80 select-none"
             style={{ fontFamily: CP }}
           >
-            NO PIN = 0000
+            ENTER ACCESS CODE
           </p>
 
           <input
@@ -132,10 +161,11 @@ export default function PinEntryBox() {
 
           <button
             type="submit"
+            disabled={status === 'loading'}
             className="mt-3 w-full rounded-md border border-white/20 bg-white/10 py-1.5 text-[10px] uppercase tracking-[0.24em] text-stone-100 hover:bg-white/20 active:scale-95 transition"
             style={{ fontFamily: CP }}
           >
-            Enter
+            {status === 'loading' ? '...' : 'Enter'}
           </button>
         </form>
       )}

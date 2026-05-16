@@ -249,6 +249,7 @@ export const SESSION_MODE_COOKIE_NAME = 'session-mode'
 export const SESSION_MODE_MEMBER = 'member'
 export const SESSION_MODE_DEFAULT_MEMBER = 'default-member'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+export const BURNER_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
 export const MIN_PASSWORD_LENGTH = 8
 export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/

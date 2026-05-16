@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import {
   AUTH_COOKIE_NAME,
   AUTH_TOKEN_MAX_AGE_SECONDS,
+  BURNER_TOKEN_MAX_AGE_SECONDS,
   BURNER_PIN,
   MESSAGES,
   ROUTES,
@@ -129,7 +130,8 @@ const loginUserSelect = {
 function withSessionCookies(
   response: NextResponse,
   token: string,
-  sessionMode: typeof SESSION_MODE_MEMBER | typeof SESSION_MODE_DEFAULT_MEMBER
+  sessionMode: typeof SESSION_MODE_MEMBER | typeof SESSION_MODE_DEFAULT_MEMBER,
+  maxAgeSeconds: number
 ) {
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
@@ -138,7 +140,7 @@ function withSessionCookies(
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    ...(sessionMode === SESSION_MODE_DEFAULT_MEMBER ? {} : { maxAge: AUTH_TOKEN_MAX_AGE_SECONDS }),
+    maxAge: maxAgeSeconds,
   })
 
   response.cookies.set({
@@ -148,7 +150,7 @@ function withSessionCookies(
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    ...(sessionMode === SESSION_MODE_DEFAULT_MEMBER ? {} : { maxAge: AUTH_TOKEN_MAX_AGE_SECONDS }),
+    maxAge: maxAgeSeconds,
   })
 
   return response
@@ -267,7 +269,7 @@ export async function POST(request: NextRequest) {
       }
 
       const token = jwt.sign(burnerTokenPayload, jwtSecret, {
-        expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS,
+        expiresIn: BURNER_TOKEN_MAX_AGE_SECONDS,
       })
 
       const response = buildSuccessResponse(
@@ -286,7 +288,7 @@ export async function POST(request: NextRequest) {
         request
       )
 
-      return withSessionCookies(response, token, SESSION_MODE_DEFAULT_MEMBER)
+      return withSessionCookies(response, token, SESSION_MODE_DEFAULT_MEMBER, BURNER_TOKEN_MAX_AGE_SECONDS)
     }
 
     if (!identifier) {
@@ -364,7 +366,7 @@ export async function POST(request: NextRequest) {
       request
     )
 
-    return withSessionCookies(response, token, SESSION_MODE_MEMBER)
+    return withSessionCookies(response, token, SESSION_MODE_MEMBER, AUTH_TOKEN_MAX_AGE_SECONDS)
   } catch (error) {
     console.error('Login error:', error)
     return buildErrorResponse(request, 'json', MESSAGES.ERROR_GENERAL, 500)

@@ -68,32 +68,6 @@ function LoginContent() {
     }
   }
 
-  async function handleBurnerAccess() {
-    setStatus('loading')
-    setError('')
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: '9999', returnTo }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || MESSAGES.LOGIN_INVALID)
-        setStatus('idle')
-        return
-      }
-
-      router.push(data.returnTo || ROUTES.DASHBOARD)
-    } catch {
-      setError('Network error. Please try again.')
-      setStatus('idle')
-    }
-  }
-
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-[#020617] text-slate-100">
       <div className="absolute inset-0">
@@ -200,16 +174,6 @@ function LoginContent() {
             style={{ fontFamily: CP }}
           >
             {status === 'loading' ? 'entering…' : 'log in'}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBurnerAccess}
-            disabled={status === 'loading'}
-            className="w-full rounded-full border border-amber-300/25 bg-amber-500/15 py-2.5 text-xs tracking-[0.14em] uppercase text-amber-100 transition hover:bg-amber-500/20 disabled:opacity-60 disabled:cursor-wait"
-            style={{ fontFamily: CP }}
-          >
-            Enter Default Mode
           </button>
 
           <p className="text-center text-[9px] uppercase tracking-[0.2em] text-stone-600" style={{ fontFamily: CP }}>
