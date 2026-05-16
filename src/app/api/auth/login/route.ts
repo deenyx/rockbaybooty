@@ -30,10 +30,9 @@ function getSafeReturnTo(returnTo: string | null): string {
 
 type ParsedLoginInput = {
   code: string
-  firstName: string
   identifier: string
   secret: string
-  secretType: 'password' | 'passcode'
+  dateOfBirth: string
   returnTo: string
   requestKind: 'json' | 'form'
 }
@@ -45,10 +44,42 @@ type LoginUser = {
   personalCode: string
   firstName: string | null
   email: string | null
-  loginPin: string | null
   passwordHash: string | null
   status: string
   emailVerified: boolean
+  profile: {
+    dateOfBirth: Date | null
+  } | null
+}
+
+function parseDob(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+
+  return date
+}
+
+function sameUtcDay(left: Date, right: Date): boolean {
+  return (
+    left.getUTCFullYear() === right.getUTCFullYear() &&
+    left.getUTCMonth() === right.getUTCMonth() &&
+    left.getUTCDate() === right.getUTCDate()
+  )
 }
 
 async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> {
@@ -59,10 +90,9 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     const body = await request.json()
     return {
       code: (body.passcode || body.pin || '').trim(),
-      firstName: (body.name || body.firstName || '').trim().toLowerCase(),
       identifier: (body.identifier || body.email || body.username || '').trim().toLowerCase(),
       secret: (body.secret || body.password || '').trim(),
-      secretType: body.secretType === 'passcode' ? 'passcode' : 'password',
+      dateOfBirth: String(body.dateOfBirth || '').trim(),
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -71,10 +101,9 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
   const formData = await request.formData()
   return {
     code: String(formData.get('passcode') || '').trim(),
-    firstName: String(formData.get('name') || formData.get('firstName') || '').trim().toLowerCase(),
     identifier: String(formData.get('identifier') || formData.get('email') || formData.get('username') || '').trim().toLowerCase(),
     secret: String(formData.get('secret') || formData.get('password') || '').trim(),
-    secretType: String(formData.get('secretType') || 'password') === 'passcode' ? 'passcode' : 'password',
+    dateOfBirth: String(formData.get('dateOfBirth') || '').trim(),
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.ME)),
     requestKind,
   }
@@ -87,10 +116,14 @@ const loginUserSelect = {
   personalCode: true,
   firstName: true,
   email: true,
-  loginPin: true,
   passwordHash: true,
   status: true,
   emailVerified: true,
+  profile: {
+    select: {
+      dateOfBirth: true,
+    },
+  },
 } as const
 
 function withSessionCookies(
@@ -209,7 +242,7 @@ async function createBurnerUser() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
+    const { code, identifier, secret, dateOfBirth, returnTo, requestKind } = await parseLoginInput(request)
     const normalizedCode = code.toUpperCase()
 
     const jwtSecret = process.env.JWT_SECRET
@@ -217,8 +250,8 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse(request, requestKind, MESSAGES.ERROR_GENERAL, 500)
     }
 
-    if (!code && !(identifier && secret)) {
-      return buildErrorResponse(request, requestKind, MESSAGES.ENTRY_PIN_REQUIRED, 400)
+    if (!code && !(identifier && secret && dateOfBirth)) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
     }
 
     // Burner access: always create a fresh read-only account for this session.
@@ -256,135 +289,44 @@ export async function POST(request: NextRequest) {
       return withSessionCookies(response, token, SESSION_MODE_DEFAULT_MEMBER)
     }
 
-    // Shortcut: 0000 starts account creation.
-    if (normalizedCode === '0000') {
-      const signupPath = ROUTES.SIGNUP
-
-      if (requestKind === 'json') {
-        return NextResponse.json(
-          { message: MESSAGES.PASSCODE_VALID, returnTo: signupPath },
-          { status: 200 }
-        )
-      }
-
-      return NextResponse.redirect(new URL(signupPath, request.url))
+    if (!identifier) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_USER_ID_REQUIRED, 400)
     }
 
-    // 5555 unlocks credential login mode.
-    if (normalizedCode === '5555' && !identifier && !secret) {
-      if (requestKind === 'json') {
-        return NextResponse.json(
-          {
-            message: MESSAGES.PASSCODE_VALID,
-            requiresCredentials: true,
-            returnTo: ROUTES.LOGIN,
-          },
-          { status: 200 }
-        )
-      }
-
-      return NextResponse.redirect(new URL(ROUTES.LOGIN, request.url))
+    if (!secret) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_REQUIRED, 400)
     }
 
-    let user: LoginUser | null = null
-
-    if (normalizedCode === '5555') {
-      if (!identifier) {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
-      }
-
-      if (!secret) {
-        const missingSecretError = secretType === 'passcode'
-          ? MESSAGES.LOGIN_PASSCODE_REQUIRED
-          : MESSAGES.LOGIN_PASSWORD_REQUIRED
-        return buildErrorResponse(request, requestKind, missingSecretError, 400)
-      }
-
-      user = await prisma.user.findFirst({
-        where: identifier.includes('@')
-          ? {
-              email: {
-                equals: identifier,
-                mode: 'insensitive',
-              },
-            }
-          : { username: identifier },
-        select: loginUserSelect,
-      })
-
-      if (!user || user.status !== 'active') {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-      }
-
-      if (secretType === 'passcode') {
-        const normalizedSecret = secret.toUpperCase()
-        const passcodeMatches = user.personalCode === normalizedSecret || user.loginPin === secret
-
-        if (!passcodeMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
-      } else {
-        if (!user.passwordHash || user.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_NOT_SET, 401)
-        }
-
-        const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
-
-        if (!passwordMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
-      }
+    if (!dateOfBirth) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_DOB_REQUIRED, 400)
     }
 
-    if (!user && firstName) {
-      const pinUser = await prisma.user.findFirst({
-        where: {
-          loginPin: normalizedCode,
-          firstName: {
-            equals: firstName,
-            mode: 'insensitive',
-          },
-        },
-        select: loginUserSelect,
-      })
+    const parsedDob = parseDob(dateOfBirth)
+    if (!parsedDob) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_DOB_REQUIRED, 400)
+    }
 
-      if (pinUser && pinUser.status === 'active') {
-        // Legacy PIN path — require email verification
-        if (!pinUser.emailVerified) {
-          return buildErrorResponse(request, requestKind, MESSAGES.EMAIL_VERIFICATION_REQUIRED, 401)
-        }
-        user = pinUser
-      } else {
-        // Fallback: match personalCode + first/display name (all onboarded users)
-        const codeUser = await prisma.user.findUnique({
-          where: { personalCode: normalizedCode },
-          select: loginUserSelect,
-        })
+    const user = await prisma.user.findUnique({
+      where: { username: identifier },
+      select: loginUserSelect,
+    })
 
-        const nameMatches =
-          codeUser &&
-          (codeUser.firstName?.toLowerCase() === firstName.toLowerCase() ||
-            codeUser.displayName?.toLowerCase() === firstName.toLowerCase())
+    if (!user || user.status !== 'active') {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+    }
 
-        if (!codeUser || codeUser.status !== 'active' || !nameMatches) {
-          return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-        }
+    if (!user.passwordHash || user.passwordHash === 'LEGACY_PREVIEW_ACCOUNT') {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_NOT_SET, 401)
+    }
 
-        user = codeUser
-      }
-    } else if (!user) {
-      if (!code) {
-        return buildErrorResponse(request, requestKind, MESSAGES.PASSCODE_REQUIRED, 400)
-      }
+    const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
+    if (!passwordMatches) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
+    }
 
-      user = await prisma.user.findUnique({
-        where: { personalCode: normalizedCode },
-        select: loginUserSelect,
-      })
-
-      if (!user || user.status !== 'active') {
-        return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-      }
+    const savedDob = user.profile?.dateOfBirth
+    if (!savedDob || !sameUtcDay(savedDob, parsedDob)) {
+      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
     }
 
     const token = jwt.sign(
