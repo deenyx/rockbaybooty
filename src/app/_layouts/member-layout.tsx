@@ -18,6 +18,7 @@ interface MemberLayoutProps {
     displayName: string
     avatarUrl?: string
   }
+  isBurner?: boolean
 }
 
 const iconMap: { [key: string]: React.ReactNode } = {
@@ -107,7 +108,7 @@ function SidebarNav() {
   )
 }
 
-export default function MemberLayout({ children, initialUser }: MemberLayoutProps) {
+export default function MemberLayout({ children, initialUser, isBurner }: MemberLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const pathname = usePathname()
@@ -163,13 +164,20 @@ export default function MemberLayout({ children, initialUser }: MemberLayoutProp
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-burgundy-500 to-champagne flex items-center justify-center text-white font-bold text-sm">
                 {initialUser ? getInitials(initialUser.displayName || initialUser.firstName) : 'U'}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-text-primary truncate">
                   {initialUser?.displayName || initialUser?.firstName || 'User'}
                 </p>
                 <p className="text-xs text-text-muted truncate">
                   @{initialUser?.username || 'username'}
                 </p>
+                {isBurner && (
+                  <div className="mt-2">
+                    <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                      Read-only Mode
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

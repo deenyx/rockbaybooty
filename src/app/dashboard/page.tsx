@@ -75,6 +75,7 @@ export default async function DashboardPage() {
           firstName: 'Member',
           displayName: burnerDisplay,
         }}
+        isBurner={true}
       >
         <DashboardClient
           initialData={{
