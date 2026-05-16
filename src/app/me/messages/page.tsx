@@ -1,2 +1,7 @@
 import { redirect } from 'next/navigation'
-export default function Page(){ redirect('/messagess') }
+
+import { ROUTES } from '@/lib/constants'
+
+export default function Page() {
+	redirect(ROUTES.MESSAGES)
+}

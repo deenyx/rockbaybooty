@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import TopQuickNav from '@/app/_components/top-quick-nav'
+import MemberLayout from '@/app/_layouts/member-layout'
 import { decideFriendRequest, fetchConversations, fetchFriendRequests } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { Conversation, DirectMessage, PendingFriendRequest } from '@/lib/types'
@@ -12,7 +12,7 @@ import type { Conversation, DirectMessage, PendingFriendRequest } from '@/lib/ty
 const NAV_ITEMS = [
   { label: 'Profile', href: ROUTES.PROFILE },
   { label: 'Search', href: ROUTES.SEARCH },
-  { label: 'Messages', href: ROUTES.MESSAGESS },
+  { label: 'Messages', href: ROUTES.MESSAGES },
   { label: 'Groups', href: ROUTES.GROUPS },
   { label: 'Classifieds', href: ROUTES.CLASSIFIEDS },
 ]
@@ -48,7 +48,7 @@ function formatConversationPreview(message: DirectMessage) {
 
 export default function MessagesPage() {
   const pathname = usePathname()
-  const safePathname = pathname ?? ROUTES.MESSAGESS
+  const safePathname = pathname ?? ROUTES.MESSAGES
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [incomingRequests, setIncomingRequests] = useState<PendingFriendRequest[]>([])
   const [outgoingRequests, setOutgoingRequests] = useState<PendingFriendRequest[]>([])
@@ -156,16 +156,8 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#090b10] text-stone-100">
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
-        style={{ backgroundImage: "url('/welcome2.jpg')" }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
-
-      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
-
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 pb-6 pt-24 sm:px-6 lg:px-8">
+    <MemberLayout>
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 pb-6 pt-8 text-stone-100 sm:px-6 lg:px-8">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-[#0d1117]/78 p-5 backdrop-blur-md md:block">
           <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Member Area</p>
@@ -285,7 +277,7 @@ export default function MessagesPage() {
                             {activeDecisionId === request.id ? 'Saving...' : 'Accept'}
                           </button>
                           <Link
-                            href={`${ROUTES.MESSAGESS}/${request.member.id}`}
+                            href={`${ROUTES.MESSAGES}/${request.member.id}`}
                             title={`Preview thread with ${request.member.displayName}`}
                             className="rounded-xl border border-white/20 bg-black/20 px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-white/35 hover:text-white"
                           >
@@ -373,7 +365,7 @@ export default function MessagesPage() {
               {conversations.map((conv) => (
                 <li key={conv.partnerId}>
                   <Link
-                    href={`${ROUTES.MESSAGESS}/${conv.partnerId}`}
+                    href={`${ROUTES.MESSAGES}/${conv.partnerId}`}
                     title={`Preview conversation with ${conv.partnerDisplayName}`}
                     className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-3 backdrop-blur-lg transition hover:border-amber-100/30 hover:bg-black/30"
                   >
@@ -419,6 +411,6 @@ export default function MessagesPage() {
           )}
         </main>
       </div>
-    </div>
+    </MemberLayout>
   )
 }

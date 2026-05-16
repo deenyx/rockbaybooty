@@ -238,10 +238,14 @@ export const MAX_AGE = 120
 export const NEW_MEMBER_PIN = '5555'
 export const QUICK_JOIN_PIN = '0000'
 export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
+export const BURNER_PIN = '9999'
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
+export const SESSION_MODE_COOKIE_NAME = 'session-mode'
+export const SESSION_MODE_MEMBER = 'member'
+export const SESSION_MODE_DEFAULT_MEMBER = 'default-member'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
 export const MIN_PASSWORD_LENGTH = 8
@@ -281,6 +285,7 @@ export const ROUTES = {
   CHAT: '/chat',
   GROUPS: '/groups',
   CLASSIFIEDS: '/classifieds',
+  MESSAGES: '/messages',
   MESSAGESS: '/messagess',
   VIDEOS: '/videos',
   MY_VIDEOS: '/videos/my',

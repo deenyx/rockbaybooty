@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 
-import TopQuickNav from '@/app/_components/top-quick-nav'
+import MemberLayout from '@/app/_layouts/member-layout'
 import nextDynamic from 'next/dynamic'
 
 // Dynamically import ProfilePreview, ProfileGallery, and PhotoUpload to avoid SSR issues
@@ -184,17 +184,8 @@ export default function ProfilePage() {
     'w-full rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition focus:border-white/35 focus:bg-black/50'
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8 profile-sexy-font">
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
-        style={{ backgroundImage: "url('/welcome2.jpg')" }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.7)_0%,rgba(6,8,12,0.84)_100%)]" />
-
-      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
-
-
-      <div className="relative z-10 mx-auto max-w-5xl space-y-6">
+    <MemberLayout>
+      <div className="mx-auto max-w-5xl space-y-6 px-4 pb-8 pt-8 text-stone-100 sm:px-6 lg:px-8 profile-sexy-font">
 
 
         {isLoading ? (
@@ -552,6 +543,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </div>
+    </MemberLayout>
   )
 }

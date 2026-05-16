@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 
-import TopQuickNav from '@/app/_components/top-quick-nav'
+import MemberLayout from '@/app/_layouts/member-layout'
 import { createVideo, deleteVideo, fetchMyVideos, updateVideo } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
 import type { VideoFeedItem } from '@/lib/types'
@@ -110,16 +110,8 @@ export default function MyVideosPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#090b10] px-4 pb-8 pt-24 text-stone-100 sm:px-6 lg:px-8">
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
-        style={{ backgroundImage: "url('/welcome2.jpg')" }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
-
-      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
-
-      <div className="relative z-10 mx-auto w-full max-w-6xl">
+    <MemberLayout>
+      <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-8 text-stone-100 sm:px-6 lg:px-8">
         <header className="rounded-3xl border border-white/12 bg-black/30 p-5 backdrop-blur-xl sm:p-6">
           <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Videos</p>
           <h1 className="mt-2 font-[family:var(--font-display)] text-3xl text-stone-100 sm:text-4xl">My Video Vault</h1>
@@ -289,6 +281,6 @@ export default function MyVideosPage() {
           </section>
         )}
       </div>
-    </div>
+    </MemberLayout>
   )
 }

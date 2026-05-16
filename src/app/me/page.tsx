@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
+import { AUTH_COOKIE_NAME, ROUTES, SESSION_MODE_DEFAULT_MEMBER } from '@/lib/constants'
 import prisma from '@/lib/prisma'
 import type { AuthTokenPayload } from '@/lib/types'
 
@@ -40,6 +40,10 @@ export default async function MePage() {
 		null
 
 	if (!userId) {
+		redirect(ROUTES.DASHBOARD)
+	}
+
+	if (payload.mode === SESSION_MODE_DEFAULT_MEMBER) {
 		redirect(ROUTES.DASHBOARD)
 	}
 

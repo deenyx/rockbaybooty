@@ -2,24 +2,23 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { motion, type Variants } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { searchMembers, sendFriendRequest } from '@/lib/api'
 import { ROUTES } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 import type { MemberSearchFilters, MemberSearchResult } from '@/lib/types'
 
 type SearchPageClientProps = {
   initialResults?: MemberSearchResult[]
 }
 
-const containerVariants: Variants = {
+const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -30,14 +29,13 @@ const containerVariants: Variants = {
   },
 }
 
-const itemVariants: Variants = {
+const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.4,
-      ease: 'easeOut',
     },
   },
 }
@@ -342,11 +340,8 @@ export default function SearchPageClient({ initialResults = [] }: SearchPageClie
                                   : 'Add Friend'}
                           </Button>
                           <Link
-                            href={`${ROUTES.MESSAGESS}/${member.id}`}
-                            className={cn(
-                              buttonVariants({ size: 'sm', variant: 'outline' }),
-                              'text-xs border-border-subtle/50'
-                            )}
+                            href={`${ROUTES.MESSAGES}/${member.id}`}
+                            className="inline-flex h-9 items-center justify-center rounded-md border border-border-subtle/50 bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                           >
                             Message
                           </Link>

@@ -23,9 +23,43 @@ import type {
   VideoResponse,
   VideoViewResponse,
 } from '@/lib/types'
+import { SESSION_MODE_COOKIE_NAME, SESSION_MODE_DEFAULT_MEMBER } from '@/lib/constants'
+
+function getSessionModeFromCookie(): string | null {
+  if (typeof document === 'undefined') {
+    return null
+  }
+
+  const cookie = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_MODE_COOKIE_NAME}=`))
+
+  if (!cookie) {
+    return null
+  }
+
+  return decodeURIComponent(cookie.split('=').slice(1).join('='))
+}
+
+function assertWriteAllowed(method: string, endpoint: string) {
+  const isMutating = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+
+  if (!isMutating) {
+    return
+  }
+
+  const sessionMode = getSessionModeFromCookie()
+  if (sessionMode === SESSION_MODE_DEFAULT_MEMBER) {
+    throw new Error('Default users are read-only. Start a full account to make changes.')
+  }
+}
 
 export async function apiCall(endpoint: string, options: RequestInit = {}) {
   const url = `${process.env.NEXT_PUBLIC_API_URL || ''}${endpoint}`
+  const method = (options.method || 'GET').toUpperCase()
+
+  assertWriteAllowed(method, endpoint)
 
   const response = await fetch(url, {
     headers: {

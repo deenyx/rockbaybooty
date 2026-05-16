@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
+import { AUTH_COOKIE_NAME, ROUTES, SESSION_MODE_COOKIE_NAME } from '@/lib/constants'
 
 // Only onboarding, welcome, login, signup, and home are public
 const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/forgot', '/reset', '/signup', '/pin-reveal', '/default'];
@@ -125,6 +125,15 @@ export async function middleware(request: NextRequest) {
       name: AUTH_COOKIE_NAME,
       value: '',
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: new Date(0),
+    })
+    response.cookies.set({
+      name: SESSION_MODE_COOKIE_NAME,
+      value: '',
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

@@ -65,21 +65,24 @@ export default async function DashboardPage() {
   }
 
   if (payload.mode === 'default-member' || userId === DEFAULT_MEMBER_ID) {
+    const burnerUsername = payload.username || 'defaultuser'
+    const burnerDisplay = burnerUsername
+
     return (
       <MemberLayout
         initialUser={{
-          username: 'default_member',
+          username: burnerUsername,
           firstName: 'Member',
-          displayName: 'Default Member',
+          displayName: burnerDisplay,
         }}
       >
         <DashboardClient
           initialData={{
             user: {
-              id: DEFAULT_MEMBER_ID,
-              username: 'default_member',
+              id: userId,
+              username: burnerUsername,
               firstName: 'Member',
-              displayName: 'Default Member',
+              displayName: burnerDisplay,
               personalCode: payload.personalCode || '9999',
             },
             profile: {

@@ -6,8 +6,12 @@ import prisma from '@/lib/prisma'
 import {
   AUTH_COOKIE_NAME,
   AUTH_TOKEN_MAX_AGE_SECONDS,
+  BURNER_PIN,
   MESSAGES,
   ROUTES,
+  SESSION_MODE_COOKIE_NAME,
+  SESSION_MODE_DEFAULT_MEMBER,
+  SESSION_MODE_MEMBER,
 } from '@/lib/constants'
 import { sendLoginAlertEmail } from '@/lib/email'
 import type { AuthTokenPayload } from '@/lib/types'
@@ -89,7 +93,11 @@ const loginUserSelect = {
   emailVerified: true,
 } as const
 
-function withAuthCookie(response: NextResponse, token: string) {
+function withSessionCookies(
+  response: NextResponse,
+  token: string,
+  sessionMode: typeof SESSION_MODE_MEMBER | typeof SESSION_MODE_DEFAULT_MEMBER
+) {
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
     value: token,
@@ -97,7 +105,17 @@ function withAuthCookie(response: NextResponse, token: string) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: AUTH_TOKEN_MAX_AGE_SECONDS,
+    ...(sessionMode === SESSION_MODE_DEFAULT_MEMBER ? {} : { maxAge: AUTH_TOKEN_MAX_AGE_SECONDS }),
+  })
+
+  response.cookies.set({
+    name: SESSION_MODE_COOKIE_NAME,
+    value: sessionMode,
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    ...(sessionMode === SESSION_MODE_DEFAULT_MEMBER ? {} : { maxAge: AUTH_TOKEN_MAX_AGE_SECONDS }),
   })
 
   return response
@@ -115,6 +133,7 @@ function buildErrorResponse(request: NextRequest, kind: ParsedLoginInput['reques
 
 function buildSuccessResponse(kind: ParsedLoginInput['requestKind'], returnTo: string, payload: {
   message: string
+  sessionMode: typeof SESSION_MODE_MEMBER | typeof SESSION_MODE_DEFAULT_MEMBER
   user: {
     id: string
     username: string
@@ -152,6 +171,42 @@ async function generateUniquePersonalCode(baseCode: string) {
   return fallback
 }
 
+async function generateBurnerUsername() {
+  const base = 'defaultuser'
+
+  for (let attempt = 0; attempt < 10_000; attempt += 1) {
+    const candidate = attempt === 0 ? base : `${base}${attempt}`
+    const existing = await prisma.user.findUnique({
+      where: { username: candidate },
+      select: { id: true },
+    })
+
+    if (!existing) {
+      return candidate
+    }
+  }
+
+  return `${base}${Date.now()}`
+}
+
+async function createBurnerUser() {
+  const username = await generateBurnerUsername()
+  const personalCode = await generateUniquePersonalCode(`BURN${Date.now().toString().slice(-6)}`)
+
+  return prisma.user.create({
+    data: {
+      username,
+      displayName: username,
+      personalCode,
+      role: 'BURNER',
+      onboardingStep: 'completed',
+      status: 'active',
+      emailVerified: true,
+    },
+    select: loginUserSelect,
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { code, firstName, identifier, secret, secretType, returnTo, requestKind } = await parseLoginInput(request)
@@ -164,6 +219,41 @@ export async function POST(request: NextRequest) {
 
     if (!code && !(identifier && secret)) {
       return buildErrorResponse(request, requestKind, MESSAGES.ENTRY_PIN_REQUIRED, 400)
+    }
+
+    // Burner access: always create a fresh read-only account for this session.
+    if (normalizedCode === BURNER_PIN) {
+      const burnerUser = await createBurnerUser()
+
+      const burnerTokenPayload: AuthTokenPayload = {
+        userId: burnerUser.id,
+        personalCode: burnerUser.personalCode,
+        mode: SESSION_MODE_DEFAULT_MEMBER,
+        sub: burnerUser.id,
+        username: burnerUser.username,
+      }
+
+      const token = jwt.sign(burnerTokenPayload, jwtSecret, {
+        expiresIn: AUTH_TOKEN_MAX_AGE_SECONDS,
+      })
+
+      const response = buildSuccessResponse(
+        requestKind,
+        returnTo,
+        {
+          message: MESSAGES.LOGIN_SUCCESS,
+          sessionMode: SESSION_MODE_DEFAULT_MEMBER,
+          user: {
+            id: burnerUser.id,
+            username: burnerUser.username,
+            displayName: burnerUser.displayName,
+            personalCode: burnerUser.personalCode,
+          },
+        },
+        request
+      )
+
+      return withSessionCookies(response, token, SESSION_MODE_DEFAULT_MEMBER)
     }
 
     // Shortcut: 0000 starts account creation.
@@ -321,6 +411,7 @@ export async function POST(request: NextRequest) {
       returnTo,
       {
         message: MESSAGES.LOGIN_SUCCESS,
+        sessionMode: SESSION_MODE_MEMBER,
         user: {
           id: user.id,
           username: user.username,
@@ -331,7 +422,7 @@ export async function POST(request: NextRequest) {
       request
     )
 
-    return withAuthCookie(response, token)
+    return withSessionCookies(response, token, SESSION_MODE_MEMBER)
   } catch (error) {
     console.error('Login error:', error)
     return buildErrorResponse(request, 'json', MESSAGES.ERROR_GENERAL, 500)

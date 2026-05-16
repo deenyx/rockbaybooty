@@ -1,21 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useParams, usePathname } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-import TopQuickNav from '@/app/_components/top-quick-nav'
+import MemberLayout from '@/app/_layouts/member-layout'
 import { fetchConversationMessages, sendGesture, sendMessage } from '@/lib/api'
 import { MESSAGING_POLL_INTERVAL_MS, ROUTES } from '@/lib/constants'
 import type { ConversationMessagesResponse, DirectMessage } from '@/lib/types'
-
-const NAV_ITEMS = [
-  { label: 'Profile', href: ROUTES.PROFILE },
-  { label: 'Search', href: ROUTES.SEARCH },
-  { label: 'Messages', href: ROUTES.MESSAGESS },
-  { label: 'Groups', href: ROUTES.GROUPS },
-  { label: 'Classifieds', href: ROUTES.CLASSIFIEDS },
-]
 
 function getInitials(name: string) {
   return name
@@ -42,6 +34,18 @@ function formatDate(isoString: string) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatConversationStats(messages: DirectMessage[]) {
+  if (messages.length === 0) {
+    return 'No messages yet'
+  }
+
+  if (messages.length === 1) {
+    return '1 message in this thread'
+  }
+
+  return `${messages.length} messages in this thread`
+}
+
 function formatMessageBody(message: DirectMessage, isMine: boolean) {
   if (message.kind === 'poke') {
     return isMine ? 'You sent a poke' : 'Sent you a poke'
@@ -61,8 +65,6 @@ function formatMessageBody(message: DirectMessage, isMine: boolean) {
 export default function ConversationPage() {
   const params = useParams()
   const partnerId = typeof params?.userId === 'string' ? params.userId : ''
-  const pathname = usePathname()
-  const safePathname = pathname ?? ROUTES.MESSAGESS
 
   const [data, setData] = useState<ConversationMessagesResponse | null>(null)
   const [messages, setMessages] = useState<DirectMessage[]>([])
@@ -218,50 +220,17 @@ export default function ConversationPage() {
   }
 
   const partner = data?.partner
+  const latestMessage = messages[messages.length - 1]
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#090b10] text-stone-100">
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-38"
-        style={{ backgroundImage: "url('/welcome2.jpg')" }}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,11,18,0.6)_0%,rgba(6,8,12,0.74)_100%)]" />
-
-      <TopQuickNav className="left-4 right-4 md:left-6 md:right-6" />
-
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl gap-6 px-4 pb-6 pt-24 sm:px-6 lg:px-8">
-        {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 rounded-3xl border border-white/10 bg-[#0d1117]/78 p-5 backdrop-blur-md md:block">
-          <p className="text-xs uppercase tracking-[0.22em] text-stone-300/80">Member Area</p>
-          <h1 className="mt-3 font-[family:var(--font-display)] text-3xl text-stone-100">Messages</h1>
-
-          <nav className="mt-8 space-y-2">
-            {NAV_ITEMS.map((item) => {
-              const active = safePathname === item.href || safePathname.startsWith(`${item.href}/`)
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={`Open ${item.label}`}
-                  className={`block rounded-xl px-4 py-3 text-sm transition ${
-                    active
-                      ? 'border border-white/20 bg-white/[0.08] text-stone-100'
-                      : 'text-stone-300 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-        </aside>
-
-        {/* Conversation panel */}
-        <main className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/30 backdrop-blur-xl">
+    <MemberLayout>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl px-4 pb-6 pt-8 text-stone-100 sm:px-6 lg:px-8">
+        <main className="flex h-[calc(100vh-7.5rem)] w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-black/30 backdrop-blur-xl md:h-[calc(100vh-5rem)]">
           {/* Header */}
-          <div className="flex items-center gap-3 border-b border-white/10 p-4 sm:p-5">
+          <div className="border-b border-white/10 bg-gradient-to-r from-white/[0.05] via-transparent to-white/[0.03] p-4 sm:p-5">
+            <div className="flex items-center gap-3">
             <Link
-              href={ROUTES.MESSAGESS}
+              href={ROUTES.MESSAGES}
               title="Back to all conversations"
               className="mr-1 rounded-lg border border-white/15 p-1.5 text-stone-300 transition hover:border-white/30 hover:text-white"
               aria-label="Back to conversations"
@@ -283,15 +252,20 @@ export default function ConversationPage() {
                     {getInitials(partner.displayName || partner.username)}
                   </div>
                 )}
-                <div>
-                  <p className="font-semibold text-white">{partner.displayName}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate font-semibold text-white">{partner.displayName}</p>
+                    <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-100">
+                      Live thread
+                    </span>
+                  </div>
                   <p className="text-xs text-stone-400">@{partner.username}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowGestureMenu((current) => !current)}
                   disabled={Boolean(activeGesture)}
-                  className="ml-auto rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-200 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="ml-auto hidden rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-200 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
                 >
                   {activeGesture ? 'Sending...' : 'Poke...'}
                 </button>
@@ -299,10 +273,22 @@ export default function ConversationPage() {
             ) : (
               <div className="h-5 w-32 animate-pulse rounded bg-white/10" />
             )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-stone-400">
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
+                {formatConversationStats(messages)}
+              </span>
+              {latestMessage ? (
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
+                  Last activity {formatTime(latestMessage.createdAt)}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_36%)] p-4 sm:p-5">
             {isLoading && (
               <div className="flex h-full items-center justify-center">
                 <div className="h-7 w-7 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
@@ -316,8 +302,13 @@ export default function ConversationPage() {
             )}
 
             {!isLoading && !loadError && messages.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <p className="text-stone-300">No messages yet. Say hello!</p>
+              <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.04] px-6 py-5 backdrop-blur-md">
+                  <p className="text-lg font-semibold text-stone-100">No messages yet</p>
+                  <p className="mt-2 max-w-sm text-sm text-stone-300">
+                    Break the ice with a quick note or send a gesture to start the conversation.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -335,15 +326,27 @@ export default function ConversationPage() {
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                        className={`flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}
                       >
+                        {!isMine && (
+                          partner?.avatarUrl ? (
+                            <div
+                              className="hidden h-8 w-8 shrink-0 rounded-xl border border-white/15 bg-cover bg-center sm:block"
+                              style={{ backgroundImage: `url(${partner.avatarUrl})` }}
+                            />
+                          ) : (
+                            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[10px] font-semibold text-stone-200 sm:flex">
+                              {getInitials(partner?.displayName || partner?.username || '?')}
+                            </div>
+                          )
+                        )}
                         <div
-                          className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                          className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-[0_12px_30px_rgba(0,0,0,0.18)] sm:max-w-[75%] ${
                             msg.kind === 'poke' || msg.kind === 'wink' || msg.kind === 'wave'
                               ? 'border border-amber-200/20 bg-amber-300/10 text-amber-100'
                               : isMine
-                                ? 'rounded-br-sm bg-amber-400/25 text-amber-50'
-                                : 'rounded-bl-sm bg-white/10 text-stone-100'
+                                ? 'rounded-br-sm border border-amber-200/20 bg-amber-400/20 text-amber-50'
+                                : 'rounded-bl-sm border border-white/10 bg-white/10 text-stone-100'
                           }`}
                         >
                           <p>{formatMessageBody(msg, isMine)}</p>
@@ -362,10 +365,36 @@ export default function ConversationPage() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-white/10 p-4 sm:p-5">
+          <div className="border-t border-white/10 bg-black/20 p-4 sm:p-5">
             {sendError && (
               <p className="mb-2 text-sm text-rose-400">{sendError}</p>
             )}
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleGesture('poke')}
+                disabled={Boolean(activeGesture)}
+                className="rounded-full border border-amber-200/30 bg-amber-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-300/20 disabled:opacity-50"
+              >
+                Quick poke
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGesture('wink')}
+                disabled={Boolean(activeGesture)}
+                className="rounded-full border border-fuchsia-200/30 bg-fuchsia-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-fuchsia-100 transition hover:bg-fuchsia-300/20 disabled:opacity-50"
+              >
+                Wink
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGesture('wave')}
+                disabled={Boolean(activeGesture)}
+                className="rounded-full border border-sky-200/30 bg-sky-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-100 transition hover:bg-sky-300/20 disabled:opacity-50"
+              >
+                Wave
+              </button>
+            </div>
             <div className="flex items-end gap-3">
               <textarea
                 value={inputValue}
@@ -373,14 +402,14 @@ export default function ConversationPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="Write a message… (Enter to send)"
                 rows={1}
-                className="flex-1 resize-none rounded-xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
+                className="flex-1 resize-none rounded-2xl border border-white/15 bg-black/35 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-400/80 focus:border-amber-200/45"
                 style={{ maxHeight: '9rem', overflowY: 'auto' }}
               />
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isSending}
-                className="rounded-xl border border-amber-200/40 bg-amber-300/20 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-2xl border border-amber-200/40 bg-amber-300/20 px-4 py-3 text-sm font-semibold text-amber-100 transition hover:border-amber-100/70 hover:bg-amber-200/30 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSending ? (
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-amber-100/30 border-t-amber-100" />
@@ -396,7 +425,7 @@ export default function ConversationPage() {
                 type="button"
                 onClick={() => setShowGestureMenu((current) => !current)}
                 disabled={Boolean(activeGesture)}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="hidden rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-semibold text-stone-100 transition hover:border-amber-100/50 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-50 sm:block"
               >
                 {activeGesture ? 'Sending...' : 'Poke...'}
               </button>
@@ -433,6 +462,6 @@ export default function ConversationPage() {
           </div>
         </main>
       </div>
-    </div>
+    </MemberLayout>
   )
 }
