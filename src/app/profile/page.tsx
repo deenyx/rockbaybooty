@@ -22,8 +22,6 @@ import {
   LOOKING_FOR_MAX_SELECTIONS,
   LOOKING_FOR_OPTIONS,
   ORIENTATION_OPTIONS,
-  ROLE_MAX_SELECTIONS,
-  ROLE_OPTIONS,
   ROUTES,
 } from '@/lib/constants'
 
@@ -39,7 +37,6 @@ type ProfileForm = {
   sexualOrientation: string
   orientationOther: string
   lookingFor: string[]
-  role: string[]
   interests: string[]
   bio: string
 }
@@ -56,7 +53,6 @@ const EMPTY_FORM: ProfileForm = {
   sexualOrientation: '',
   orientationOther: '',
   lookingFor: [],
-  role: [],
   interests: [],
   bio: '',
 }
@@ -97,7 +93,6 @@ export default function ProfilePage() {
           sexualOrientation: response.profile.sexualOrientation || '',
           orientationOther: response.profile.orientationOther || '',
           lookingFor: response.profile.lookingFor || [],
-          role: response.profile.role || [],
           interests: response.profile.interests || [],
           bio: response.profile.bio || '',
         })
@@ -165,7 +160,6 @@ export default function ProfilePage() {
         sexualOrientation: form.sexualOrientation,
         orientationOther: form.orientationOther || undefined,
         lookingFor: form.lookingFor,
-        role: form.role,
         interests: form.interests,
         bio: form.bio || undefined,
       })
@@ -374,42 +368,6 @@ export default function ProfilePage() {
                       className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
                         active
                           ? 'border-amber-400/40 bg-amber-400/[0.12] text-amber-300'
-                          : atCap
-                          ? 'cursor-not-allowed border-white/10 bg-white/[0.01] text-stone-600'
-                          : 'border-white/15 bg-white/[0.03] text-stone-300 hover:border-white/25 hover:text-stone-100'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-
-            {/* Role */}
-            <section className="rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-xl sm:p-7">
-              <div className="flex items-baseline justify-between">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-stone-400">Role</p>
-                <span className="text-[10px] text-stone-500">{form.role.length}/{ROLE_MAX_SELECTIONS}</span>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {ROLE_OPTIONS.map((opt) => {
-                  const active = form.role.includes(opt)
-                  const atCap = form.role.length >= ROLE_MAX_SELECTIONS
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      disabled={!active && atCap}
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          role: toggleArrayItem(prev.role, opt),
-                        }))
-                      }
-                      className={`rounded-full border px-4 py-1.5 text-xs font-medium transition ${
-                        active
-                          ? 'border-rose-400/40 bg-rose-400/[0.12] text-rose-300'
                           : atCap
                           ? 'cursor-not-allowed border-white/10 bg-white/[0.01] text-stone-600'
                           : 'border-white/15 bg-white/[0.03] text-stone-300 hover:border-white/25 hover:text-stone-100'

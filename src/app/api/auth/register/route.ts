@@ -7,6 +7,7 @@ import {
   MIN_AGE,
   MESSAGES,
   NEW_MEMBER_PIN,
+  USERNAME_REGEX,
 } from '@/lib/constants'
 import { sendVerificationEmail } from '@/lib/email'
 
@@ -55,8 +56,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const email = body.email?.trim().toLowerCase()
-    const rawName = typeof body.name === 'string' ? body.name : body.firstName
-    const name = typeof rawName === 'string' ? rawName.trim().replace(/\s+/g, ' ') : ''
+    const rawUsername =
+      typeof body.username === 'string'
+        ? body.username
+        : typeof body.name === 'string'
+          ? body.name
+          : body.firstName
+    const username = typeof rawUsername === 'string' ? rawUsername.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password.trim() : ''
     const dateOfBirth = parseDob(body.dateOfBirth)
 
@@ -64,8 +70,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: MESSAGES.INVALID_EMAIL }, { status: 400 })
     }
 
-    if (!name) {
-      return NextResponse.json({ error: MESSAGES.FIELD_REQUIRED }, { status: 400 })
+    if (!username) {
+      return NextResponse.json({ error: MESSAGES.LOGIN_USER_ID_REQUIRED }, { status: 400 })
+    }
+
+    if (!USERNAME_REGEX.test(username)) {
+      return NextResponse.json({ error: MESSAGES.INVALID_USER_ID }, { status: 400 })
     }
 
     if (!dateOfBirth || !isAtLeastMinimumAge(dateOfBirth, MIN_AGE)) {
@@ -76,28 +86,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: MESSAGES.PASSWORD_MIN_LENGTH }, { status: 400 })
     }
 
-    const existingName = await prisma.user.findFirst({
-      where: {
-        OR: [
-          {
-            firstName: {
-              equals: name,
-              mode: 'insensitive',
-            },
-          },
-          {
-            displayName: {
-              equals: name,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
       select: { id: true },
     })
 
-    if (existingName) {
-      return NextResponse.json({ error: MESSAGES.NAME_EXISTS }, { status: 409 })
+    if (existingUsername) {
+      return NextResponse.json({ error: MESSAGES.USERNAME_EXISTS }, { status: 409 })
     }
 
     const existingEmail = await prisma.user.findUnique({
@@ -114,25 +109,14 @@ export async function POST(request: NextRequest) {
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    // Generate a unique username
-    const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) || 'member'
-    let username = base + Math.floor(1000 + Math.random() * 9000)
-    let taken = await prisma.user.findUnique({ where: { username } })
-    let attempts = 0
-    while (taken && attempts < 20) {
-      username = base + Math.floor(1000 + Math.random() * 9000)
-      taken = await prisma.user.findUnique({ where: { username } })
-      attempts++
-    }
-
     const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
     const passwordHash = await bcrypt.hash(password, 10)
 
     const createdUser = await prisma.user.create({
       data: {
         email,
-        firstName: name,
-        displayName: name,
+        firstName: username,
+        displayName: username,
         username,
         personalCode,
         passwordHash,
@@ -157,7 +141,7 @@ export async function POST(request: NextRequest) {
       })
     } else {
       try {
-        await sendVerificationEmail(email, name, token)
+        await sendVerificationEmail(email, username, token)
       } catch (error) {
         await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => undefined)
 
@@ -186,6 +170,7 @@ export async function POST(request: NextRequest) {
           {
             message: 'Now, verify your email.',
             pin: NEW_MEMBER_PIN,
+            username: user.username,
             user: {
               id: user.id,
               username: user.username,
@@ -211,6 +196,7 @@ export async function POST(request: NextRequest) {
       {
         message: 'Now, verify your email.',
         pin: NEW_MEMBER_PIN,
+        username,
       },
       { status: 200 }
     )

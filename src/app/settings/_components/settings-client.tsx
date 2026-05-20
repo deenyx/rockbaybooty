@@ -10,8 +10,15 @@ import type { MemberSettings } from '@/lib/types'
 
 type SettingsState = MemberSettings
 
+type ToggleSettingKey =
+  | 'isPublic'
+  | 'allowDirectMessages'
+  | 'allowFriendRequests'
+  | 'showOnlineStatus'
+  | 'emailLoginAlerts'
+
 type ToggleConfig = {
-  key: keyof SettingsState
+  key: ToggleSettingKey
   title: string
   description: string
 }
@@ -45,6 +52,7 @@ const TOGGLES: ToggleConfig[] = [
 ]
 
 const DEFAULT_SETTINGS: SettingsState = {
+  profileVisibility: 'private',
   isPublic: false,
   allowDirectMessages: true,
   allowFriendRequests: true,
@@ -102,7 +110,7 @@ export default function SettingsClient() {
     return JSON.stringify(settings) !== JSON.stringify(initialSettings)
   }, [settings, initialSettings])
 
-  const handleToggle = (key: keyof SettingsState) => {
+  const handleToggle = (key: ToggleSettingKey) => {
     setSettings((prev) => ({
       ...prev,
       [key]: !prev[key],

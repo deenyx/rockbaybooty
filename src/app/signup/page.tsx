@@ -12,6 +12,10 @@ const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 type RegisterResponse = {
   message?: string
   pin?: string
+  username?: string
+  user?: {
+    username?: string
+  }
   error?: string
 }
 
@@ -38,6 +42,7 @@ function SignupContent() {
   const [error, setError] = useState(getServerError(searchParams?.get('error') ?? null))
   const [successMessage, setSuccessMessage] = useState('')
   const [pin, setPin] = useState('')
+  const [generatedUsername, setGeneratedUsername] = useState('')
 
   const maxDob = useMemo(() => {
     const now = new Date()
@@ -48,6 +53,12 @@ function SignupContent() {
   const validateForm = (): string => {
     if (!name.trim() || !email.trim() || !dateOfBirth || !password || !confirmPassword) {
       return MESSAGES.FIELD_REQUIRED
+    }
+
+    const username = name.trim().toLowerCase()
+    const validUsername = /^[a-zA-Z0-9_]{3,20}$/.test(username)
+    if (!validUsername) {
+      return MESSAGES.INVALID_USER_ID
     }
 
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim().toLowerCase())
@@ -94,7 +105,7 @@ function SignupContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          username: name.trim().toLowerCase(),
           email: email.trim().toLowerCase(),
           dateOfBirth,
           password,
@@ -117,6 +128,7 @@ function SignupContent() {
 
       setSuccessMessage(data.message || MESSAGES.EMAIL_SENT)
       setPin(data.pin || '')
+      setGeneratedUsername(data.username || data.user?.username || '')
       setStatus('success')
     } catch {
       setError(MESSAGES.ERROR_GENERAL)
@@ -173,7 +185,15 @@ function SignupContent() {
 
               {!!pin && (
                 <div className="rounded-xl border border-amber-200/30 bg-amber-100/10 px-4 py-3 text-center">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100/80" style={{ fontFamily: CP }}>
+                  {!!generatedUsername && (
+                    <>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100/80" style={{ fontFamily: CP }}>
+                        User ID
+                      </p>
+                      <p className="mt-2 text-xl tracking-[0.12em] text-amber-100">{generatedUsername}</p>
+                    </>
+                  )}
+                  <p className={`${generatedUsername ? 'mt-3 ' : ''}text-[11px] uppercase tracking-[0.18em] text-amber-100/80`} style={{ fontFamily: CP }}>
                     Starter PIN
                   </p>
                   <p className="mt-2 text-2xl tracking-[0.35em] text-amber-100">{pin}</p>
@@ -196,19 +216,21 @@ function SignupContent() {
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block space-y-1">
                 <span className="block text-[10px] uppercase tracking-[0.22em] text-stone-400" style={{ fontFamily: CP }}>
-                  Name
+                  User ID
                 </span>
                 <input
                   type="text"
-                  autoComplete="name"
+                  autoComplete="username"
                   value={name}
                   onChange={(event) => {
-                    setName(event.target.value)
+                    setName(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
                     setError('')
                   }}
-                  placeholder="Your first name"
+                  placeholder="your screen name"
+                  maxLength={20}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-pink-400/40 focus:ring-1 focus:ring-pink-400/15 transition"
                 />
+                <p className="text-[11px] text-stone-500">3-20 letters, numbers, or underscores.</p>
               </label>
 
               <label className="block space-y-1">

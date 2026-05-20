@@ -1,3 +1,16 @@
+/**
+ * Legacy onboarding prototype kept intentionally.
+ *
+ * The live onboarding flow now runs via App Router at:
+ * - src/app/onboarding/page.tsx
+ *
+ * Keep this file as historical reference only.
+ */
+export default function LegacyOnboardingReference() {
+  return null
+}
+
+/*
 import { useState, ChangeEvent, FormEvent } from "react";
 
 import { registerUser } from "./lib/api";
@@ -88,3 +101,4 @@ export default function Onboarding() {
     </div>
   );
 }
+*/

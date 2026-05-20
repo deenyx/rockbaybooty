@@ -22,8 +22,10 @@ export interface Profile {
   dateOfBirth?: Date
   gender?: string
   genderOther?: string
+  pronouns?: string
   sexualOrientation?: string
   orientationOther?: string
+  intentions?: string
   city?: string
   state?: string
   country?: string
@@ -117,6 +119,35 @@ export interface ErrorResponse {
   error: string
 }
 
+export interface ClassifiedListing {
+  id: string
+  userId: string
+  title: string
+  description: string
+  category: string
+  location: string | null
+  photos: string[]
+  status: string
+  expiresAt: string
+  createdAt: string
+  poster: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }
+}
+
+export interface SocialLinks {
+  twitterUrl?: string
+  fetlifeUrl?: string
+  onlyfansUrl?: string
+  pornhubUrl?: string
+  tumblrUrl?: string
+  instagramUrl?: string
+  socialLinksVisibility: string
+}
+
 export interface MemberProfileResponse {
   user: {
     id: string
@@ -130,14 +161,35 @@ export interface MemberProfileResponse {
     country: string
     gender: string
     genderOther: string
+    pronouns: string
     sexualOrientation: string
     orientationOther: string
+    intentions: string
     lookingFor: string[]
-    role: string[]
     bio: string
     interests: string[]
     avatarUrl: string
-    photoUrls?: string[]
+    photoUrls: string[]
+    twitterUrl: string
+    fetlifeUrl: string
+    onlyfansUrl: string
+    pornhubUrl: string
+    tumblrUrl: string
+    instagramUrl: string
+    socialLinksVisibility: string
+  }
+}
+
+export interface ProfileOptionsResponse {
+  options: {
+    lookingFor: string[]
+    intentions: string[]
+    gender: string[]
+    pronouns: string[]
+    orientation: string[]
+    interests: string[]
+    kinks: string[]
+    roles: string[]
   }
 }
 
@@ -148,16 +200,25 @@ export interface UpdateMemberProfileInput {
   country?: string
   gender: string
   genderOther?: string
+  pronouns?: string
   sexualOrientation: string
   orientationOther?: string
+  intentions?: string
   lookingFor: string[]
-  role?: string[]
   bio?: string
   interests?: string[]
   avatarUrl?: string
+  twitterUrl?: string
+  fetlifeUrl?: string
+  onlyfansUrl?: string
+  pornhubUrl?: string
+  tumblrUrl?: string
+  instagramUrl?: string
+  socialLinksVisibility?: string
 }
 
 export interface MemberSettings {
+  profileVisibility: 'public' | 'members' | 'private'
   isPublic: boolean
   allowDirectMessages: boolean
   allowFriendRequests: boolean
@@ -169,7 +230,39 @@ export interface MemberSettingsResponse {
   settings: MemberSettings
 }
 
+export interface MembershipStatusResponse {
+  isPremium: boolean
+  isVerified: boolean
+  verificationStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  memberSince: string
+  totalVideos: number
+  publicVideos: number
+  totalViews: number
+}
+
+export interface UpgradeCheckoutResponse {
+  url?: string
+  message?: string
+}
+
+export interface UpgradeCompleteResponse {
+  message: string
+  isPremium: boolean
+}
+
+export interface IdentityVerificationResponse {
+  verification: {
+    id: string
+    status: 'pending' | 'approved' | 'rejected'
+    imageUrl: string
+    createdAt: string
+    reviewedAt: string | null
+    reviewNotes: string | null
+  }
+}
+
 export interface UpdateMemberSettingsInput {
+  profileVisibility?: 'public' | 'members' | 'private'
   isPublic?: boolean
   allowDirectMessages?: boolean
   allowFriendRequests?: boolean
@@ -184,13 +277,17 @@ export interface AccountActionResponse {
 export interface MemberSearchFilters {
   q?: string
   location?: string
+  sortBy?: 'recent' | 'location_asc' | 'location_desc' | 'nearby'
   minAge?: number
   maxAge?: number
   gender?: string
   orientation?: string
   lookingFor?: string[]
-  role?: string
+  interests?: string[]
+  kinks?: string[]
   onlineOnly?: boolean
+  verificationStatus?: 'any' | 'verified' | 'pending' | 'rejected' | 'unverified'
+  verifiedOnly?: boolean
   hasPhoto?: boolean
   lastActive?: 'today' | 'week' | 'any'
   limit?: number
@@ -205,8 +302,11 @@ export interface MemberSearchResult {
   bio: string
   avatarUrl: string
   interests: string[]
+  kinks: string[]
   lookingFor: string[]
   isOnline: boolean
+  isVerified: boolean
+  verificationStatus: 'verified' | 'pending' | 'rejected' | 'unverified'
   friendshipStatus: FriendshipStatus
 }
 
@@ -324,6 +424,7 @@ export interface Conversation {
   partnerUsername: string
   partnerDisplayName: string
   partnerAvatarUrl: string | null
+  partnerLastActiveAt: string | null
   lastMessage: DirectMessage
   unreadCount: number
 }
@@ -333,8 +434,139 @@ export interface SendMessageResponse {
 }
 
 export interface ConversationMessagesResponse {
+  canMessage: boolean
+  pendingRequest: {
+    id: string
+    direction: 'sent' | 'received'
+    intro: string | null
+  } | null
   messages: DirectMessage[]
   partner: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+    lastActiveAt: string | null
+  }
+}
+
+export interface ConversationsResponse {
+  conversations: Conversation[]
+}
+
+export interface GrokReplyResponse {
+  reply: string
+  model: string
+}
+
+export interface DiscoverMember {
+  id: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  city: string | null
+  country: string | null
+  lastActiveAt: string | null
+  createdAt: string | null
+}
+
+export interface DiscoverResponse {
+  onlineMembers: DiscoverMember[]
+  newMembers: DiscoverMember[]
+  trendingInterests: Array<{
+    label: string
+    count: number
+  }>
+}
+
+export interface MembershipStatusResponse {
+  isPremium: boolean
+  isVerified: boolean
+  memberSince: string
+  totalVideos: number
+  publicVideos: number
+  totalViews: number
+}
+
+export interface SafetySummaryResponse {
+  blocked: Array<{
+    blockedId: string
+    createdAt: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+  }>
+  reportCounts: {
+    pending: number
+    reviewed: number
+    dismissed: number
+    actioned: number
+  }
+}
+
+// Block & Report
+
+export interface BlockActionResponse {
+  message: string
+}
+
+export interface BlockedEntry {
+  blockedId: string
+  createdAt: string
+}
+
+export interface BlockListResponse {
+  blocked: BlockedEntry[]
+}
+
+export type ReportReason =
+  | 'harassment'
+  | 'explicit_content'
+  | 'spam'
+  | 'impersonation'
+  | 'underage'
+  | 'other'
+
+export interface SubmitReportInput {
+  targetId: string
+  reason: ReportReason
+  details?: string
+}
+
+export interface SubmitReportResponse {
+  message: string
+  reportId: string
+}
+
+// Groups
+
+export type GroupRole = 'member' | 'moderator' | 'owner'
+
+export interface GroupSummary {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  category: string
+  coverUrl: string | null
+  isPublic: boolean
+  memberCount: number
+  createdAt: string
+  memberRole: GroupRole | null // null = not a member
+}
+
+export interface GroupDetail extends GroupSummary {
+  creatorId: string
+  recentPosts: GroupPostItem[]
+}
+
+export interface GroupPostItem {
+  id: string
+  groupId: string
+  body: string
+  createdAt: string
+  updatedAt: string
+  author: {
     id: string
     username: string
     displayName: string
@@ -342,6 +574,31 @@ export interface ConversationMessagesResponse {
   }
 }
 
-export interface ConversationsResponse {
-  conversations: Conversation[]
+export interface GroupListResponse {
+  groups: GroupSummary[]
 }
+
+export interface GroupDetailResponse {
+  group: GroupDetail
+}
+
+export interface GroupPostsResponse {
+  posts: GroupPostItem[]
+  hasMore: boolean
+}
+
+export interface CreateGroupInput {
+  name: string
+  description?: string
+  category?: string
+  isPublic?: boolean
+}
+
+export interface CreateGroupPostInput {
+  body: string
+}
+
+export interface GroupActionResponse {
+  message: string
+}
+

@@ -33,7 +33,6 @@ type ParsedLoginInput = {
   code: string
   identifier: string
   secret: string
-  dateOfBirth: string
   returnTo: string
   requestKind: 'json' | 'form'
 }
@@ -48,39 +47,6 @@ type LoginUser = {
   passwordHash: string | null
   status: string
   emailVerified: boolean
-  profile: {
-    dateOfBirth: Date | null
-  } | null
-}
-
-function parseDob(value: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return null
-  }
-
-  const date = new Date(`${value}T00:00:00.000Z`)
-  if (Number.isNaN(date.getTime())) {
-    return null
-  }
-
-  const [year, month, day] = value.split('-').map(Number)
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() + 1 !== month ||
-    date.getUTCDate() !== day
-  ) {
-    return null
-  }
-
-  return date
-}
-
-function sameUtcDay(left: Date, right: Date): boolean {
-  return (
-    left.getUTCFullYear() === right.getUTCFullYear() &&
-    left.getUTCMonth() === right.getUTCMonth() &&
-    left.getUTCDate() === right.getUTCDate()
-  )
 }
 
 async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> {
@@ -93,7 +59,6 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
       code: (body.passcode || body.pin || '').trim(),
       identifier: (body.identifier || body.email || body.username || '').trim().toLowerCase(),
       secret: (body.secret || body.password || '').trim(),
-      dateOfBirth: String(body.dateOfBirth || '').trim(),
       returnTo: getSafeReturnTo(body.returnTo || null),
       requestKind,
     }
@@ -104,7 +69,6 @@ async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> 
     code: String(formData.get('passcode') || '').trim(),
     identifier: String(formData.get('identifier') || formData.get('email') || formData.get('username') || '').trim().toLowerCase(),
     secret: String(formData.get('secret') || formData.get('password') || '').trim(),
-    dateOfBirth: String(formData.get('dateOfBirth') || '').trim(),
     returnTo: getSafeReturnTo(String(formData.get('returnTo') || ROUTES.ME)),
     requestKind,
   }
@@ -120,11 +84,6 @@ const loginUserSelect = {
   passwordHash: true,
   status: true,
   emailVerified: true,
-  profile: {
-    select: {
-      dateOfBirth: true,
-    },
-  },
 } as const
 
 function withSessionCookies(
@@ -244,7 +203,7 @@ async function createBurnerUser() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, identifier, secret, dateOfBirth, returnTo, requestKind } = await parseLoginInput(request)
+    const { code, identifier, secret, returnTo, requestKind } = await parseLoginInput(request)
     const normalizedCode = code.toUpperCase()
 
     const jwtSecret = process.env.JWT_SECRET
@@ -252,7 +211,7 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse(request, requestKind, MESSAGES.ERROR_GENERAL, 500)
     }
 
-    if (!code && !(identifier && secret && dateOfBirth)) {
+    if (!code && !(identifier && secret)) {
       return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
     }
 
@@ -299,17 +258,10 @@ export async function POST(request: NextRequest) {
       return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_PASSWORD_REQUIRED, 400)
     }
 
-    if (!dateOfBirth) {
-      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_DOB_REQUIRED, 400)
-    }
-
-    const parsedDob = parseDob(dateOfBirth)
-    if (!parsedDob) {
-      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_DOB_REQUIRED, 400)
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { username: identifier },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ username: identifier }, { email: identifier }],
+      },
       select: loginUserSelect,
     })
 
@@ -323,11 +275,6 @@ export async function POST(request: NextRequest) {
 
     const passwordMatches = await bcrypt.compare(secret, user.passwordHash)
     if (!passwordMatches) {
-      return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
-    }
-
-    const savedDob = user.profile?.dateOfBirth
-    if (!savedDob || !sameUtcDay(savedDob, parsedDob)) {
       return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_INVALID, 401)
     }
 

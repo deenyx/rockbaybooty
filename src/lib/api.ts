@@ -1,65 +1,51 @@
+// Utility functions for API calls
+
 import type {
   AccountActionResponse,
   AuthResponse,
+  BlockActionResponse,
+  BlockListResponse,
   ChatRoomTokenResponse,
+  CreateGroupInput,
+  CreateGroupPostInput,
+  CreateVideoInput,
+  DiscoverResponse,
   ConversationMessagesResponse,
   ConversationsResponse,
-  CreateVideoInput,
-  FriendRequestResponse,
   FriendRequestsResponse,
+  FriendRequestResponse,
   FriendshipDecisionAction,
+  GroupActionResponse,
+  GroupDetailResponse,
+  GroupListResponse,
+  GroupPostsResponse,
+  GrokReplyResponse,
   LoginResponse,
-  MemberProfileResponse,
+  MembershipStatusResponse,
   MemberSearchFilters,
   MemberSearchResponse,
+  ProfileOptionsResponse,
+  SafetySummaryResponse,
+  MemberProfileResponse,
   MemberSettingsResponse,
   PasscodeValidationResponse,
   SendMessageResponse,
-  UpdateMemberProfileInput,
+  SubmitReportInput,
+  SubmitReportResponse,
   UpdateMemberSettingsInput,
   UpdateVideoInput,
-  UserIdAvailabilityResponse,
   VideoListResponse,
   VideoResponse,
   VideoViewResponse,
+  UpdateMemberProfileInput,
+  UserIdAvailabilityResponse,
 } from '@/lib/types'
-import { SESSION_MODE_COOKIE_NAME, SESSION_MODE_DEFAULT_MEMBER } from '@/lib/constants'
 
-function getSessionModeFromCookie(): string | null {
-  if (typeof document === 'undefined') {
-    return null
-  }
-
-  const cookie = document.cookie
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${SESSION_MODE_COOKIE_NAME}=`))
-
-  if (!cookie) {
-    return null
-  }
-
-  return decodeURIComponent(cookie.split('=').slice(1).join('='))
-}
-
-function assertWriteAllowed(method: string, endpoint: string) {
-  const isMutating = !['GET', 'HEAD', 'OPTIONS'].includes(method)
-
-  if (!isMutating) {
-    return
-  }
-
-  const sessionMode = getSessionModeFromCookie()
-  if (sessionMode === SESSION_MODE_DEFAULT_MEMBER) {
-    throw new Error('Default users are read-only. Start a full account to make changes.')
-  }
-}
-
-export async function apiCall(endpoint: string, options: RequestInit = {}) {
+export async function apiCall(
+  endpoint: string,
+  options: RequestInit = {}
+) {
   const url = `${process.env.NEXT_PUBLIC_API_URL || ''}${endpoint}`
-  const method = (options.method || 'GET').toUpperCase()
-
-  assertWriteAllowed(method, endpoint)
 
   const response = await fetch(url, {
     headers: {
@@ -70,7 +56,7 @@ export async function apiCall(endpoint: string, options: RequestInit = {}) {
   })
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
+    const error = await response.json()
     throw new Error(error.error || 'API call failed')
   }
 
@@ -79,6 +65,7 @@ export async function apiCall(endpoint: string, options: RequestInit = {}) {
 
 export async function onboard(data: {
   passcode?: string
+  email?: string
   dateOfBirth: string
   displayName: string
   username: string
@@ -88,8 +75,10 @@ export async function onboard(data: {
   country?: string
   gender: string
   genderOther?: string
+  pronouns?: string
   sexualOrientation: string
   orientationOther?: string
+  intentions?: string
   lookingFor: string[]
   bio?: string
   interests?: string[]
@@ -136,6 +125,12 @@ export async function fetchMemberProfile(): Promise<MemberProfileResponse> {
   })
 }
 
+export async function fetchProfileOptions(): Promise<ProfileOptionsResponse> {
+  return apiCall('/api/profile-options', {
+    method: 'GET',
+  })
+}
+
 export async function updateMemberProfile(
   data: UpdateMemberProfileInput
 ): Promise<MemberProfileResponse> {
@@ -178,25 +173,100 @@ export async function fetchChatRoomToken(): Promise<ChatRoomTokenResponse> {
   return apiCall('/api/chat/token')
 }
 
+export async function askGrok(prompt: string, context?: string): Promise<GrokReplyResponse> {
+  return apiCall('/api/ai/grok', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, context }),
+  })
+}
+
+export async function fetchDiscover(): Promise<DiscoverResponse> {
+  return apiCall('/api/discover', {
+    method: 'GET',
+  })
+}
+
+export async function fetchMembershipStatus(): Promise<MembershipStatusResponse> {
+  return apiCall('/api/member/membership', {
+    method: 'GET',
+  })
+}
+
+export async function fetchSafetySummary(): Promise<SafetySummaryResponse> {
+  return apiCall('/api/member/safety', {
+    method: 'GET',
+  })
+}
+
 export async function searchMembers(
   filters: MemberSearchFilters,
   signal?: AbortSignal
 ): Promise<MemberSearchResponse> {
   const params = new URLSearchParams()
 
-  if (filters.q) params.set('q', filters.q)
-  if (filters.location) params.set('location', filters.location)
-  if (typeof filters.minAge === 'number') params.set('minAge', String(filters.minAge))
-  if (typeof filters.maxAge === 'number') params.set('maxAge', String(filters.maxAge))
-  if (filters.gender) params.set('gender', filters.gender)
-  if (filters.orientation) params.set('orientation', filters.orientation)
+  if (filters.q) {
+    params.set('q', filters.q)
+  }
+
+  if (filters.location) {
+    params.set('location', filters.location)
+  }
+
+  if (filters.sortBy) {
+    params.set('sortBy', filters.sortBy)
+  }
+
+  if (typeof filters.minAge === 'number') {
+    params.set('minAge', String(filters.minAge))
+  }
+
+  if (typeof filters.maxAge === 'number') {
+    params.set('maxAge', String(filters.maxAge))
+  }
+
+  if (filters.gender) {
+    params.set('gender', filters.gender)
+  }
+
+  if (filters.orientation) {
+    params.set('orientation', filters.orientation)
+  }
+
   if (filters.lookingFor && filters.lookingFor.length > 0) {
     params.set('lookingFor', filters.lookingFor.join(','))
   }
-  if (filters.onlineOnly) params.set('onlineOnly', 'true')
-  if (filters.hasPhoto) params.set('hasPhoto', 'true')
-  if (filters.lastActive && filters.lastActive !== 'any') params.set('lastActive', filters.lastActive)
-  if (typeof filters.limit === 'number') params.set('limit', String(filters.limit))
+
+  if (filters.interests && filters.interests.length > 0) {
+    params.set('interests', filters.interests.join(','))
+  }
+
+  if (filters.kinks && filters.kinks.length > 0) {
+    params.set('kinks', filters.kinks.join(','))
+  }
+
+  if (filters.onlineOnly) {
+    params.set('onlineOnly', 'true')
+  }
+
+  if (filters.verificationStatus && filters.verificationStatus !== 'any') {
+    params.set('verificationStatus', filters.verificationStatus)
+  }
+
+  if (filters.verifiedOnly) {
+    params.set('verifiedOnly', 'true')
+  }
+
+  if (filters.hasPhoto) {
+    params.set('hasPhoto', 'true')
+  }
+
+  if (filters.lastActive && filters.lastActive !== 'any') {
+    params.set('lastActive', filters.lastActive)
+  }
+
+  if (typeof filters.limit === 'number') {
+    params.set('limit', String(filters.limit))
+  }
 
   const query = params.toString()
 
@@ -231,7 +301,9 @@ export async function sendMessage(
   })
 }
 
-export async function sendPoke(recipientId: string): Promise<SendMessageResponse> {
+export async function sendPoke(
+  recipientId: string
+): Promise<SendMessageResponse> {
   return sendGesture(recipientId, 'poke')
 }
 
@@ -309,28 +381,87 @@ export async function incrementVideoViews(videoId: string): Promise<VideoViewRes
   })
 }
 
-// Legacy wrappers kept for old non-app-router pages still present in this repo.
-export async function registerUser(data: any) {
-  return apiCall('/api/auth/register', {
+export async function blockUser(targetId: string): Promise<BlockActionResponse> {
+  return apiCall('/api/member/block', {
+    method: 'POST',
+    body: JSON.stringify({ targetId }),
+  })
+}
+
+export async function unblockUser(targetId: string): Promise<BlockActionResponse> {
+  return apiCall('/api/member/block', {
+    method: 'DELETE',
+    body: JSON.stringify({ targetId }),
+  })
+}
+
+export async function fetchBlockList(): Promise<BlockListResponse> {
+  return apiCall('/api/member/block', {
+    method: 'GET',
+  })
+}
+
+export async function reportUser(data: SubmitReportInput): Promise<SubmitReportResponse> {
+  return apiCall('/api/member/report', {
+    method: 'POST',
+    body: JSON.stringify({ targetId: data.targetId, reason: data.reason, details: data.details }),
+  })
+}
+
+// Groups
+
+export async function fetchGroups(params?: {
+  mine?: boolean
+  category?: string
+  cursor?: string
+}): Promise<GroupListResponse & { hasMore: boolean; nextCursor: string | null }> {
+  const search = new URLSearchParams()
+  if (params?.mine) search.set('mine', '1')
+  if (params?.category) search.set('category', params.category)
+  if (params?.cursor) search.set('cursor', params.cursor)
+  return apiCall(`/api/groups?${search.toString()}`)
+}
+
+export async function createGroup(
+  data: CreateGroupInput
+): Promise<{ message: string; group: GroupDetailResponse['group'] }> {
+  return apiCall('/api/groups', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 }
 
-export async function onboardUser(data: any) {
-  return onboard(data)
+export async function fetchGroupDetail(slug: string): Promise<GroupDetailResponse> {
+  return apiCall(`/api/groups/${slug}`)
 }
 
-export async function loginUser(data: any) {
-  if (data && (data.passcode === '9999' || data.pin === '9999')) {
-    return apiCall('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ passcode: '9999' }),
-    })
-  }
+export async function joinGroup(slug: string): Promise<GroupActionResponse> {
+  return apiCall(`/api/groups/${slug}/join`, { method: 'POST' })
+}
 
-  return apiCall('/api/auth/login', {
+export async function leaveGroup(slug: string): Promise<GroupActionResponse> {
+  return apiCall(`/api/groups/${slug}/leave`, { method: 'POST' })
+}
+
+export async function fetchGroupPosts(
+  slug: string,
+  cursor?: string
+): Promise<GroupPostsResponse & { nextCursor: string | null }> {
+  const search = new URLSearchParams()
+  if (cursor) search.set('cursor', cursor)
+  return apiCall(`/api/groups/${slug}/posts?${search.toString()}`)
+}
+
+export async function createGroupPost(
+  slug: string,
+  data: CreateGroupPostInput
+): Promise<{ message: string; post: GroupPostsResponse['posts'][number] }> {
+  return apiCall(`/api/groups/${slug}/posts`, {
     method: 'POST',
     body: JSON.stringify(data),
   })
+}
+
+export async function deleteGroupPost(slug: string, postId: string): Promise<GroupActionResponse> {
+  return apiCall(`/api/groups/${slug}/posts/${postId}`, { method: 'DELETE' })
 }

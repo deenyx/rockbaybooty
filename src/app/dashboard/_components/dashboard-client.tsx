@@ -1,11 +1,13 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import { Users, Zap, Heart, TrendingUp } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ROUTES } from '@/lib/constants'
 
 type DashboardViewData = {
   user: {
@@ -98,13 +100,37 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         animate="visible"
         className="max-w-7xl mx-auto space-y-8"
       >
-        {/* Welcome Section */}
+        {/* Top Section */}
         <motion.div variants={itemVariants}>
-          <div className="space-y-2 mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-text-primary">
-              Welcome back, <span className="bg-gradient-to-r from-champagne to-burgundy-500 bg-clip-text text-transparent">{user.displayName || user.firstName}</span>
-            </h1>
-            <p className="text-text-muted text-lg">Here's what's happening with your profile</p>
+          <div className="mb-8 rounded-3xl border border-border-subtle/60 bg-gradient-to-br from-bg-surface/60 to-bg-surface/20 p-5 backdrop-blur-md md:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.22em] text-text-muted">Member Dashboard</p>
+                <h1 className="text-2xl font-semibold text-text-primary md:text-3xl">Your Activity Overview</h1>
+                <p className="text-sm text-text-muted md:text-base">Here's what's happening with your profile.</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={ROUTES.SEARCH}
+                  className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:bg-sky-300/15"
+                >
+                  Discover Members
+                </Link>
+                <Link
+                  href={ROUTES.FRIENDS}
+                  className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-300/15"
+                >
+                  View Friends
+                </Link>
+                <Link
+                  href={ROUTES.MESSAGES}
+                  className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-100 transition hover:bg-amber-200/15"
+                >
+                  Open Messages
+                </Link>
+              </div>
+            </div>
           </div>
         </motion.div>
 
