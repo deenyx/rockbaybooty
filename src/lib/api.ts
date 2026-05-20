@@ -247,6 +247,14 @@ export async function searchMembers(
     params.set('onlineOnly', 'true')
   }
 
+  if (filters.verificationStatus && filters.verificationStatus !== 'any') {
+    params.set('verificationStatus', filters.verificationStatus)
+  }
+
+  if (filters.verifiedOnly) {
+    params.set('verifiedOnly', 'true')
+  }
+
   if (filters.hasPhoto) {
     params.set('hasPhoto', 'true')
   }

@@ -32,6 +32,7 @@ const INITIAL_FILTERS: MemberSearchFilters = {
   interests: [],
   kinks: [],
   onlineOnly: false,
+  verificationStatus: 'any',
   hasPhoto: false,
   lastActive: 'any',
   limit: 24,
@@ -129,6 +130,31 @@ function NavIcon({ label }: { label: string }) {
   )
 }
 
+function getVerificationChip(status: MemberSearchResult['verificationStatus']) {
+  if (status === 'pending') {
+    return {
+      label: 'Verification Pending',
+      className: 'border border-amber-200/35 bg-amber-300/15 text-amber-100',
+    }
+  }
+
+  if (status === 'rejected') {
+    return {
+      label: 'Verification Rejected',
+      className: 'border border-rose-200/35 bg-rose-400/15 text-rose-100',
+    }
+  }
+
+  if (status === 'unverified') {
+    return {
+      label: 'Unverified',
+      className: 'border border-white/20 bg-white/10 text-stone-200',
+    }
+  }
+
+  return null
+}
+
 export default function SearchPage() {
   const pathname = usePathname()
 
@@ -206,6 +232,10 @@ export default function SearchPage() {
     }
 
     if (filters.onlineOnly) {
+      count += 1
+    }
+
+    if (filters.verificationStatus && filters.verificationStatus !== 'any') {
       count += 1
     }
 
@@ -736,6 +766,27 @@ export default function SearchPage() {
                     className="h-4 w-4 rounded border-white/30 bg-transparent text-stone-100"
                   />
                 </label>
+
+                <div>
+                  <label className="text-xs uppercase tracking-[0.16em] text-stone-300" htmlFor="verification-filter">
+                    Verification
+                  </label>
+                  <select
+                    id="verification-filter"
+                    value={filters.verificationStatus || 'any'}
+                    onChange={(event) => {
+                      const value = event.target.value as 'any' | 'verified' | 'pending' | 'rejected' | 'unverified'
+                      setFilters((current) => ({ ...current, verificationStatus: value }))
+                    }}
+                    className="mt-2 w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm outline-none transition focus:border-white/35"
+                  >
+                    <option value="any">Any status</option>
+                    <option value="verified">Verified</option>
+                    <option value="pending">Pending verification</option>
+                    <option value="rejected">Verification rejected</option>
+                    <option value="unverified">Unverified</option>
+                  </select>
+                </div>
                 </div>
               )}
             </aside>
@@ -758,7 +809,10 @@ export default function SearchPage() {
               )}
 
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {results.map((member) => (
+                {results.map((member) => {
+                  const verificationChip = getVerificationChip(member.verificationStatus)
+
+                  return (
                   <article
                     key={member.id}
                     className="group rounded-3xl border border-white/12 bg-black/30 p-4 shadow-[0_8px_22px_rgba(0,0,0,0.22)] backdrop-blur-md transition hover:-translate-y-0.5 hover:border-white/25"
@@ -806,6 +860,14 @@ export default function SearchPage() {
                       <p>{member.location || 'Location hidden'}</p>
                       <p>{member.age ? `${member.age} years old` : 'Age hidden'}</p>
                     </div>
+
+                    {verificationChip && (
+                      <div className="mt-2">
+                        <span className={`inline-flex rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.15em] ${verificationChip.className}`}>
+                          {verificationChip.label}
+                        </span>
+                      </div>
+                    )}
 
                     <p className="mt-3 min-h-[3.75rem] text-sm leading-relaxed text-stone-300">
                       {member.bio || 'No bio yet, but open to conversation.'}
@@ -908,7 +970,8 @@ export default function SearchPage() {
                       <p className="mt-2 text-xs text-stone-300">{friendFeedback[member.id]}</p>
                     )}
                   </article>
-                ))}
+                  )
+                })}
               </div>
 
               {!isLoading && results.length === 0 && !loadError && (

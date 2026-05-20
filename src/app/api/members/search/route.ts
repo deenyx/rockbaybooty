@@ -12,6 +12,7 @@ const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 60
 const ONLINE_WINDOW_MINUTES = 15
 const SORT_OPTIONS = new Set(['recent', 'location_asc', 'location_desc', 'nearby'])
+const VERIFICATION_STATUS_OPTIONS = new Set(['any', 'verified', 'pending', 'rejected', 'unverified'])
 
 function normalizeLocationPart(value: string | null | undefined): string {
   return (value || '').trim().toLowerCase()
@@ -108,6 +109,11 @@ export async function GET(request: NextRequest) {
     const interests = parseList(searchParams.get('interests'))
     const kinks = parseList(searchParams.get('kinks'))
     const onlineOnly = parseBoolean(searchParams.get('onlineOnly'))
+    const verifiedOnly = parseBoolean(searchParams.get('verifiedOnly'))
+    const rawVerificationStatus = searchParams.get('verificationStatus')?.trim().toLowerCase() || 'any'
+    const verificationStatus = VERIFICATION_STATUS_OPTIONS.has(rawVerificationStatus)
+      ? rawVerificationStatus
+      : 'any'
     const hasPhoto = parseBoolean(searchParams.get('hasPhoto'))
     const lastActive = searchParams.get('lastActive') as 'today' | 'week' | 'any' | null
     const parsedMinAge = parseNumber(searchParams.get('minAge'))
@@ -198,20 +204,53 @@ export async function GET(request: NextRequest) {
           ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
           : null
 
+    const resolvedVerificationStatus =
+      verificationStatus === 'any' && verifiedOnly ? 'verified' : verificationStatus
+
+    const verificationFilter: Prisma.UserWhereInput =
+      resolvedVerificationStatus === 'verified'
+        ? {
+            isVerified: true,
+          }
+        : resolvedVerificationStatus === 'pending'
+          ? {
+              isVerified: false,
+              identityVerification: {
+                is: {
+                  status: 'pending',
+                },
+              },
+            }
+          : resolvedVerificationStatus === 'rejected'
+            ? {
+                isVerified: false,
+                identityVerification: {
+                  is: {
+                    status: 'rejected',
+                  },
+                },
+              }
+            : resolvedVerificationStatus === 'unverified'
+              ? {
+                  isVerified: false,
+                }
+              : {}
+
     const where: Prisma.UserWhereInput = {
       id: {
         not: currentUserId,
       },
       status: 'active',
+      ...verificationFilter,
       ...(onlineOnly
         ? {
-            updatedAt: {
+            lastActiveAt: {
               gte: onlineCutoff,
             },
           }
         : lastActiveCutoff
           ? {
-              updatedAt: {
+              lastActiveAt: {
                 gte: lastActiveCutoff,
               },
             }
@@ -298,6 +337,11 @@ export async function GET(request: NextRequest) {
         displayName: true,
         updatedAt: true,
         isVerified: true,
+        identityVerification: {
+          select: {
+            status: true,
+          },
+        },
         profile: {
           select: {
             age: true,
@@ -381,6 +425,14 @@ export async function GET(request: NextRequest) {
         .filter(Boolean)
         .join(', ')
 
+      const verificationStatus = user.isVerified
+        ? 'verified'
+        : user.identityVerification?.status === 'pending'
+          ? 'pending'
+          : user.identityVerification?.status === 'rejected'
+            ? 'rejected'
+            : 'unverified'
+
       const city = normalizeLocationPart(profile?.city)
       const state = normalizeLocationPart(profile?.state)
       const country = normalizeLocationPart(profile?.country)
@@ -398,6 +450,7 @@ export async function GET(request: NextRequest) {
         lookingFor: profile?.lookingFor || [],
         isOnline: profile?.showOnlineStatus && user.lastActiveAt ? user.lastActiveAt >= onlineCutoff : false,
         isVerified: user.isVerified,
+        verificationStatus,
         friendshipStatus: relationshipByUser.get(user.id) || 'none',
         __city: city,
         __state: state,

@@ -286,6 +286,8 @@ export interface MemberSearchFilters {
   interests?: string[]
   kinks?: string[]
   onlineOnly?: boolean
+  verificationStatus?: 'any' | 'verified' | 'pending' | 'rejected' | 'unverified'
+  verifiedOnly?: boolean
   hasPhoto?: boolean
   lastActive?: 'today' | 'week' | 'any'
   limit?: number
@@ -304,6 +306,7 @@ export interface MemberSearchResult {
   lookingFor: string[]
   isOnline: boolean
   isVerified: boolean
+  verificationStatus: 'verified' | 'pending' | 'rejected' | 'unverified'
   friendshipStatus: FriendshipStatus
 }
 
