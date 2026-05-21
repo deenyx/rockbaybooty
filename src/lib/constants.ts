@@ -185,6 +185,10 @@ export const MESSAGES = {
   INVALID_USER_ID: 'User ID must be 3-20 characters and use only letters, numbers, or underscores',
   ERROR_CREATING_ACCOUNT: 'Failed to create account. Please try again.',
   ERROR_GENERAL: 'An error occurred. Please try again.',
+  ACCESS_CODE_INVALID: 'Invalid access code',
+  PREVIEW_READ_ONLY: 'Preview accounts are read-only',
+  ADMIN_PASSPHRASE_REQUIRED: 'Passphrase is required',
+  ADMIN_PASSPHRASE_INVALID: 'Invalid passphrase',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
   FRIEND_REQUEST_SENT: 'Friend request sent',
@@ -245,7 +249,11 @@ export const SOCIAL_LINK_VISIBILITY_OPTIONS = [
 export type SocialLinksVisibility = 'public' | 'members' | 'friends' | 'private'
 export const NEW_MEMBER_PIN = '5555'
 export const QUICK_JOIN_PIN = '0000'
+export const BURNER_PREVIEW_PIN = '9999'
+export const ADMIN_ENTRY_PIN = '3333'
 export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
+export const BURNER_PREVIEW_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+export const TEMP_ADMIN_AUTH_MAX_AGE_SECONDS = 60 * 60 * 24
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
@@ -353,8 +361,10 @@ export const ROUTES = {
   WELCOME: '/welcome',
   ONBOARDING: '/onboarding',
   DASHBOARD: '/dashboard',
+  ADMIN: '/admin',
   LOG_IN: '/log-in',
   LOGIN: '/login',
+  ADMIN_AUTH: '/admin_auth',
   SIGNUP: '/signup',
   PIN_REVEAL: '/pin-reveal',
   PROFILE: '/profile',

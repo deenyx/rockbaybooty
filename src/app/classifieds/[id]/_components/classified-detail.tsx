@@ -227,7 +227,7 @@ export default function ClassifiedDetail({ listing, currentUserId }: ClassifiedD
                   </button>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs text-stone-400">Are you sure? This can't be undone.</p>
+                    <p className="text-xs text-stone-400">Are you sure? This can&apos;t be undone.</p>
                     <div className="flex gap-2">
                       <button
                         type="button"

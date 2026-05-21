@@ -199,6 +199,19 @@ After deploy, verify:
 7. `/api/chat/token` returns a valid LiveKit token and the live room connects.
 8. Email delivery works (check `journalctl` if emails are missing).
 
+## Push And Deploy Note Template
+
+When pushing and deploying, include a short release note in your commit/PR/deploy log:
+
+1. What shipped (2-4 bullets)
+2. Why this matters now (1 sentence)
+3. Current direction (1 sentence)
+4. Risk and rollback plan (1 short bullet)
+
+Suggested direction sentence:
+
+"We are moving toward a reliable members-only platform where access control is strict, onboarding is smooth, and discovery plus messaging feel dependable before adding broader feature surface area."
+
 ## Media Storage
 
 Profile photos are currently stored as base64 data URLs in the database.

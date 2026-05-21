@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-import { MESSAGES, ROUTES } from '@/lib/constants'
+import { MESSAGES, NEW_MEMBER_PIN, ROUTES } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -58,7 +58,7 @@ function LoginContent() {
         return
       }
 
-      if (data.requiresCredentials || code === '5555') {
+       if (data.requiresCredentials || code === NEW_MEMBER_PIN) {
         setStage('credentials')
         setStatus('idle')
         setError('')
@@ -88,7 +88,7 @@ function LoginContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          passcode: '5555',
+           passcode: NEW_MEMBER_PIN,
           identifier: identifier.trim().toLowerCase(),
           secret: secret.trim(),
           returnTo,
@@ -175,7 +175,7 @@ function LoginContent() {
                 style={{ fontFamily: CP }}
               />
               <p className="mt-2 text-center text-[10px] tracking-wide text-stone-400" style={{ fontFamily: CP }}>
-                no pin = 0000
+                enter access code
             
               </p>
             </div>

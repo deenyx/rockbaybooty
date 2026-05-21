@@ -2,15 +2,19 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import crypto from 'crypto'
 
 import {
   AUTH_COOKIE_NAME,
   AUTH_TOKEN_MAX_AGE_SECONDS,
+  BURNER_PREVIEW_MAX_AGE_SECONDS,
+  BURNER_PREVIEW_PIN,
   MESSAGES,
+  NEW_MEMBER_PIN,
+  QUICK_JOIN_PIN,
   ROUTES,
 } from '@/lib/constants'
 import { sendLoginAlertEmail } from '@/lib/email'
-import type { AuthTokenPayload } from '@/lib/types'
 
 // Extract client IP from request (handles proxies like Vercel, Cloudflare)
 function getClientIp(request: NextRequest): string {
@@ -105,6 +109,59 @@ type LoginUser = {
   emailVerified: boolean
 }
 
+function generatePreviewUsername(): string {
+  const suffix = crypto.randomBytes(4).toString('hex')
+  return `preview_${suffix}`
+}
+
+function generatePersonalCode(): string {
+  return crypto.randomBytes(4).toString('hex').toUpperCase()
+}
+
+async function createBurnerPreviewUser() {
+  let username = generatePreviewUsername()
+  let existingByUsername = await prisma.user.findUnique({ where: { username }, select: { id: true } })
+
+  while (existingByUsername) {
+    username = generatePreviewUsername()
+    existingByUsername = await prisma.user.findUnique({ where: { username }, select: { id: true } })
+  }
+
+  let personalCode = generatePersonalCode()
+  let existingByCode = await prisma.user.findUnique({ where: { personalCode }, select: { id: true } })
+
+  while (existingByCode) {
+    personalCode = generatePersonalCode()
+    existingByCode = await prisma.user.findUnique({ where: { personalCode }, select: { id: true } })
+  }
+
+  const displayName = 'Preview Guest'
+
+  return prisma.user.create({
+    data: {
+      username,
+      displayName,
+      firstName: displayName,
+      personalCode,
+      passwordHash: 'LEGACY_PREVIEW_ACCOUNT',
+      status: 'active',
+      emailVerified: true,
+      onboardingStep: 'completed',
+      profile: {
+        create: {
+          isPublic: false,
+        },
+      },
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      personalCode: true,
+    },
+  })
+}
+
 async function parseLoginInput(request: NextRequest): Promise<ParsedLoginInput> {
   const contentType = request.headers.get('content-type') || ''
   const requestKind: ParsedLoginInput['requestKind'] = contentType.includes('application/json') ? 'json' : 'form'
@@ -191,7 +248,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Shortcut: 0000 starts account creation
-    if (code === '0000') {
+    if (code === QUICK_JOIN_PIN) {
       const signupPath = ROUTES.ONBOARDING
 
       if (requestKind === 'json') {
@@ -204,8 +261,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.redirect(new URL(signupPath, request.url))
     }
 
+    if (code === BURNER_PREVIEW_PIN) {
+      const user = await createBurnerPreviewUser()
+
+      const token = jwt.sign(
+        {
+          userId: user.id,
+          personalCode: user.personalCode,
+          mode: 'burner-preview',
+        },
+        jwtSecret,
+        { expiresIn: BURNER_PREVIEW_MAX_AGE_SECONDS }
+      )
+
+      const response = buildSuccessResponse(
+        requestKind,
+        returnTo,
+        {
+          message: MESSAGES.LOGIN_SUCCESS,
+          user,
+        },
+        request
+      )
+
+      response.cookies.set({
+        name: AUTH_COOKIE_NAME,
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: BURNER_PREVIEW_MAX_AGE_SECONDS,
+      })
+
+      return response
+    }
+
     // 5555 unlocks credential login mode
-    if (code === '5555' && !identifier && !secret) {
+    if (code === NEW_MEMBER_PIN && !identifier && !secret) {
       if (requestKind === 'json') {
         return NextResponse.json(
           {
@@ -221,7 +314,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5555 with credentials: username/email + password login
-    if (code === '5555') {
+    if (code === NEW_MEMBER_PIN) {
       if (!identifier || !secret) {
         return buildErrorResponse(request, requestKind, MESSAGES.LOGIN_CREDENTIALS_REQUIRED, 400)
       }

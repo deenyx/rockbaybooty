@@ -29,3 +29,17 @@
 ---
 
 These tasks should be prioritized based on user feedback and MVP requirements.
+
+## Handoff Snapshot (May 21, 2026)
+- Active implementation scope: `werk/`.
+- Repo root includes multiple copies/snapshots, so confirm target before editing.
+- `werk/src/app/welcome/page.tsx` must remain unchanged unless explicitly requested.
+- Last accidental formatting-only change on welcome page was reverted.
+- Working tree was clean after that revert.
+
+## Handoff Snapshot (Auth Update)
+- Access codes now enforced in API: `0000`, `5555`, `9999` only.
+- `9999` now creates a burner preview session (7-day cookie) with middleware read-only API enforcement.
+- Temporary admin entry added: `3333` on PIN box routes to `/admin_auth`.
+- `/admin_auth` accepts one passphrase field and calls `/api/auth/admin-auth`.
+- Default temporary passphrase is `alljackedup` (override via `TEMP_ADMIN_PASSPHRASE` in environment).

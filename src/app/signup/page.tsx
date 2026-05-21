@@ -187,7 +187,7 @@ function SignupContent() {
               </p>
 
               <p className="rounded-xl border border-sky-300/30 bg-sky-400/10 px-4 py-3 text-center text-[11px] text-sky-100">
-                After email verification, enter 5555 on the welcome screen, then log in with your username/email and password.
+                After email verification, return to the login screen and continue with your username/email and password.
               </p>
 
               <div className="grid gap-2 sm:grid-cols-2">

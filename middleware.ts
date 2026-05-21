@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { AUTH_COOKIE_NAME, ROUTES } from '@/lib/constants'
+import { AUTH_COOKIE_NAME, MESSAGES, ROUTES } from '@/lib/constants'
 
 // Only onboarding, welcome, login, signup, and home are public
-const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal'];
+const PUBLIC_PATHS = ['/', '/welcome', '/onboarding', '/log-in', '/login', '/signup', '/pin-reveal', '/admin_auth'];
 const DEV_BOGUS_POST_PATHS = new Set([
   '/action',
   '/submit',
@@ -57,31 +57,58 @@ function decodeBase64Url(value: string): string | null {
   }
 }
 
-function isLikelyValidToken(token: string): boolean {
+type TokenPayload = {
+  exp?: number
+  mode?: string
+}
+
+function getTokenPayload(token: string): TokenPayload | null {
   const parts = token.split('.')
 
   if (parts.length !== 3) {
-    return false
+    return null
   }
 
   const payloadJson = decodeBase64Url(parts[1])
 
   if (!payloadJson) {
-    return false
+    return null
   }
 
   try {
-    const payload = JSON.parse(payloadJson) as { exp?: number }
-
-    if (typeof payload.exp !== 'number') {
-      return true
-    }
-
-    const nowInSeconds = Math.floor(Date.now() / 1000)
-    return payload.exp > nowInSeconds
+    return JSON.parse(payloadJson) as TokenPayload
   } catch {
+    return null
+  }
+}
+
+function isLikelyValidToken(payload: TokenPayload): boolean {
+  if (typeof payload.exp !== 'number') {
+    return true
+  }
+
+  const nowInSeconds = Math.floor(Date.now() / 1000)
+  return payload.exp > nowInSeconds
+}
+
+function isBlockedReadOnlyMutation(pathname: string, method: string): boolean {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
     return false
   }
+
+  if (pathname === '/api/auth/logout') {
+    return false
+  }
+
+  return pathname.startsWith('/api/')
+}
+
+function buildReadOnlyResponse(request: NextRequest): NextResponse {
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.json({ error: MESSAGES.PREVIEW_READ_ONLY }, { status: 403 })
+  }
+
+  return NextResponse.redirect(new URL(ROUTES.DASHBOARD, request.url))
 }
 
 export async function middleware(request: NextRequest) {
@@ -110,8 +137,14 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    if (!isLikelyValidToken(token)) {
+    const payload = getTokenPayload(token)
+
+    if (!payload || !isLikelyValidToken(payload)) {
       throw new Error('Invalid token payload')
+    }
+
+    if (payload.mode === 'burner-preview' && isBlockedReadOnlyMutation(pathname, request.method)) {
+      return buildReadOnlyResponse(request)
     }
 
     return NextResponse.next()

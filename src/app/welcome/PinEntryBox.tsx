@@ -3,7 +3,7 @@
 import { FormEvent, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { ROUTES } from '@/lib/constants'
+import { ADMIN_ENTRY_PIN, BURNER_PREVIEW_PIN, ROUTES } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -73,7 +73,29 @@ export default function PinEntryBox() {
       return
     }
 
-    setError('Use 0000 or 5555')
+    if (pin === ADMIN_ENTRY_PIN) {
+      router.push(ROUTES.ADMIN_AUTH)
+      return
+    }
+
+    if (pin === BURNER_PREVIEW_PIN) {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode: BURNER_PREVIEW_PIN, returnTo: ROUTES.DASHBOARD }),
+        })
+
+        if (response.ok) {
+          router.push(ROUTES.DASHBOARD)
+          return
+        }
+      } catch {
+        // Fall through to generic error
+      }
+    }
+
+    setError('Invalid code')
   }
 
   return (
@@ -101,13 +123,6 @@ export default function PinEntryBox() {
           >
             PIN
           </label>
-          <p
-            className="mb-2 text-center text-[8px] tracking-[0.14em] text-red-400/80 select-none"
-            style={{ fontFamily: CP }}
-          >
-            NO PIN = 0000
-          </p>
-
           <input
             ref={inputRef}
             type="password"
