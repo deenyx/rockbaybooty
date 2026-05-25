@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       createdAt: true,
       lastActiveAt: true,
       profile: { select: { avatarUrl: true } },
-      _count: { select: { reportsReceived: true } },
     },
   })
 
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
       createdAt: u.createdAt.toISOString(),
       lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
       avatarUrl: u.profile?.avatarUrl ?? null,
-      reportCount: u._count.reportsReceived,
+      reportCount: 0,
     })),
     nextCursor,
   })
