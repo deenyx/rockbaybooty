@@ -48,8 +48,6 @@ export async function GET(request: NextRequest) {
       email: true,
       status: true,
       createdAt: true,
-      lastActiveAt: true,
-      profile: { select: { avatarUrl: true } },
     },
   })
 
@@ -66,8 +64,8 @@ export async function GET(request: NextRequest) {
       status: u.status,
       isVerified: false,
       createdAt: u.createdAt.toISOString(),
-      lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
-      avatarUrl: u.profile?.avatarUrl ?? null,
+      lastActiveAt: null,
+      avatarUrl: null,
       reportCount: 0,
     })),
     nextCursor,
