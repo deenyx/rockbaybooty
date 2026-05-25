@@ -50,11 +50,25 @@ type ClassifiedItem = {
   author: { id: string; username: string; displayName: string; avatarUrl: string | null }
 }
 
+type MemberItem = {
+  id: string
+  username: string
+  displayName: string
+  email: string | null
+  status: string
+  isVerified: boolean
+  createdAt: string
+  lastActiveAt: string | null
+  avatarUrl: string | null
+  reportCount: number
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-type MainTab = 'reports' | 'groups' | 'classifieds'
+type MainTab = 'reports' | 'members' | 'groups' | 'classifieds'
 const MAIN_TABS: { key: MainTab; label: string }[] = [
   { key: 'reports', label: 'Reports' },
+  { key: 'members', label: 'Members' },
   { key: 'groups', label: 'Groups' },
   { key: 'classifieds', label: 'Classifieds' },
 ]
@@ -89,6 +103,15 @@ export default function AdminDashboardPage() {
   const [actioningId, setActioningId] = useState<string | null>(null)
   const [userActioningId, setUserActioningId] = useState<string | null>(null)
 
+  // ── Members state ──────────────────────────────────────────────────────────
+  const [members, setMembers] = useState<MemberItem[]>([])
+  const [membersNextCursor, setMembersNextCursor] = useState<string | null>(null)
+  const [memberStatusFilter, setMemberStatusFilter] = useState<'all' | 'active' | 'suspended' | 'deleted'>('all')
+  const [memberSearch, setMemberSearch] = useState('')
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [membersError, setMembersError] = useState('')
+  const [memberActioningId, setMemberActioningId] = useState<string | null>(null)
+
   // ── Groups state ───────────────────────────────────────────────────────────
   const [groups, setGroups] = useState<GroupItem[]>([])
   const [groupsNextCursor, setGroupsNextCursor] = useState<string | null>(null)
@@ -122,6 +145,33 @@ export default function AdminDashboardPage() {
       setReportsError(err instanceof Error ? err.message : 'Error')
     } finally {
       setReportsLoading(false)
+    }
+  }
+
+  async function loadMembers(
+    status: typeof memberStatusFilter,
+    q: string,
+    cursor?: string
+  ) {
+    try {
+      setMembersLoading(true)
+      setMembersError('')
+      const params = new URLSearchParams({ q: q.trim() })
+      if (status !== 'all') params.set('status', status)
+      if (cursor) params.set('cursor', cursor)
+
+      const res = await fetch(`/api/admin/members?${params}`)
+      if (!res.ok) throw new Error('Failed to load members')
+      const data = await res.json()
+
+      setMembers((prev) =>
+        cursor ? [...prev, ...(data.members ?? [])] : (data.members ?? [])
+      )
+      setMembersNextCursor(data.nextCursor ?? null)
+    } catch (err) {
+      setMembersError(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setMembersLoading(false)
     }
   }
 
@@ -164,6 +214,11 @@ export default function AdminDashboardPage() {
   // ── Effects ────────────────────────────────────────────────────────────────
 
   useEffect(() => { void loadReports(reportStatusTab) }, [reportStatusTab])
+  useEffect(() => {
+    if (mainTab === 'members') {
+      void loadMembers(memberStatusFilter, memberSearch)
+    }
+  }, [mainTab, memberStatusFilter])
   useEffect(() => { void loadGroups(groupStatusFilter, groupSearch) }, [groupStatusFilter])
   useEffect(() => { void loadClassifieds(classifiedStatusFilter, classifiedSearch) }, [classifiedStatusFilter])
 
@@ -214,6 +269,47 @@ export default function AdminDashboardPage() {
       setReportsError(err instanceof Error ? err.message : 'Error')
     } finally {
       setUserActioningId(null)
+    }
+  }
+
+  async function handleMemberAction(
+    userId: string,
+    action: 'suspend' | 'unsuspend' | 'delete' | 'verify' | 'unverify'
+  ) {
+    const confirmed = window.confirm(
+      action === 'delete' ? 'Permanently delete this user? This cannot be undone.'
+      : action === 'verify' ? 'Grant verified badge to this user?'
+      : action === 'unverify' ? 'Remove verified badge from this user?'
+      : `${action === 'suspend' ? 'Suspend' : 'Unsuspend'} this user?`
+    )
+    if (!confirmed) return
+
+    try {
+      setMemberActioningId(userId)
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+
+      if (!res.ok) throw new Error('Failed to update user')
+
+      const data = await res.json()
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.id === userId
+            ? {
+                ...member,
+                status: data.user.status ?? member.status,
+                isVerified: data.user.isVerified ?? member.isVerified,
+              }
+            : member
+        )
+      )
+    } catch (err) {
+      setMembersError(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setMemberActioningId(null)
     }
   }
 
@@ -414,6 +510,174 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
+            )}
+          </>
+        )}
+
+        {/* ── MEMBERS panel ─────────────────────────────────────────────── */}
+        {mainTab === 'members' && (
+          <>
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <div className="flex gap-2">
+                {(['all', 'active', 'suspended', 'deleted'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setMemberStatusFilter(s)
+                      setMembers([])
+                      void loadMembers(s, memberSearch)
+                    }}
+                    className={`rounded-xl border px-4 py-1.5 text-xs font-semibold uppercase tracking-widest transition ${
+                      memberStatusFilter === s
+                        ? 'border-white/30 bg-white/10 text-stone-100'
+                        : 'border-white/10 text-stone-500 hover:border-white/20 hover:text-stone-300'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              <form
+                className="flex flex-1 min-w-[180px] items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void loadMembers(memberStatusFilter, memberSearch)
+                }}
+              >
+                <input
+                  type="search"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  placeholder="Search members…"
+                  className="flex-1 rounded-xl border border-white/15 bg-black/35 px-3 py-1.5 text-sm text-stone-100 outline-none placeholder:text-stone-500 focus:border-white/30"
+                />
+                <button
+                  type="submit"
+                  className="rounded-xl border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-stone-300 transition hover:bg-white/10"
+                >
+                  Search
+                </button>
+              </form>
+            </div>
+
+            {membersError && (
+              <p className="mb-4 rounded-xl border border-rose-500/30 bg-rose-900/30 px-4 py-2 text-sm text-rose-300">
+                {membersError}
+              </p>
+            )}
+
+            {membersLoading && members.length === 0 ? (
+              <div className="flex justify-center py-16">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+              </div>
+            ) : members.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-white/10 p-10 text-center text-sm text-stone-500">
+                No members found.
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {members.map((member) => (
+                    <div key={member.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 text-sm font-bold text-stone-300">
+                            {member.avatarUrl ? (
+                              <img src={member.avatarUrl} alt="" className="h-10 w-10 object-cover" />
+                            ) : (
+                              getInitials(member.displayName)
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link href={`/u/${member.username}`} className="text-sm font-semibold text-stone-100 hover:underline">
+                                {member.displayName}
+                              </Link>
+                              <span className="text-xs text-stone-500">@{member.username}</span>
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-widest font-medium ${
+                                  member.status === 'active'
+                                    ? 'bg-emerald-500/15 text-emerald-400'
+                                    : member.status === 'suspended'
+                                    ? 'bg-amber-500/15 text-amber-400'
+                                    : 'bg-rose-500/15 text-rose-400'
+                                }`}
+                              >
+                                {member.status}
+                              </span>
+                              {member.isVerified && (
+                                <span className="rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[10px] uppercase tracking-widest text-sky-300">
+                                  verified
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-stone-500">
+                              {member.email || 'No email'} · Reports: {member.reportCount} · Joined{' '}
+                              {new Date(member.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 gap-2">
+                          {member.status === 'active' ? (
+                            <button
+                              type="button"
+                              disabled={memberActioningId === member.id}
+                              onClick={() => void handleMemberAction(member.id, 'suspend')}
+                              className="rounded-lg border border-amber-500/30 px-3 py-1 text-xs text-amber-300 transition hover:border-amber-400/40 hover:text-amber-200 disabled:cursor-wait disabled:opacity-50"
+                            >
+                              Suspend
+                            </button>
+                          ) : member.status === 'suspended' ? (
+                            <button
+                              type="button"
+                              disabled={memberActioningId === member.id}
+                              onClick={() => void handleMemberAction(member.id, 'unsuspend')}
+                              className="rounded-lg border border-emerald-500/30 px-3 py-1 text-xs text-emerald-300 transition hover:border-emerald-400/40 hover:text-emerald-200 disabled:cursor-wait disabled:opacity-50"
+                            >
+                              Unsuspend
+                            </button>
+                          ) : null}
+
+                          <button
+                            type="button"
+                            disabled={memberActioningId === member.id}
+                            onClick={() => void handleMemberAction(member.id, member.isVerified ? 'unverify' : 'verify')}
+                            className="rounded-lg border border-sky-500/30 px-3 py-1 text-xs text-sky-300 transition hover:border-sky-400/40 hover:text-sky-200 disabled:cursor-wait disabled:opacity-50"
+                          >
+                            {member.isVerified ? 'Remove ✓' : 'Verify ✓'}
+                          </button>
+
+                          {member.status !== 'deleted' && (
+                            <button
+                              type="button"
+                              disabled={memberActioningId === member.id}
+                              onClick={() => void handleMemberAction(member.id, 'delete')}
+                              className="rounded-lg border border-rose-700/40 px-3 py-1 text-xs text-rose-400 transition hover:border-rose-600/50 hover:text-rose-300 disabled:cursor-wait disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {membersNextCursor && (
+                  <button
+                    type="button"
+                    disabled={membersLoading}
+                    onClick={() => void loadMembers(memberStatusFilter, memberSearch, membersNextCursor)}
+                    className="mt-5 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold uppercase tracking-widest text-stone-300 transition hover:bg-white/10 disabled:cursor-wait disabled:opacity-50"
+                  >
+                    {membersLoading ? 'Loading…' : 'Load more'}
+                  </button>
+                )}
+              </>
             )}
           </>
         )}

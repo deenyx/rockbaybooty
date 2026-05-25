@@ -146,24 +146,10 @@ function generateTempUsername(seed = ''): string {
 async function createOrGetTempAdmin() {
   const existingByEmail = await prisma.user.findUnique({
     where: { email: TEMP_ADMIN_EMAIL },
-    select: { id: true, username: true, displayName: true, personalCode: true, isAdmin: true },
+    select: { id: true, username: true, displayName: true, personalCode: true },
   })
 
   if (existingByEmail) {
-    if (!existingByEmail.isAdmin) {
-      const elevated = await prisma.user.update({
-        where: { id: existingByEmail.id },
-        data: {
-          isAdmin: true,
-          status: 'active',
-          emailVerified: true,
-          onboardingStep: 'completed',
-        },
-        select: { id: true, username: true, displayName: true, personalCode: true },
-      })
-      return elevated
-    }
-
     return existingByEmail
   }
 
@@ -192,12 +178,6 @@ async function createOrGetTempAdmin() {
       status: 'active',
       emailVerified: true,
       onboardingStep: 'completed',
-      isAdmin: true,
-      profile: {
-        create: {
-          isPublic: false,
-        },
-      },
     },
     select: { id: true, username: true, displayName: true, personalCode: true },
   })
@@ -255,7 +235,7 @@ export async function POST(request: NextRequest) {
       {
         userId: adminUser.id,
         personalCode: adminUser.personalCode,
-        mode: 'default-member',
+        mode: 'temp-admin',
         username: adminUser.username,
       },
       jwtSecret,

@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getAuthenticatedUserId } from '@/lib/auth'
+import { getAuthTokenPayload } from '@/lib/auth'
 import { MESSAGES } from '@/lib/constants'
 import prisma from '@/lib/prisma'
 
 async function requireAdmin(request: NextRequest) {
-  const userId = await getAuthenticatedUserId(request)
-  if (!userId) return null
+  const payload = await getAuthTokenPayload(request)
+  if (!payload?.userId) return null
+  if (payload.mode === 'temp-admin') return payload.userId
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: payload.userId },
     select: { isAdmin: true },
   })
 
-  return user?.isAdmin ? userId : null
+  return user?.isAdmin ? payload.userId : null
 }
 
 export async function GET(request: NextRequest) {

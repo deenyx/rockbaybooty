@@ -19,6 +19,13 @@ function getBearerToken(header: string | null): string | null {
 }
 
 export async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
+  const payload = await getAuthTokenPayload(request)
+  return payload?.userId ?? null
+}
+
+export async function getAuthTokenPayload(
+  request: NextRequest
+): Promise<(AuthTokenPayload & { sub?: string }) | null> {
   const jwtSecret = process.env.JWT_SECRET
 
   if (!jwtSecret) {
@@ -37,10 +44,17 @@ export async function getAuthenticatedUserId(request: NextRequest): Promise<stri
     const payload = jwt.verify(token, jwtSecret) as AuthTokenPayload & { sub?: string }
 
     if (typeof payload.userId === 'string') {
-      return payload.userId
+      return payload
     }
 
-    return typeof payload.sub === 'string' ? payload.sub : null
+    if (typeof payload.sub === 'string') {
+      return {
+        ...payload,
+        userId: payload.sub,
+      }
+    }
+
+    return null
   } catch {
     return null
   }

@@ -53,7 +53,7 @@ export interface InviteCode {
 export interface AuthTokenPayload {
   userId: string
   personalCode: string
-  mode?: 'default-member' | 'burner-preview'
+  mode?: 'default-member' | 'burner-preview' | 'temp-admin'
   sub?: string
   username?: string
   iat?: number
