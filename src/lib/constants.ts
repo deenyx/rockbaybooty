@@ -189,6 +189,7 @@ export const MESSAGES = {
   PREVIEW_READ_ONLY: 'Preview accounts are read-only',
   ADMIN_PASSPHRASE_REQUIRED: 'Passphrase is required',
   ADMIN_PASSPHRASE_INVALID: 'Invalid passphrase',
+  ADMIN_AUTH_RATE_LIMITED: 'Too many attempts. Try again later.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
   FRIEND_REQUEST_SENT: 'Friend request sent',
@@ -254,6 +255,9 @@ export const ADMIN_ENTRY_PIN = '3333'
 export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
 export const BURNER_PREVIEW_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 export const TEMP_ADMIN_AUTH_MAX_AGE_SECONDS = 60 * 60 * 24
+export const TEMP_ADMIN_AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
+export const TEMP_ADMIN_AUTH_RATE_LIMIT_LOCKOUT_MS = 15 * 60 * 1000
+export const TEMP_ADMIN_AUTH_RATE_LIMIT_MAX_ATTEMPTS = 5
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
