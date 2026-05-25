@@ -194,6 +194,7 @@ export const MESSAGES = {
   ADMIN_BREAKGLASS_SECRET_REQUIRED: 'Break-glass secret is required',
   ADMIN_BREAKGLASS_SECRET_INVALID: 'Invalid break-glass secret',
   ADMIN_BREAKGLASS_NOT_CONFIGURED: 'Break-glass reset is not configured',
+  PRIME_ADMIN_UNLOCK_SUCCESS: 'Prime admin unlocked',
   ADMIN_PASSPHRASE_RESET_SUCCESS: 'Admin passphrase reset and temp admin sessions revoked.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
@@ -257,9 +258,11 @@ export const NEW_MEMBER_PIN = '5555'
 export const QUICK_JOIN_PIN = '0000'
 export const BURNER_PREVIEW_PIN = '9999'
 export const ADMIN_ENTRY_PIN = '3333'
+export const PRIME_ADMIN_ENTRY_PIN = '4444'
 export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
 export const BURNER_PREVIEW_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
 export const TEMP_ADMIN_AUTH_MAX_AGE_SECONDS = 60 * 60 * 24
+export const PRIME_ADMIN_AUTH_MAX_AGE_SECONDS = 60 * 30
 export const TEMP_ADMIN_AUTH_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 export const TEMP_ADMIN_AUTH_RATE_LIMIT_LOCKOUT_MS = 15 * 60 * 1000
 export const TEMP_ADMIN_AUTH_RATE_LIMIT_MAX_ATTEMPTS = 5
@@ -267,6 +270,7 @@ export const TEMP_ADMIN_AUTH_RATE_LIMIT_MAX_ATTEMPTS = 5
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8
 export const AUTH_COOKIE_NAME = 'auth-token'
+export const PRIME_ADMIN_COOKIE_NAME = 'prime-admin-token'
 export const AUTH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 export const VIDEO_PLAYBACK_TOKEN_MAX_AGE_SECONDS = 60 * 10
 export const MIN_PASSWORD_LENGTH = 8
@@ -374,6 +378,7 @@ export const ROUTES = {
   LOG_IN: '/log-in',
   LOGIN: '/login',
   ADMIN_AUTH: '/admin_auth',
+  PRIME_ADMIN_AUTH: '/prime_admin_auth',
   SIGNUP: '/signup',
   PIN_REVEAL: '/pin-reveal',
   PROFILE: '/profile',

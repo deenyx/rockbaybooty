@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
+  ADMIN_ENTRY_PIN,
   BURNER_PREVIEW_PIN,
   MESSAGES,
   NEW_MEMBER_PIN,
+  PRIME_ADMIN_ENTRY_PIN,
   QUICK_JOIN_PIN,
   ROUTES,
 } from '@/lib/constants'
@@ -37,6 +39,20 @@ export async function POST(request: NextRequest) {
     if (passcode === BURNER_PREVIEW_PIN) {
       return NextResponse.json(
         { message: MESSAGES.PASSCODE_VALID, returnTo: ROUTES.LOGIN, preview: true },
+        { status: 200 }
+      )
+    }
+
+    if (passcode === ADMIN_ENTRY_PIN) {
+      return NextResponse.json(
+        { message: MESSAGES.PASSCODE_VALID, returnTo: ROUTES.ADMIN_AUTH },
+        { status: 200 }
+      )
+    }
+
+    if (passcode === PRIME_ADMIN_ENTRY_PIN) {
+      return NextResponse.json(
+        { message: MESSAGES.PASSCODE_VALID, returnTo: ROUTES.PRIME_ADMIN_AUTH },
         { status: 200 }
       )
     }

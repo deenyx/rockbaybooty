@@ -4,13 +4,14 @@ import {
   AUTH_COOKIE_NAME,
   MESSAGES,
   MIN_PASSWORD_LENGTH,
+  PRIME_ADMIN_COOKIE_NAME,
 } from '@/lib/constants'
+import { isPrimeAdminUnlocked, isValidBreakglassSecret } from '@/lib/prime-admin'
 import { clearAllTempAdminSessions, rotateTempAdminAccess } from '@/lib/temp-admin-control'
 
 export async function POST(request: NextRequest) {
   try {
-    const configuredSecret = process.env.TEMP_ADMIN_BREAKGLASS_SECRET
-    if (!configuredSecret) {
+    if (!process.env.TEMP_ADMIN_BREAKGLASS_SECRET) {
       return NextResponse.json(
         { error: MESSAGES.ADMIN_BREAKGLASS_NOT_CONFIGURED },
         { status: 503 }
@@ -21,15 +22,16 @@ export async function POST(request: NextRequest) {
     const breakglassSecret = String(body?.breakglassSecret || '').trim()
     const newPassphrase = String(body?.newPassphrase || '').trim()
     const revokeExistingSessions = body?.revokeExistingSessions !== false
+    const unlockedByPrimeAdmin = isPrimeAdminUnlocked(request)
 
-    if (!breakglassSecret) {
+    if (!breakglassSecret && !unlockedByPrimeAdmin) {
       return NextResponse.json(
         { error: MESSAGES.ADMIN_BREAKGLASS_SECRET_REQUIRED },
         { status: 400 }
       )
     }
 
-    if (breakglassSecret !== configuredSecret) {
+    if (!unlockedByPrimeAdmin && !isValidBreakglassSecret(breakglassSecret)) {
       return NextResponse.json(
         { error: MESSAGES.ADMIN_BREAKGLASS_SECRET_INVALID },
         { status: 401 }
@@ -70,6 +72,18 @@ export async function POST(request: NextRequest) {
       path: '/',
       expires: new Date(0),
     })
+
+    if (revokeExistingSessions) {
+      response.cookies.set({
+        name: PRIME_ADMIN_COOKIE_NAME,
+        value: '',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        expires: new Date(0),
+      })
+    }
 
     return response
   } catch (error) {

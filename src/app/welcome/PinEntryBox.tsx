@@ -3,7 +3,7 @@
 import { FormEvent, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { ADMIN_ENTRY_PIN, BURNER_PREVIEW_PIN, ROUTES } from '@/lib/constants'
+import { ADMIN_ENTRY_PIN, BURNER_PREVIEW_PIN, PRIME_ADMIN_ENTRY_PIN, ROUTES } from '@/lib/constants'
 
 const CP = "Copperplate, 'Copperplate Gothic Light', fantasy"
 
@@ -75,6 +75,11 @@ export default function PinEntryBox() {
 
     if (pin === ADMIN_ENTRY_PIN) {
       router.push(ROUTES.ADMIN_AUTH)
+      return
+    }
+
+    if (pin === PRIME_ADMIN_ENTRY_PIN) {
+      router.push(ROUTES.PRIME_ADMIN_AUTH)
       return
     }
 
