@@ -1,4 +1,3 @@
-import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -13,9 +12,7 @@ import {
   TEMP_ADMIN_AUTH_RATE_LIMIT_WINDOW_MS,
 } from '@/lib/constants'
 
-const TEMP_ADMIN_USERNAME_BASE = 'temp_admin'
 const TEMP_ADMIN_EMAIL = 'temp-admin@fuxem.local'
-const TEMP_ADMIN_DISPLAY_NAME = 'Temporary Admin'
 
 type RateLimitState = {
   count: number
@@ -134,15 +131,6 @@ function clearRateLimit(ip: string) {
   rateLimitStore.delete(ip)
 }
 
-function generatePersonalCode(): string {
-  return crypto.randomBytes(4).toString('hex').toUpperCase()
-}
-
-function generateTempUsername(seed = ''): string {
-  const suffix = seed || crypto.randomBytes(2).toString('hex')
-  return `${TEMP_ADMIN_USERNAME_BASE}_${suffix}`
-}
-
 async function createOrGetTempAdmin() {
   const existingByEmail = await prisma.user.findUnique({
     where: { email: TEMP_ADMIN_EMAIL },
@@ -153,34 +141,19 @@ async function createOrGetTempAdmin() {
     return existingByEmail
   }
 
-  let username = generateTempUsername('core')
-  let usernameExists = await prisma.user.findUnique({ where: { username }, select: { id: true } })
-  while (usernameExists) {
-    username = generateTempUsername()
-    usernameExists = await prisma.user.findUnique({ where: { username }, select: { id: true } })
-  }
-
-  let personalCode = generatePersonalCode()
-  let codeExists = await prisma.user.findUnique({ where: { personalCode }, select: { id: true } })
-  while (codeExists) {
-    personalCode = generatePersonalCode()
-    codeExists = await prisma.user.findUnique({ where: { personalCode }, select: { id: true } })
-  }
-
-  return prisma.user.create({
-    data: {
-      email: TEMP_ADMIN_EMAIL,
-      username,
-      displayName: TEMP_ADMIN_DISPLAY_NAME,
-      firstName: TEMP_ADMIN_DISPLAY_NAME,
-      personalCode,
-      passwordHash: 'TEMP_ADMIN_PASS_ONLY',
-      status: 'active',
-      emailVerified: true,
-      onboardingStep: 'completed',
-    },
+  // Fallback for older production schemas: reuse any existing active user
+  // rather than creating one with columns that may not exist yet.
+  const existingActiveUser = await prisma.user.findFirst({
+    where: { status: 'active' },
+    orderBy: { createdAt: 'asc' },
     select: { id: true, username: true, displayName: true, personalCode: true },
   })
+
+  if (existingActiveUser) {
+    return existingActiveUser
+  }
+
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -224,6 +197,12 @@ export async function POST(request: NextRequest) {
     }
 
     const adminUser = await createOrGetTempAdmin()
+    if (!adminUser) {
+      return NextResponse.json(
+        { error: 'No active member account found. Create one account first, then retry admin auth.' },
+        { status: 503 }
+      )
+    }
     clearRateLimit(ip)
     logAdminAuthEvent('attempt_succeeded', request, {
       adminUserId: adminUser.id,
