@@ -190,6 +190,7 @@ export const MESSAGES = {
   ADMIN_PASSPHRASE_REQUIRED: 'Passphrase is required',
   ADMIN_PASSPHRASE_INVALID: 'Invalid passphrase',
   ADMIN_AUTH_RATE_LIMITED: 'Too many attempts. Try again later.',
+  ADMIN_SESSION_LIMIT_REACHED: 'Admin session limit reached. Only 2 active admin sessions are allowed right now.',
   PASSWORD_MIN_LENGTH: 'Password must be at least 8 characters',
   ROOM_UNAVAILABLE: 'The live room is not available right now. Please try again later.',
   FRIEND_REQUEST_SENT: 'Friend request sent',

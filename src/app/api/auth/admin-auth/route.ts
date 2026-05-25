@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import jwt from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -20,7 +21,18 @@ type RateLimitState = {
   blockedUntilMs: number
 }
 
+type ActiveTempAdminSession = {
+  sessionId: string
+  userId: string
+  expiresAtMs: number
+  ip: string
+  userAgent: string
+}
+
 const rateLimitStore = new Map<string, RateLimitState>()
+const activeTempAdminSessions = new Map<string, ActiveTempAdminSession>()
+
+const DEFAULT_MAX_ACTIVE_TEMP_ADMIN_SESSIONS = 2
 
 function getClientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for')
@@ -131,6 +143,82 @@ function clearRateLimit(ip: string) {
   rateLimitStore.delete(ip)
 }
 
+function getMaxActiveTempAdminSessions(): number {
+  const configured = Number.parseInt(process.env.TEMP_ADMIN_MAX_ACTIVE_SESSIONS || '', 10)
+  if (Number.isFinite(configured) && configured > 0) {
+    return configured
+  }
+
+  return DEFAULT_MAX_ACTIVE_TEMP_ADMIN_SESSIONS
+}
+
+function pruneExpiredTempAdminSessions() {
+  const now = Date.now()
+  for (const [sessionId, session] of activeTempAdminSessions.entries()) {
+    if (session.expiresAtMs <= now) {
+      activeTempAdminSessions.delete(sessionId)
+    }
+  }
+}
+
+function getExistingTempAdminSessionId(request: NextRequest, jwtSecret: string): string | null {
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
+  if (!token) {
+    return null
+  }
+
+  try {
+    const payload = jwt.verify(token, jwtSecret) as {
+      mode?: string
+      tempAdminSessionId?: unknown
+    }
+
+    if (payload.mode !== 'temp-admin') {
+      return null
+    }
+
+    return typeof payload.tempAdminSessionId === 'string' ? payload.tempAdminSessionId : null
+  } catch {
+    return null
+  }
+}
+
+function reserveTempAdminSession(request: NextRequest, userId: string, jwtSecret: string): string | null {
+  pruneExpiredTempAdminSessions()
+
+  const now = Date.now()
+  const expiresAtMs = now + TEMP_ADMIN_AUTH_MAX_AGE_SECONDS * 1000
+  const ip = getClientIp(request)
+  const userAgent = request.headers.get('user-agent') || 'unknown'
+  const currentSessionId = getExistingTempAdminSessionId(request, jwtSecret)
+
+  if (currentSessionId && activeTempAdminSessions.has(currentSessionId)) {
+    activeTempAdminSessions.set(currentSessionId, {
+      sessionId: currentSessionId,
+      userId,
+      expiresAtMs,
+      ip,
+      userAgent,
+    })
+    return currentSessionId
+  }
+
+  if (activeTempAdminSessions.size >= getMaxActiveTempAdminSessions()) {
+    return null
+  }
+
+  const sessionId = randomUUID()
+  activeTempAdminSessions.set(sessionId, {
+    sessionId,
+    userId,
+    expiresAtMs,
+    ip,
+    userAgent,
+  })
+
+  return sessionId
+}
+
 async function createOrGetTempAdmin() {
   const existingByEmail = await prisma.user.findUnique({
     where: { email: TEMP_ADMIN_EMAIL },
@@ -203,11 +291,25 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       )
     }
+
+    const tempAdminSessionId = reserveTempAdminSession(request, adminUser.id, jwtSecret)
+    if (!tempAdminSessionId) {
+      logAdminAuthEvent('attempt_failed', request, {
+        reason: 'session_limit_reached',
+        maxActiveSessions: getMaxActiveTempAdminSessions(),
+      })
+      return NextResponse.json(
+        { error: MESSAGES.ADMIN_SESSION_LIMIT_REACHED },
+        { status: 403 }
+      )
+    }
+
     clearRateLimit(ip)
     logAdminAuthEvent('attempt_succeeded', request, {
       adminUserId: adminUser.id,
       adminUsername: adminUser.username,
       usedDefaultPassphrase: !process.env.TEMP_ADMIN_PASSPHRASE,
+      tempAdminSessionId,
     })
 
     const token = jwt.sign(
@@ -215,6 +317,7 @@ export async function POST(request: NextRequest) {
         userId: adminUser.id,
         personalCode: adminUser.personalCode,
         mode: 'temp-admin',
+        tempAdminSessionId,
         username: adminUser.username,
       },
       jwtSecret,
