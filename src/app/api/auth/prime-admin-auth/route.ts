@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const breakglas = String(body?.breakglas || '').trim()
+    const breakglas = String(body?.breakglas || body?.breakglassSecret || '').trim()
 
     if (!breakglas) {
       return NextResponse.json(
