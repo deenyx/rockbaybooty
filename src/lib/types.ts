@@ -55,6 +55,7 @@ export interface AuthTokenPayload {
   personalCode: string
   mode?: 'default-member' | 'burner-preview' | 'temp-admin'
   tempAdminSessionId?: string
+  tempAdminSessionVersion?: number
   sub?: string
   username?: string
   iat?: number

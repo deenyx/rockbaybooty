@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
 
 import { AUTH_COOKIE_NAME } from '@/lib/constants'
+import { isTempAdminSessionValid } from '@/lib/temp-admin-control'
 import type { AuthTokenPayload } from '@/lib/types'
 
 function getBearerToken(header: string | null): string | null {
@@ -42,6 +43,13 @@ export async function getAuthTokenPayload(
 
   try {
     const payload = jwt.verify(token, jwtSecret) as AuthTokenPayload & { sub?: string }
+
+    if (payload.mode === 'temp-admin') {
+      const valid = await isTempAdminSessionValid(payload)
+      if (!valid) {
+        return null
+      }
+    }
 
     if (typeof payload.userId === 'string') {
       return payload
