@@ -3,16 +3,19 @@
 import React from 'react'
 import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
-import { Users, Zap, Heart, TrendingUp } from 'lucide-react'
+import { Users, Zap, Heart, TrendingUp, MapPin, Compass, Copy, ExternalLink } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/constants'
 
 type DashboardViewData = {
   user: {
     id: string
     username: string
+    accountName: string
     firstName: string
     displayName: string
     personalCode: string
@@ -61,9 +64,59 @@ const itemVariants: Variants = {
   },
 }
 
+function getDefaultArea(profile: DashboardViewData['profile']) {
+  const cityStateCountry = [profile.city, profile.state, profile.country].filter(Boolean)
+
+  if (cityStateCountry.length > 0) {
+    return cityStateCountry.join(', ')
+  }
+
+  if (profile.location && profile.location !== 'Preview mode') {
+    return profile.location
+  }
+
+  return 'Downtown'
+}
+
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const { user, profile } = initialData
+  const defaultArea = getDefaultArea(profile)
+  const [startArea, setStartArea] = React.useState(defaultArea)
+  const [destination, setDestination] = React.useState('')
+  const [travelMode, setTravelMode] = React.useState<'driving' | 'walking' | 'transit'>('driving')
+  const [activeMapQuery, setActiveMapQuery] = React.useState(defaultArea)
+  const [copied, setCopied] = React.useState(false)
+
+  const quickDestinations = ['Coffee shop', 'Cocktail bar', 'Lounge', 'Dinner spot', 'Hotel lobby']
+
+  const mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(activeMapQuery)}&output=embed`
+  const routeUrl = destination.trim()
+    ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(startArea)}&destination=${encodeURIComponent(destination)}&travelmode=${travelMode}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeMapQuery)}`
+
+  const meetupSummary = destination.trim()
+    ? `Meetup plan: starting around ${startArea}, destination ${destination}, mode ${travelMode}.`
+    : `Meetup plan: exploring options around ${startArea}.`
+
+  async function copyMeetupSummary() {
+    try {
+      await navigator.clipboard.writeText(meetupSummary)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  function searchMap() {
+    if (destination.trim()) {
+      setActiveMapQuery(`${startArea} to ${destination}`)
+      return
+    }
+
+    setActiveMapQuery(startArea)
+  }
 
   const statCards = [
     {
@@ -189,6 +242,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   </div>
                 </div>
 
+                <div>
+                  <p className="text-sm text-text-muted mb-1">Member Marker</p>
+                  <p className="text-base font-semibold text-champagne">{user.accountName} + @{user.username}</p>
+                </div>
+
                 {profile.bio && (
                   <div>
                     <p className="text-sm text-text-muted mb-2">Bio</p>
@@ -298,6 +356,115 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                     <p className="text-xs text-text-muted">{activity.time}</p>
                   </motion.div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Map Planner */}
+        <motion.div variants={itemVariants}>
+          <Card className="overflow-hidden border-border-subtle/50 bg-gradient-to-br from-bg-surface/50 to-bg-surface/20">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <MapPin className="h-5 w-5 text-champagne" />
+                    Map Planner
+                  </CardTitle>
+                  <CardDescription>Plan meetups without leaving your dashboard.</CardDescription>
+                </div>
+                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-100">
+                  Area-first privacy
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="md:col-span-1">
+                  <p className="mb-2 text-xs uppercase tracking-[0.2em] text-text-muted">Start Area</p>
+                  <Input
+                    value={startArea}
+                    onChange={(event) => setStartArea(event.target.value)}
+                    placeholder="City, state, or district"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <p className="mb-2 text-xs uppercase tracking-[0.2em] text-text-muted">Destination</p>
+                  <Input
+                    value={destination}
+                    onChange={(event) => setDestination(event.target.value)}
+                    placeholder="Coffee shop near Midtown"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <p className="mb-2 text-xs uppercase tracking-[0.2em] text-text-muted">Travel Mode</p>
+                  <div className="flex gap-2">
+                    {(['driving', 'walking', 'transit'] as const).map((mode) => (
+                      <Button
+                        key={mode}
+                        type="button"
+                        variant={travelMode === mode ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTravelMode(mode)}
+                        className="capitalize"
+                      >
+                        {mode}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {quickDestinations.map((spot) => (
+                  <Button
+                    key={spot}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDestination(`${spot} near ${startArea}`)
+                    }}
+                  >
+                    {spot}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" onClick={searchMap} className="gap-2">
+                  <Compass className="h-4 w-4" />
+                  Update Map
+                </Button>
+                <Button type="button" variant="outline" onClick={copyMeetupSummary} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  {copied ? 'Copied' : 'Copy Meetup Plan'}
+                </Button>
+                <a
+                  href={routeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex"
+                >
+                  <Button type="button" variant="secondary" className="gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    Open Full Map
+                  </Button>
+                </a>
+              </div>
+
+              <div className="rounded-xl border border-border-subtle/60 bg-black/10 p-2">
+                <iframe
+                  title="Member meetup map"
+                  src={mapEmbedUrl}
+                  className="h-[320px] w-full rounded-lg border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+
+              <div className="rounded-lg border border-amber-300/30 bg-amber-400/10 p-3 text-xs text-amber-100">
+                Keep exact addresses in direct messages only after both members agree. Start with city or district-level planning by default.
               </div>
             </CardContent>
           </Card>

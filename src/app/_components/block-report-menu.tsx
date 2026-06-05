@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { reportUser } from '@/lib/api'
+
 type BlockReportMenuProps = {
   targetId: string
   targetName: string
@@ -9,6 +11,31 @@ type BlockReportMenuProps = {
 
 export default function BlockReportMenu({ targetId, targetName }: BlockReportMenuProps) {
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  async function submitQuickReport() {
+    if (isSubmitting) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setNotice(null)
+
+    try {
+      await reportUser({
+        targetId,
+        reason: 'other',
+      })
+
+      setNotice('Report submitted')
+      setOpen(false)
+    } catch {
+      setNotice('Could not submit report')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="relative">
@@ -30,10 +57,11 @@ export default function BlockReportMenu({ targetId, targetName }: BlockReportMen
         >
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            disabled={isSubmitting}
+            onClick={submitQuickReport}
             className="block w-full rounded-lg px-2 py-2 text-left text-xs text-stone-200 transition hover:bg-white/10"
           >
-            Report {targetName}
+            {isSubmitting ? 'Submitting...' : `Report ${targetName}`}
           </button>
           <button
             type="button"
@@ -45,6 +73,8 @@ export default function BlockReportMenu({ targetId, targetName }: BlockReportMen
           <p className="px-2 pb-1 pt-2 text-[10px] text-stone-400">ID: {targetId.slice(0, 8)}...</p>
         </div>
       )}
+
+      {notice ? <p className="mt-1 text-[10px] text-stone-300">{notice}</p> : null}
     </div>
   )
 }

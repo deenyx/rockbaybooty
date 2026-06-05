@@ -82,6 +82,7 @@ export default async function DashboardPage() {
             user: {
               id: userId,
               username: burnerUsername,
+              accountName: '#preview',
               firstName: 'Member',
               displayName: burnerDisplay,
               personalCode: payload.personalCode || '9999',
@@ -112,6 +113,7 @@ export default async function DashboardPage() {
     select: {
       id: true,
       username: true,
+      accountName: true,
       firstName: true,
       displayName: true,
       personalCode: true,
@@ -158,6 +160,7 @@ export default async function DashboardPage() {
           user: {
             id: user.id,
             username: user.username,
+            accountName: user.accountName,
             firstName: user.firstName || user.displayName || user.username,
             displayName: user.displayName,
             personalCode: user.personalCode,

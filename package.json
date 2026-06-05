@@ -2,7 +2,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:vercel": "prisma generate && next build",
+    "build:vps": "prisma generate && NODE_ENV=production next build",
+    "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
+    "start": "next start",
     "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
@@ -19,6 +23,8 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "jsonwebtoken": "^9.0.3",
+    "livekit-client": "^2.19.1",
+    "livekit-server-sdk": "^2.15.4",
     "lucide-react": "^1.16.0",
     "next": "^16.2.3",
     "nodemailer": "^8.0.5",

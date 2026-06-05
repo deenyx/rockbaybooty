@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '@/lib/prisma'
 import { sendOnboardingWelcomeEmail } from '@/lib/email'
+import { generateNextAccountName } from '@/lib/account-name'
 
 import {
   AUTH_COOKIE_NAME,
@@ -239,17 +240,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        email: email || null,
-        username,
-        displayName,
-        personalCode,
-        passwordHash,
-        firstName: displayName,
-        onboardingStep: 'completed',
-        status: 'active',
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const accountName = await generateNextAccountName(tx)
+
+      return tx.user.create({
+        data: {
+          email: email || null,
+          username,
+          displayName,
+          accountName,
+          personalCode,
+          passwordHash,
+          firstName: displayName,
+          onboardingStep: 'completed',
+          status: 'active',
+        },
+      })
     })
 
     const location = [city, state, country].filter(Boolean).join(', ')

@@ -13,8 +13,10 @@ type RegisterResponse = {
   message?: string
   pin?: string
   username?: string
+  accountName?: string
   user?: {
     username?: string
+    accountName?: string
   }
   error?: string
 }
@@ -43,6 +45,7 @@ function SignupContent() {
   const [successMessage, setSuccessMessage] = useState('')
   const [pin, setPin] = useState('')
   const [generatedUsername, setGeneratedUsername] = useState('')
+  const [accountName, setAccountName] = useState('')
 
   const maxDob = useMemo(() => {
     const now = new Date()
@@ -129,6 +132,7 @@ function SignupContent() {
       setSuccessMessage(data.message || MESSAGES.EMAIL_SENT)
       setPin(data.pin || '')
       setGeneratedUsername(data.username || data.user?.username || '')
+      setAccountName(data.accountName || data.user?.accountName || '')
       setStatus('success')
     } catch {
       setError(MESSAGES.ERROR_GENERAL)
@@ -185,9 +189,18 @@ function SignupContent() {
 
               {!!pin && (
                 <div className="rounded-xl border border-amber-200/30 bg-amber-100/10 px-4 py-3 text-center">
-                  {!!generatedUsername && (
+                  {!!accountName && !!generatedUsername && (
                     <>
                       <p className="text-[11px] uppercase tracking-[0.18em] text-amber-100/80" style={{ fontFamily: CP }}>
+                        Member Marker
+                      </p>
+                      <p className="mt-2 text-lg tracking-[0.08em] text-amber-100">{accountName} + @{generatedUsername}</p>
+                    </>
+                  )}
+
+                  {!!generatedUsername && (
+                    <>
+                      <p className={`${accountName ? 'mt-3 ' : ''}text-[11px] uppercase tracking-[0.18em] text-amber-100/80`} style={{ fontFamily: CP }}>
                         User ID
                       </p>
                       <p className="mt-2 text-xl tracking-[0.12em] text-amber-100">{generatedUsername}</p>

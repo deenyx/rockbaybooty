@@ -4,6 +4,8 @@ import TopQuickNav from '@/app/_components/top-quick-nav'
 import { ROUTES } from '@/lib/constants'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Events | RockBayBooty Community',
   description: 'Find and join community events and meetups',

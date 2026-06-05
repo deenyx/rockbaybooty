@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 
 import {
   AUTH_COOKIE_NAME,
@@ -15,6 +16,7 @@ import {
   SESSION_MODE_MEMBER,
 } from '@/lib/constants'
 import { sendLoginAlertEmail } from '@/lib/email'
+import { generateNextAccountName } from '@/lib/account-name'
 import type { AuthTokenPayload } from '@/lib/types'
 
 function getSafeReturnTo(returnTo: string | null): string {
@@ -142,14 +144,14 @@ function buildSuccessResponse(kind: ParsedLoginInput['requestKind'], returnTo: s
   return NextResponse.redirect(new URL(returnTo, request.url))
 }
 
-async function generateUniquePersonalCode(baseCode: string) {
+async function generateUniquePersonalCode(baseCode: string, tx: Prisma.TransactionClient) {
   const normalizedBase = baseCode.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)
   let attempt = 0
 
   while (attempt < 10) {
     const suffix = attempt === 0 ? '' : String(attempt)
     const personalCode = `${normalizedBase}${suffix}`.slice(0, 12)
-    const existing = await prisma.user.findUnique({
+    const existing = await tx.user.findUnique({
       where: { personalCode },
       select: { id: true },
     })
@@ -165,12 +167,12 @@ async function generateUniquePersonalCode(baseCode: string) {
   return fallback
 }
 
-async function generateBurnerUsername() {
+async function generateBurnerUsername(tx: Prisma.TransactionClient) {
   const base = 'defaultuser'
 
   for (let attempt = 0; attempt < 10_000; attempt += 1) {
     const candidate = attempt === 0 ? base : `${base}${attempt}`
-    const existing = await prisma.user.findUnique({
+    const existing = await tx.user.findUnique({
       where: { username: candidate },
       select: { id: true },
     })
@@ -184,20 +186,24 @@ async function generateBurnerUsername() {
 }
 
 async function createBurnerUser() {
-  const username = await generateBurnerUsername()
-  const personalCode = await generateUniquePersonalCode(`BURN${Date.now().toString().slice(-6)}`)
+  return prisma.$transaction(async (tx) => {
+    const accountName = await generateNextAccountName(tx)
+    const username = await generateBurnerUsername(tx)
+    const personalCode = await generateUniquePersonalCode(`BURN${Date.now().toString().slice(-6)}`, tx)
 
-  return prisma.user.create({
-    data: {
-      username,
-      displayName: username,
-      personalCode,
-      role: 'BURNER',
-      onboardingStep: 'completed',
-      status: 'active',
-      emailVerified: true,
-    },
-    select: loginUserSelect,
+    return tx.user.create({
+      data: {
+        username,
+        accountName,
+        displayName: username,
+        personalCode,
+        role: 'BURNER',
+        onboardingStep: 'completed',
+        status: 'active',
+        emailVerified: true,
+      },
+      select: loginUserSelect,
+    })
   })
 }
 

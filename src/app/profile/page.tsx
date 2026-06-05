@@ -27,7 +27,6 @@ import {
 
 type ProfileForm = {
   name: string
-  displayName: string
   avatarUrl: string
   city: string
   state: string
@@ -43,7 +42,6 @@ type ProfileForm = {
 
 const EMPTY_FORM: ProfileForm = {
   name: '',
-  displayName: '',
   avatarUrl: '',
   city: '',
   state: '',
@@ -83,7 +81,6 @@ export default function ProfilePage() {
         setUsername(response.user.username)
         setForm({
           name: response.user.displayName || '',
-          displayName: response.user.displayName || '',
           avatarUrl: response.profile.avatarUrl || '',
           city: response.profile.city || '',
           state: response.profile.state || '',
@@ -152,6 +149,7 @@ export default function ProfilePage() {
       await updateMemberProfile({
         displayName: form.name,
         avatarUrl: form.avatarUrl || undefined,
+        photoUrls,
         city: form.city,
         state: form.state || undefined,
         country: form.country || undefined,
@@ -480,7 +478,7 @@ export default function ProfilePage() {
             {/* Live Profile Preview */}
             <div className="w-full md:w-96 shrink-0 flex flex-col gap-6">
               <ProfilePreview
-                displayName={form.displayName}
+                displayName={form.name}
                 avatarUrl={form.avatarUrl}
                 city={form.city}
                 state={form.state}

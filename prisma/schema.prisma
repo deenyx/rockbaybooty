@@ -5,6 +5,22 @@ enum UserRole {
   MEMBER         // 4: Standard, email-verified
   BURNER         // 5: Burner/default/public
 }
+
+enum ReportStatus {
+  pending
+  reviewed
+  dismissed
+  actioned
+}
+
+enum ReportReason {
+  harassment
+  explicit_content
+  spam
+  impersonation
+  underage
+  other
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -33,6 +49,7 @@ model User {
   role           UserRole @default(MEMBER)
   email          String?  @unique
   username       String   @unique
+  accountName    String   @unique
   displayName    String
   personalCode   String   @unique // Referral / sharing code
   passwordHash   String?           // Optional — new users use PIN-based auth
@@ -55,6 +72,10 @@ model User {
   outgoingFriendships Friendship[] @relation("OutgoingFriendships")
   incomingFriendships Friendship[] @relation("IncomingFriendships")
   videos         Video[]
+  reportsFiled    Report[] @relation("ReportsFiled")
+  reportsReceived Report[] @relation("ReportsReceived")
+  reviewedReports Report[] @relation("ReportsReviewed")
+  adminAuditEvents AdminAuditLog[] @relation("AdminAuditActor")
 
   // Account Status
   status         String   @default("active") // active, suspended, deleted
@@ -208,4 +229,45 @@ model Message {
   @@index([senderId])
   @@index([recipientId])
   @@index([senderId, recipientId, createdAt])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  reporterId      String
+  targetId        String
+  reason          ReportReason
+  details         String?
+  status          ReportStatus @default(pending)
+  reviewedById    String?
+  reviewedAt      DateTime?
+  resolutionNote  String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  reporter        User         @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+  target          User         @relation("ReportsReceived", fields: [targetId], references: [id], onDelete: Cascade)
+  reviewedBy      User?        @relation("ReportsReviewed", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([targetId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String
+  targetUserId  String?
+  action        String
+  beforeState   Json?
+  afterState    Json?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  actor         User     @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId])
+  @@index([targetUserId])
+  @@index([action])
+  @@index([createdAt])
 }

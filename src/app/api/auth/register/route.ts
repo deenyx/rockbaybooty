@@ -10,6 +10,7 @@ import {
   USERNAME_REGEX,
 } from '@/lib/constants'
 import { sendVerificationEmail } from '@/lib/email'
+import { generateNextAccountName } from '@/lib/account-name'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -112,25 +113,30 @@ export async function POST(request: NextRequest) {
     const personalCode = crypto.randomBytes(4).toString('hex').toUpperCase()
     const passwordHash = await bcrypt.hash(password, 10)
 
-    const createdUser = await prisma.user.create({
-      data: {
-        email,
-        firstName: username,
-        displayName: username,
-        username,
-        personalCode,
-        passwordHash,
-        loginPin: NEW_MEMBER_PIN,
-        emailVerificationToken: token,
-        emailVerificationExpiresAt: expiresAt,
-        onboardingStep: 'passcode',
-        profile: {
-          create: {
-            age,
-            dateOfBirth,
+    const createdUser = await prisma.$transaction(async (tx) => {
+      const accountName = await generateNextAccountName(tx)
+
+      return tx.user.create({
+        data: {
+          email,
+          firstName: username,
+          displayName: username,
+          username,
+          accountName,
+          personalCode,
+          passwordHash,
+          loginPin: NEW_MEMBER_PIN,
+          emailVerificationToken: token,
+          emailVerificationExpiresAt: expiresAt,
+          onboardingStep: 'passcode',
+          profile: {
+            create: {
+              age,
+              dateOfBirth,
+            },
           },
         },
-      },
+      })
     })
 
     // Skip email send in development; auto-mark as verified
@@ -158,7 +164,7 @@ export async function POST(request: NextRequest) {
       // Fetch the user (should be verified now)
       const user = await prisma.user.findUnique({
         where: { email },
-        select: { id: true, username: true, displayName: true, personalCode: true },
+        select: { id: true, username: true, displayName: true, accountName: true, personalCode: true },
       })
       if (user) {
         const jwt = require('jsonwebtoken')
@@ -174,6 +180,7 @@ export async function POST(request: NextRequest) {
             user: {
               id: user.id,
               username: user.username,
+              accountName: user.accountName,
               displayName: user.displayName,
               personalCode: user.personalCode,
             },
@@ -197,6 +204,7 @@ export async function POST(request: NextRequest) {
         message: 'Now, verify your email.',
         pin: NEW_MEMBER_PIN,
         username,
+        accountName: createdUser.accountName,
       },
       { status: 200 }
     )

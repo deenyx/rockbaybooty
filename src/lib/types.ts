@@ -208,6 +208,7 @@ export interface UpdateMemberProfileInput {
   bio?: string
   interests?: string[]
   avatarUrl?: string
+  photoUrls?: string[]
   twitterUrl?: string
   fetlifeUrl?: string
   onlyfansUrl?: string

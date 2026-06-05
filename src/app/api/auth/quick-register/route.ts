@@ -9,6 +9,7 @@ import {
   MESSAGES,
   MIN_AGE,
 } from '@/lib/constants'
+import { generateNextAccountName } from '@/lib/account-name'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/
 
@@ -86,20 +87,25 @@ export async function POST(request: NextRequest) {
     // No passwords — hash the personalCode as the dummy passwordHash
     const passwordHash = await bcrypt.hash(personalCode, 10)
 
-    const user = await prisma.user.create({
-      data: {
-        username,
-        displayName,
-        personalCode,
-        passwordHash,
-        onboardingStep: 'completed',
-        status: 'active',
-        profile: {
-          create: {
-            dateOfBirth: dob,
+    const user = await prisma.$transaction(async (tx) => {
+      const accountName = await generateNextAccountName(tx)
+
+      return tx.user.create({
+        data: {
+          username,
+          displayName,
+          accountName,
+          personalCode,
+          passwordHash,
+          onboardingStep: 'completed',
+          status: 'active',
+          profile: {
+            create: {
+              dateOfBirth: dob,
+            },
           },
         },
-      },
+      })
     })
 
     const jwtSecret = process.env.JWT_SECRET
