@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getAuthenticatedUserId } from '@/lib/auth'
 import { MESSAGES } from '@/lib/constants'
+import { getMemberMediaPolicy } from '@/lib/member-media-policy'
 import prisma from '@/lib/prisma'
 
 function normalizeString(value: unknown): string | null {
@@ -39,6 +40,8 @@ async function buildProfileResponse(userId: string) {
       displayName: true,
       accountName: true,
       personalCode: true,
+      role: true,
+      isPremium: true,
       profile: {
         select: {
           city: true,
@@ -53,6 +56,7 @@ async function buildProfileResponse(userId: string) {
           interests: true,
           avatarUrl: true,
           photoUrls: true,
+          videoUrls: true,
         },
       },
     },
@@ -62,6 +66,10 @@ async function buildProfileResponse(userId: string) {
     return null
   }
 
+  const mediaPolicy = getMemberMediaPolicy({ role: user.role, isPremium: user.isPremium })
+  const photoUrls = user.profile?.photoUrls || []
+  const videoUrls = user.profile?.videoUrls || []
+
   return {
     user: {
       id: user.id,
@@ -69,6 +77,8 @@ async function buildProfileResponse(userId: string) {
       displayName: user.displayName,
       accountName: user.accountName,
       personalCode: user.personalCode,
+      role: user.role,
+      isPremium: user.isPremium,
     },
     profile: {
       city: user.profile?.city || '',
@@ -84,7 +94,8 @@ async function buildProfileResponse(userId: string) {
       bio: user.profile?.bio || '',
       interests: user.profile?.interests || [],
       avatarUrl: user.profile?.avatarUrl || '',
-      photoUrls: user.profile?.photoUrls || [],
+      photoUrls,
+      videoUrls,
       twitterUrl: '',
       fetlifeUrl: '',
       onlyfansUrl: '',
@@ -92,6 +103,13 @@ async function buildProfileResponse(userId: string) {
       tumblrUrl: '',
       instagramUrl: '',
       socialLinksVisibility: 'private',
+    },
+    media: {
+      policy: mediaPolicy,
+      counts: {
+        photos: photoUrls.length,
+        videos: videoUrls.length,
+      },
     },
   }
 }
@@ -135,6 +153,8 @@ export async function PATCH(request: NextRequest) {
       where: { id: userId },
       select: {
         id: true,
+        role: true,
+        isPremium: true,
         profile: {
           select: {
             city: true,
@@ -149,6 +169,7 @@ export async function PATCH(request: NextRequest) {
             interests: true,
             avatarUrl: true,
             photoUrls: true,
+            videoUrls: true,
           },
         },
       },
@@ -173,6 +194,21 @@ export async function PATCH(request: NextRequest) {
     const nextBio = normalizeString(body.bio) ?? user.profile?.bio ?? ''
     const nextAvatarUrl = normalizeString(body.avatarUrl) ?? user.profile?.avatarUrl ?? ''
     const nextPhotoUrls = normalizeStringArray(body.photoUrls) ?? user.profile?.photoUrls ?? []
+    const nextVideoUrls = normalizeStringArray(body.videoUrls) ?? user.profile?.videoUrls ?? []
+
+    const mediaPolicy = getMemberMediaPolicy({ role: user.role, isPremium: user.isPremium })
+
+    if (mediaPolicy.maxPhotos !== null && nextPhotoUrls.length > mediaPolicy.maxPhotos) {
+      return NextResponse.json({ error: `Photo limit reached for your plan (${mediaPolicy.maxPhotos} max).` }, { status: 400 })
+    }
+
+    if (!mediaPolicy.allowVideos && nextVideoUrls.length > 0) {
+      return NextResponse.json({ error: 'Your account cannot upload videos.' }, { status: 403 })
+    }
+
+    if (mediaPolicy.maxVideos !== null && nextVideoUrls.length > mediaPolicy.maxVideos) {
+      return NextResponse.json({ error: `Video limit reached for your plan (${mediaPolicy.maxVideos} max).` }, { status: 400 })
+    }
 
     if (!nextDisplayName) {
       return NextResponse.json({ error: MESSAGES.FIELD_REQUIRED }, { status: 400 })
@@ -209,6 +245,7 @@ export async function PATCH(request: NextRequest) {
           bio: nextBio,
           avatarUrl: nextAvatarUrl,
           photoUrls: nextPhotoUrls,
+          videoUrls: nextVideoUrls,
         },
         update: {
           city: nextCity,
@@ -224,6 +261,7 @@ export async function PATCH(request: NextRequest) {
           bio: nextBio,
           avatarUrl: nextAvatarUrl,
           photoUrls: nextPhotoUrls,
+          videoUrls: nextVideoUrls,
         },
       }),
     ])

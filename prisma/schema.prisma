@@ -164,6 +164,7 @@ model Profile {
   // Media
   avatarUrl       String?
   photoUrls       String[] @default([]) // Multiple profile photos
+  videoUrls       String[] @default([]) // Profile videos captured/uploaded by member
   
   // Preferences
   isPublic        Boolean  @default(false) // Visible in member search

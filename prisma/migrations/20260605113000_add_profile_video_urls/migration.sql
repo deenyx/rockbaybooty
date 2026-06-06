@@ -1,0 +1,2 @@
+ALTER TABLE "Profile"
+ADD COLUMN "videoUrls" TEXT[] DEFAULT ARRAY[]::TEXT[];

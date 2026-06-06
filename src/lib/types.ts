@@ -153,7 +153,10 @@ export interface MemberProfileResponse {
     id: string
     username: string
     displayName: string
+    accountName: string
     personalCode: string
+    role: 'SUPREME_ADMIN' | 'ADMIN' | 'MODEL_VERIFIED' | 'MEMBER' | 'BURNER'
+    isPremium: boolean
   }
   profile: {
     city: string
@@ -170,6 +173,7 @@ export interface MemberProfileResponse {
     interests: string[]
     avatarUrl: string
     photoUrls: string[]
+    videoUrls: string[]
     twitterUrl: string
     fetlifeUrl: string
     onlyfansUrl: string
@@ -177,6 +181,19 @@ export interface MemberProfileResponse {
     tumblrUrl: string
     instagramUrl: string
     socialLinksVisibility: string
+  }
+  media: {
+    policy: {
+      tier: 'premium' | 'free' | 'burner'
+      maxPhotos: number | null
+      maxVideos: number | null
+      allowVideos: boolean
+      requireWatermark: boolean
+    }
+    counts: {
+      photos: number
+      videos: number
+    }
   }
 }
 
@@ -209,6 +226,7 @@ export interface UpdateMemberProfileInput {
   interests?: string[]
   avatarUrl?: string
   photoUrls?: string[]
+  videoUrls?: string[]
   twitterUrl?: string
   fetlifeUrl?: string
   onlyfansUrl?: string
