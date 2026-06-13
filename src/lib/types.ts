@@ -53,7 +53,7 @@ export interface InviteCode {
 export interface AuthTokenPayload {
   userId: string
   personalCode: string
-  mode?: 'default-member'
+  mode?: 'default-member' | 'member'
   sub?: string
   username?: string
   iat?: number
@@ -107,6 +107,7 @@ export interface LoginResponse {
   message: string
   returnTo?: string
   requiresCredentials?: boolean
+  promptNametag?: boolean
   user: {
     id: string
     username: string

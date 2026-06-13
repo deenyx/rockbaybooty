@@ -80,14 +80,14 @@ export default function PinEntryBox() {
       return
     }
 
-    if (code === '9999') {
+    if (code === '9999' || code === '3333') {
       setError('')
 
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ passcode: '9999', returnTo: ROUTES.DASHBOARD }),
+          body: JSON.stringify({ passcode: code, returnTo: ROUTES.DASHBOARD }),
         })
 
         const data = await res.json()
@@ -95,6 +95,11 @@ export default function PinEntryBox() {
         if (!res.ok) {
           setError(data.error || 'Invalid code')
           setStatus('idle')
+          return
+        }
+
+        if (data.promptNametag) {
+          router.push(`${ROUTES.ME_PROFILE}?prompt=nametag`)
           return
         }
 

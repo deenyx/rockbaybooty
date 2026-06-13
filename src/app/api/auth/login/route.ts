@@ -10,6 +10,7 @@ import {
   BURNER_TOKEN_MAX_AGE_SECONDS,
   BURNER_PIN,
   MESSAGES,
+  PRESHARED_KEY_PIN,
   ROUTES,
   SESSION_MODE_COOKIE_NAME,
   SESSION_MODE_DEFAULT_MEMBER,
@@ -136,7 +137,7 @@ function buildSuccessResponse(kind: ParsedLoginInput['requestKind'], returnTo: s
     displayName: string
     personalCode: string
   }
-}, request: NextRequest) {
+} & Record<string, unknown>, request: NextRequest) {
   if (kind === 'json') {
     return NextResponse.json({ ...payload, returnTo }, { status: 200 })
   }
@@ -207,6 +208,28 @@ async function createBurnerUser() {
   })
 }
 
+async function createPresharedUser() {
+  return prisma.$transaction(async (tx) => {
+    const accountName = await generateNextAccountName(tx)
+    const username = await generateBurnerUsername(tx)
+    const personalCode = await generateUniquePersonalCode(`KEY${Date.now().toString().slice(-6)}`, tx)
+
+    return tx.user.create({
+      data: {
+        username,
+        accountName,
+        displayName: username,
+        personalCode,
+        role: 'MEMBER',
+        onboardingStep: 'completed',
+        status: 'active',
+        emailVerified: true,
+      },
+      select: loginUserSelect,
+    })
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { code, identifier, secret, returnTo, requestKind } = await parseLoginInput(request)
@@ -254,6 +277,41 @@ export async function POST(request: NextRequest) {
       )
 
       return withSessionCookies(response, token, SESSION_MODE_DEFAULT_MEMBER, BURNER_TOKEN_MAX_AGE_SECONDS)
+    }
+
+    if (normalizedCode === PRESHARED_KEY_PIN) {
+      const presharedUser = await createPresharedUser()
+
+      const presharedTokenPayload: AuthTokenPayload = {
+        userId: presharedUser.id,
+        personalCode: presharedUser.personalCode,
+        mode: SESSION_MODE_MEMBER,
+        sub: presharedUser.id,
+        username: presharedUser.username,
+      }
+
+      const token = jwt.sign(presharedTokenPayload, jwtSecret, {
+        expiresIn: BURNER_TOKEN_MAX_AGE_SECONDS,
+      })
+
+      const response = buildSuccessResponse(
+        requestKind,
+        returnTo,
+        {
+          message: MESSAGES.LOGIN_SUCCESS,
+          sessionMode: SESSION_MODE_MEMBER,
+          promptNametag: true,
+          user: {
+            id: presharedUser.id,
+            username: presharedUser.username,
+            displayName: presharedUser.displayName,
+            personalCode: presharedUser.personalCode,
+          },
+        },
+        request
+      )
+
+      return withSessionCookies(response, token, SESSION_MODE_MEMBER, BURNER_TOKEN_MAX_AGE_SECONDS)
     }
 
     if (!identifier) {

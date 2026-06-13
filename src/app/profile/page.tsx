@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 import MemberLayout from '@/app/_layouts/member-layout'
 import nextDynamic from 'next/dynamic'
@@ -68,6 +69,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     let mounted = true
@@ -179,6 +181,14 @@ export default function ProfilePage() {
     <MemberLayout>
       <div className="mx-auto max-w-5xl space-y-6 px-4 pb-8 pt-8 text-stone-100 sm:px-6 lg:px-8 profile-sexy-font">
 
+        {searchParams.get('prompt') === 'nametag' && !isLoading && (
+          <div className="rounded-3xl border border-amber-400/25 bg-amber-400/10 p-5 text-amber-100 shadow-[0_12px_30px_rgba(251,191,36,0.15)]">
+            <p className="text-sm font-semibold">Choose a nametag</p>
+            <p className="mt-2 text-sm text-amber-100/80">
+              Give your account a display name so other members can recognize you.
+            </p>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="rounded-3xl border border-white/10 bg-black/30 p-8 backdrop-blur-xl">

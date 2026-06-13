@@ -241,6 +241,7 @@ export const NEW_MEMBER_PIN = '5555'
 export const QUICK_JOIN_PIN = '0000'
 export const QUICK_JOIN_QUERY_PARAM = 'quickJoin'
 export const BURNER_PIN = '9999'
+export const PRESHARED_KEY_PIN = '3333'
 
 export const PASSCODE_LENGTH = 6
 export const PERSONAL_CODE_LENGTH = 8

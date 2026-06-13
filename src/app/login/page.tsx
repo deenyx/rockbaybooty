@@ -65,6 +65,11 @@ function LoginContent() {
         return
       }
 
+      if (data.promptNametag) {
+        router.push(`${ROUTES.ME_PROFILE}?prompt=nametag`)
+        return
+      }
+
       router.push(data.returnTo || ROUTES.DASHBOARD)
     } catch {
       setError('Network error. Please try again.')
@@ -100,6 +105,11 @@ function LoginContent() {
       if (!res.ok) {
         setError(data.error || MESSAGES.LOGIN_INVALID)
         setStatus('idle')
+        return
+      }
+
+      if (data.promptNametag) {
+        router.push(`${ROUTES.ME_PROFILE}?prompt=nametag`)
         return
       }
 
